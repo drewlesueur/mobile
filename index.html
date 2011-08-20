@@ -1,0 +1,39 @@
+<!doctype html>
+<html>
+<head>
+  <title></title>
+  <!-- TODO concat all javascript files together and put at end of page  -->
+  <link rel="stylesheet" type="text/css" href="styles.css" /> 
+  <script src="http://inc.the.tl/module.js"></script>
+  <script src="http://inc.the.tl/jquery-1.6.min.js"></script>
+  <script src="http://inc.the.tl/json2.js"></script>
+  <script src="http://inc.the.tl/underscore.js"></script>
+  <script src="http://inc.the.tl/nimble.js"></script>
+  <script src="http://inc.the.tl/drews-mixins.js"></script>
+  <script src="drews-event.js"></script>
+  <script src="http://severus.drewl.us/severus.js"></script>
+  <script src="http://filebox.drewl.us/filebox.js"></script>
+  <script src="config.js"></script>
+  <script src="mobile-manager-presenter.js"></script>
+  <script src="mobile-manager-view.js"></script>
+
+  <script src="mobile-app-presenter.js"></script>
+  <script src="mobile-app.js"></script>
+  <script src="mobile-app-view.js"></script>
+  <script>
+    // for javascripts that done use the define, require pattern
+    define("jquery", function(){return jQuery;});
+    define("underscore", function(){return _;});
+    define("json", function(){return JSON;});
+    define("nimble", function(){return _;});
+    define("google", function(){return google;});
+  </script>
+  <script src="index.js"></script>
+</head>
+<body>
+ <div class="body-wrapper" align="center">
+ </div>
+
+</body>
+</html>
+
