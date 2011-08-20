@@ -5,18 +5,30 @@
     eventer = require("drews-event");
     _ = require("underscore");
     return mobileManagerView = function(self) {
-      var clearNav, el, emit, navTo;
+      var app, clearNav, el, emit, navTo, screen, showApp;
       if (self == null) {
         self = {};
       }
       self = eventer(self);
       emit = self.emit;
-      el = " \n<div class=\"phone\">\n  <div class=\"screen\">\n   </div>\n</div>\n<div class=\"ctrls\">\n <a href=\"#new\">New app</a>\n <a href=\"#load\">load</a>\n</div>\n<div class=\"apps\">\n  <ul>\n  </ul>\n</div>";
+      el = $(" \n <div class=\"container\">\n  <div class=\"row show-grid\">\n    <div class=\"apps span4 column\">\n      <ul class=\"unstyled zebra-striped\">\n      </ul>\n    </div>\n    <div class=\"phone span6 column\">\n      <div class=\"screen\">\n       </div>\n    </div>\n    <div class=\"ctrls span6 column\">\n     <a class=\"new\" href=\"#\">New app</a>\n    </div>\n  </div>\n</div>");
+      el.find(".new").bind("click", function() {
+        return emit("new");
+      });
+      app = null;
+      self.getApp = function() {
+        return app;
+      };
+      screen = el.find(".screen");
       self.getEl = function() {
         return el;
       };
       self.addApp = function(app) {
         return $(".apps ul").append(app.view.getEl());
+      };
+      showApp = self.showApp = function(_app) {
+        app = _app;
+        return screen.append(app.view.getEl());
       };
       self.clearApps = function() {
         return $(".apps ul").empty();

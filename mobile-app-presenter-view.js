@@ -17,8 +17,9 @@
       model = self.model, emit = self.emit;
       console.log(model);
       name = model.get("name");
-      el = $("<li>\n  <a href=\"#" + name + "\">" + name + "</a> <a class=\"remove\" href=\"#\">[delete]</a>\n</li>");
-      el.find(".remove").bind("click", function() {
+      el = $("<li>\n  <a href=\"#apps/" + name + "\">" + name + "</a> <a class=\"remove\" href=\"#\">[delete]</a>\n</li>");
+      el.find(".remove").bind("click", function(e) {
+        e.preventDefault();
         if (confirm("Are you sure you want to delete " + name + "?")) {
           return emit("remove");
         }

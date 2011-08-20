@@ -12,7 +12,7 @@
     mobileAppViewMaker = require("mobile-app-view");
     eventer = require("drews-event");
     return mobileAppPresenterMaker = function(self) {
-      var emit, loadApp, model, setApp, view;
+      var emit, getModel, loadApp, model, setApp, view;
       if (self == null) {
         self = {};
       }
@@ -20,6 +20,9 @@
       model = null;
       view = null;
       emit = self.emit;
+      getModel = function() {
+        return model;
+      };
       setApp = function(_app) {
         model = _app;
         model.view = mobileAppViewMaker({

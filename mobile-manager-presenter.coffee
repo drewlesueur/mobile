@@ -5,6 +5,7 @@ define "mobile-manager-presenter", () ->
   mobileAppPresenterMaker = require "mobile-app-presenter"
   mobileAppPresenterViewMaker = require "mobile-app-presenter-view"
   infoViewMaker = require "info-view"
+  routerMaker = require "router"
   mobileManagerPresenter = () ->
     self = {}
     view = mobileManagerView()
@@ -17,7 +18,6 @@ define "mobile-manager-presenter", () ->
       infoView.clear args...
 
     load = self.load = ->
-      view.clearNav()
       view.clearApps()
       loading = info "loading mobile sites"
       mobileAppMaker.find (err, _apps) ->
@@ -27,6 +27,7 @@ define "mobile-manager-presenter", () ->
           app = mobileAppMaker app
           addApp app
         clear loading
+        view.initNav()
 
     addApp = (mobileApp) ->
       apps.push mobileApp
@@ -42,11 +43,7 @@ define "mobile-manager-presenter", () ->
         mobileAppPresenter.view.remove()
 
 
-        
-
-
     newApp = () ->
-      view.clearNav()
       mobileApp = mobileAppMaker
         name: prompt("name")
       #TODO: you are adding before you know it worked
@@ -55,17 +52,39 @@ define "mobile-manager-presenter", () ->
         addApp mobileApp
         clear saving 
 
+    loadApp = (mobileApp) ->
+      view.showApp mobileApp
+      
+    loadAppByName = (path, name) ->
+      mobileApp = null
+      found = _.any apps, (app) ->
+        console.log """
+          checking #{app.get("name")} == #{name}
+        """
+        if app.get("name") == name
+          mobileApp = app
+          return true
+      if found
+        console.log mobileApp
+        loadApp mobileApp
+      
+      
+
+      
+
     load()
-
-    navMap =
-      new: newApp
+    
+    router = routerMaker
       load: load
+      "apps/:name": loadAppByName
+   
+
+
     view.on "nav", (place) ->
-      fn = navMap[place]
-      fn?()
+      router.testRoutes place
 
+    view.on "new", newApp
 
-    view.initNav()
     
 
     self.getEl = -> view.getEl()

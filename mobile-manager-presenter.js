@@ -1,15 +1,16 @@
 (function() {
   var __slice = Array.prototype.slice;
   define("mobile-manager-presenter", function() {
-    var infoViewMaker, mobileAppMaker, mobileAppPresenterMaker, mobileAppPresenterViewMaker, mobileAppViewMaker, mobileManagerPresenter, mobileManagerView;
+    var infoViewMaker, mobileAppMaker, mobileAppPresenterMaker, mobileAppPresenterViewMaker, mobileAppViewMaker, mobileManagerPresenter, mobileManagerView, routerMaker;
     mobileManagerView = require("mobile-manager-view");
     mobileAppMaker = require("mobile-app");
     mobileAppViewMaker = require("mobile-app-view");
     mobileAppPresenterMaker = require("mobile-app-presenter");
     mobileAppPresenterViewMaker = require("mobile-app-presenter-view");
     infoViewMaker = require("info-view");
+    routerMaker = require("router");
     return mobileManagerPresenter = function() {
-      var addApp, apps, clear, info, infoView, load, navMap, newApp, self, view;
+      var addApp, apps, clear, info, infoView, load, loadApp, loadAppByName, newApp, router, self, view;
       self = {};
       view = mobileManagerView();
       apps = [];
@@ -26,7 +27,6 @@
       };
       load = self.load = function() {
         var loading;
-        view.clearNav();
         view.clearApps();
         loading = info("loading mobile sites");
         return mobileAppMaker.find(function(err, _apps) {
@@ -36,7 +36,8 @@
             app = mobileAppMaker(app);
             return addApp(app);
           });
-          return clear(loading);
+          clear(loading);
+          return view.initNav();
         });
       };
       addApp = function(mobileApp) {
@@ -61,7 +62,6 @@
       };
       newApp = function() {
         var mobileApp, saving;
-        view.clearNav();
         mobileApp = mobileAppMaker({
           name: prompt("name")
         });
@@ -71,17 +71,33 @@
           return clear(saving);
         });
       };
-      load();
-      navMap = {
-        "new": newApp,
-        load: load
+      loadApp = function(mobileApp) {
+        return view.showApp(mobileApp);
       };
-      view.on("nav", function(place) {
-        var fn;
-        fn = navMap[place];
-        return typeof fn === "function" ? fn() : void 0;
+      loadAppByName = function(path, name) {
+        var found, mobileApp;
+        mobileApp = null;
+        found = _.any(apps, function(app) {
+          console.log("checking " + (app.get("name")) + " == " + name);
+          if (app.get("name") === name) {
+            mobileApp = app;
+            return true;
+          }
+        });
+        if (found) {
+          console.log(mobileApp);
+          return loadApp(mobileApp);
+        }
+      };
+      load();
+      router = routerMaker({
+        load: load,
+        "apps/:name": loadAppByName
       });
-      view.initNav();
+      view.on("nav", function(place) {
+        return router.testRoutes(place);
+      });
+      view.on("new", newApp);
       self.getEl = function() {
         return view.getEl();
       };

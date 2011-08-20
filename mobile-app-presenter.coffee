@@ -14,6 +14,8 @@ define "mobile-app-presenter", () ->
     view = null
     {emit} = self
 
+    getModel = () -> model
+
     setApp = (_app) ->
       model = _app
       model.view = mobileAppViewMaker model: model

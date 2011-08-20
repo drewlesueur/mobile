@@ -13,10 +13,11 @@ define "mobile-app-presenter-view", () ->
     name = model.get "name"
     el = $ """
       <li>
-        <a href="##{name}">#{name}</a> <a class="remove" href="#">[delete]</a>
+        <a href="#apps/#{name}">#{name}</a> <a class="remove" href="#">[delete]</a>
       </li>
     """
-    el.find(".remove").bind "click", () ->
+    el.find(".remove").bind "click", (e) ->
+      e.preventDefault()
       if confirm "Are you sure you want to delete #{name}?"
         emit "remove"
     self.getEl = -> el
