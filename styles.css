@@ -22,3 +22,8 @@ body {
   background-color: #000;
   border-radius: 20px;
 }
+.info {
+  position: fixed;
+  top: 0;
+  left: 0;
+}

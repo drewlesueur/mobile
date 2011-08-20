@@ -10,27 +10,35 @@ define "mobile-manager-view", () ->
        <div class="screen">
         </div>
      </div>
+     <div class="ctrls">
+      <a href="#new">New app</a>
+      <a href="#load">load</a>
+     </div>
      <div class="apps">
        <ul>
        </ul>
      </div>
     """
-    $(document.body).find('.body-wrapper').append el
-    self.addAppToList = (app) ->
-      name = app.get "name"
-      $(".apps ul").append """
-        <li>
-          <a href="##{name}">name</a>
-        </li>
-      """
+    self.getEl = () -> el
+    self.addApp = (app) ->
+      $(".apps ul").append app.view.getEl()
+    self.clearApps = () ->
+      $(".apps ul").empty()
+
     #initial emitting of hash
-    hash = location.hash.slice 1
-    emit "nav", hash
-    console.log hash
-    $(window).bind "hashchange", (e) ->
+    self.initNav = () ->
       hash = location.hash.slice 1
       emit "nav", hash
-      console.log hash
+      $(window).bind "hashchange", (e) ->
+        hash = location.hash.slice 1
+        emit "nav", hash
+    navTo = () ->
+      window.location.hash = "#"
+    self.navTo = navTo
+    clearNav = () ->
+      navTo ""
+    self.clearNav = clearNav
+      
 
       
 
