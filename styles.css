@@ -27,3 +27,14 @@ body {
   top: 0;
   left: 0;
 }
+.header {
+  height: 50px;
+  background-color: #ff0;
+  align: left;
+}
+.header img {
+  height: 50px;
+}
+.header-selected {
+  background-color: #008000;
+}

@@ -15,11 +15,13 @@
         attrs = {};
       }
       self = eventer({});
+      self.attrs = attrs;
       emit = self.emit;
       save = function(cb) {
         if (cb == null) {
           cb = function() {};
         }
+        emit("saving");
         return severus.save("mobileapps", attrs, function(err, _mobileApp) {
           _.extend(attrs, _mobileApp);
           emit("save", self);
@@ -28,6 +30,7 @@
       };
       self.save = save;
       remove = function(cb) {
+        emit("removing");
         return severus.remove("mobileapps", attrs._id, function() {
           var args;
           args = 1 <= arguments.length ? __slice.call(arguments, 0) : [];

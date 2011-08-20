@@ -20,6 +20,16 @@ define "mobile-app-presenter", () ->
       model = _app
       model.view = mobileAppViewMaker model: model
       view = model.view
+      view.on "modelviewvalchanged", (_model, prop, val) ->
+        model.set prop, val
+        model.save()
+      view.on "newheaderimage", (files) ->
+        file = files[0]
+        reader = new FileReader()
+        reader.onload = (e) ->
+          alert "loaded"
+          view.setHeaderUrl e.target.result
+        reader.readAsDataURL file
 
       model.on "remove", (args...) ->
         emit "remove", model, args...
@@ -31,8 +41,8 @@ define "mobile-app-presenter", () ->
     loadApp = (name, cb) ->
       mobileAppMaker.find name:"name", (err, _app) ->
         model = mobileAppMaker _app
-        model.view = mobileAppViewMaker model: model
-        view = model.view
+        setApp model
+
     self.loadApp = loadApp
 
     self.set = (args...) ->

@@ -41,6 +41,11 @@ define "mobile-manager-presenter", () ->
           clear deleting 
       mobileAppPresenter.on "remove", () ->
         mobileAppPresenter.view.remove()
+      saving = null
+      mobileApp.on "saving", () ->
+        saving = info "saving #{mobileApp.get("name")}"
+      mobileApp.on "save", () ->
+        clear saving
 
 
     newApp = () ->

@@ -29,6 +29,20 @@
           model: model
         });
         view = model.view;
+        view.on("modelviewvalchanged", function(_model, prop, val) {
+          model.set(prop, val);
+          return model.save();
+        });
+        view.on("newheaderimage", function(files) {
+          var file, reader;
+          file = files[0];
+          reader = new FileReader();
+          reader.onload = function(e) {
+            alert("loaded");
+            return view.setHeaderUrl(e.target.result);
+          };
+          return reader.readAsDataURL(file);
+        });
         model.on("remove", function() {
           var args;
           args = 1 <= arguments.length ? __slice.call(arguments, 0) : [];
@@ -46,10 +60,7 @@
           name: "name"
         }, function(err, _app) {
           model = mobileAppMaker(_app);
-          model.view = mobileAppViewMaker({
-            model: model
-          });
-          return view = model.view;
+          return setApp(model);
         });
       };
       self.loadApp = loadApp;

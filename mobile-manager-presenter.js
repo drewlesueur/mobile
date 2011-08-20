@@ -41,7 +41,7 @@
         });
       };
       addApp = function(mobileApp) {
-        var mobileAppPresenter;
+        var mobileAppPresenter, saving;
         apps.push(mobileApp);
         mobileAppPresenter = mobileAppPresenterMaker();
         mobileAppPresenter.setApp(mobileApp);
@@ -56,8 +56,15 @@
             return clear(deleting);
           });
         });
-        return mobileAppPresenter.on("remove", function() {
+        mobileAppPresenter.on("remove", function() {
           return mobileAppPresenter.view.remove();
+        });
+        saving = null;
+        mobileApp.on("saving", function() {
+          return saving = info("saving " + (mobileApp.get("name")));
+        });
+        return mobileApp.on("save", function() {
+          return clear(saving);
         });
       };
       newApp = function() {

@@ -28,6 +28,7 @@
       };
       showApp = self.showApp = function(_app) {
         app = _app;
+        screen.empty();
         return screen.append(app.view.getEl());
       };
       self.clearApps = function() {

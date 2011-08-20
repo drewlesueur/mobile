@@ -36,6 +36,7 @@ define "mobile-manager-view", () ->
     #this app is the mobileApp model, not he mobileapp presenter
     showApp = self.showApp = (_app) ->
       app = _app
+      screen.empty()
       screen.append app.view.getEl()
       
     self.clearApps = () ->

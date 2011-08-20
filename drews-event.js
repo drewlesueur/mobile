@@ -9,6 +9,7 @@
       obj.setTriggeree = function(_trig) {
         return triggeree = _trig;
       };
+      obj.setEmittee = obj.setTriggeree;
       obj.on = function() {
         var args;
         args = 1 <= arguments.length ? __slice.call(arguments, 0) : [];
@@ -19,6 +20,7 @@
         args = 1 <= arguments.length ? __slice.call(arguments, 0) : [];
         return drews.trigger.apply(drews, [triggeree].concat(__slice.call(args)));
       };
+      obj.trigger = obj.emit;
       return obj;
     };
   });

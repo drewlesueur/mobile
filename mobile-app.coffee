@@ -9,9 +9,11 @@ define "mobile-app", () ->
   mobileAppMaker = (attrs={}) ->
     
     self = eventer {}
+    self.attrs = attrs
     {emit} = self
     
     save = (cb=->) ->
+      emit "saving"
       severus.save "mobileapps", attrs, (err, _mobileApp) ->
         _.extend attrs, _mobileApp
         emit "save", self
@@ -19,6 +21,7 @@ define "mobile-app", () ->
     self.save = save
 
     remove = (cb) ->
+      emit "removing"
       severus.remove "mobileapps", attrs._id, (args...) ->
         emit "remove", self
         cb args...
