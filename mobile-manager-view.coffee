@@ -20,6 +20,8 @@ define "mobile-manager-view", () ->
           <a class="new" href="#">New app</a>
           <div class="uploads">
           </div>
+          <div class="form">
+          </div>
          </div>
        </div>
      </div>
@@ -35,6 +37,11 @@ define "mobile-manager-view", () ->
     #this app is the app presenter
     self.addApp = (app) ->
       $(".apps ul").append app.view.getEl()
+
+      #TODO: why was this called twice
+      el.find(".form").empty()
+      el.find(".form").append app.view.getFormEl()
+      
 
     #this app is the mobileApp model, not he mobileapp presenter
     showApp = self.showApp = (_app) ->

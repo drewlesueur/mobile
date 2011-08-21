@@ -1,3 +1,8 @@
+#fonts = 'Menlo',
+"DejaVu Sans Mono",
+"Bitstream Vera Sans Mono",
+"Consolas",
+"Monaco",
 * {
   padding: 0;
   margin: 0;
@@ -5,7 +10,6 @@
 body {
   margin: 0;
   padding: 0;
-  font-family: "Menlo", "DejaVu Sans Mono", "Bitstream Vera Sans Mono", "Consolas", "Monaco";
 }
 .screen {
   width: 320px;
@@ -36,4 +40,15 @@ body {
 }
 .header-selected {
   background-color: #008000;
+}
+.clear {
+  clear: both;
+}
+.form-toggler {
+  position: relative;
+}
+.form-togglee {
+  position: absolute;
+  top: 0;
+  left: 0;
 }

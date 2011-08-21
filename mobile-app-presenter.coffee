@@ -16,6 +16,7 @@ define "mobile-app-presenter", () ->
 
     getModel = () -> model
 
+
     setApp = (_app) ->
       model = _app
       model.view = mobileAppViewMaker model: model
@@ -39,11 +40,14 @@ define "mobile-app-presenter", () ->
     self.setApp = setApp
 
     loadApp = (name, cb) ->
-      mobileAppMaker.find name:"name", (err, _app) ->
-        model = mobileAppMaker _app
+      mobileAppMaker.find name:name, (err, _app) ->
+        console.log _app
+        model = mobileAppMaker _app[0]
         setApp model
+        cb null
 
     self.loadApp = loadApp
+    self.getEl = () -> view.getEl()
 
     self.set = (args...) ->
       model.set args...

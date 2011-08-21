@@ -11,7 +11,7 @@
       }
       self = eventer(self);
       emit = self.emit;
-      el = $(" \n <div class=\"container\">\n  <div class=\"row show-grid\">\n    <div class=\"apps span4 column\">\n      <ul class=\"unstyled zebra-striped\">\n      </ul>\n    </div>\n    <div class=\"phone span6 column\">\n      <div class=\"screen\">\n       </div>\n    </div>\n    <div class=\"ctrls span6 column\">\n     <a class=\"new\" href=\"#\">New app</a>\n     <div class=\"uploads\">\n     </div>\n    </div>\n  </div>\n</div>");
+      el = $(" \n <div class=\"container\">\n  <div class=\"row show-grid\">\n    <div class=\"apps span4 column\">\n      <ul class=\"unstyled zebra-striped\">\n      </ul>\n    </div>\n    <div class=\"phone span6 column\">\n      <div class=\"screen\">\n       </div>\n    </div>\n    <div class=\"ctrls span6 column\">\n     <a class=\"new\" href=\"#\">New app</a>\n     <div class=\"uploads\">\n     </div>\n     <div class=\"form\">\n     </div>\n    </div>\n  </div>\n</div>");
       el.find(".new").bind("click", function() {
         return emit("new");
       });
@@ -24,7 +24,9 @@
         return el;
       };
       self.addApp = function(app) {
-        return $(".apps ul").append(app.view.getEl());
+        $(".apps ul").append(app.view.getEl());
+        el.find(".form").empty();
+        return el.find(".form").append(app.view.getFormEl());
       };
       showApp = self.showApp = function(_app) {
         app = _app;

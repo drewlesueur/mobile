@@ -56,13 +56,18 @@
       self.setApp = setApp;
       loadApp = function(name, cb) {
         return mobileAppMaker.find({
-          name: "name"
+          name: name
         }, function(err, _app) {
-          model = mobileAppMaker(_app);
-          return setApp(model);
+          console.log(_app);
+          model = mobileAppMaker(_app[0]);
+          setApp(model);
+          return cb(null);
         });
       };
       self.loadApp = loadApp;
+      self.getEl = function() {
+        return view.getEl();
+      };
       self.set = function() {
         var args;
         args = 1 <= arguments.length ? __slice.call(arguments, 0) : [];

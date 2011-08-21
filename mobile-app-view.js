@@ -17,11 +17,13 @@
       }
       self = eventer(self);
       emit = self.emit, model = self.model;
+      console.log(model);
       headerImgHtml = "";
       if (model.get("header")) {
         headerImgHtml = "<img src=\"" + (model.get("header")) + "\" />";
       }
-      html = "<div id=\"mobile-wrapper\">\n  <div class=\"header\">\n    " + headerImgHtml + "\n  </div>\n  <div class=\"hours-phone\">\n    <span class=\"editable\" data-prop=\"hours\"></span>\n    <span class=\"editable\" data-prop=\"phone\"></span> \n  </div>\n  <div class=\"address editable\" data-prop=\"address\"></div>\n  \n</div>";
+      html = "<div id=\"mobile-wrapper\">\n  <div class=\"header\" style=\"float:left\">\n    " + headerImgHtml + "\n  </div>\n  <div class=\"\" style=\"float:right\">\n    <span class=\"editable\" data-prop=\"phone\"></span> \n  </div>\n  <div class=\"clear\"></div>\n  <div class=\"hours-phone\">\n    <span class=\"editable\" data-prop=\"hours\"></span>\n  </div>\n  <div class=\"address editable\" data-prop=\"address\"></div>\n  \n</div>";
+      console.log(html);
       form = editableFormMaker(html, model);
       form.setEmittee(self);
       el = form.getEl();
