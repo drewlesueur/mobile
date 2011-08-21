@@ -18,12 +18,15 @@ define "mobile-manager-view", () ->
          </div>
          <div class="ctrls span6 column">
           <a class="new" href="#">New app</a>
+          <div class="uploads">
+          </div>
          </div>
        </div>
      </div>
     """
     el.find(".new").bind "click", () ->
       emit "new"
+
     app = null
     self.getApp = () -> app
     screen = el.find ".screen"
@@ -55,11 +58,8 @@ define "mobile-manager-view", () ->
     clearNav = () ->
       navTo ""
     self.clearNav = clearNav
-      
-
-      
-
-
+    self.addFileBoxProgress = (filebox) ->
+      el.find(".uploads").append filebox.getProgressBars()
    
 
     self

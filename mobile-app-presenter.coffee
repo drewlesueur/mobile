@@ -27,8 +27,8 @@ define "mobile-app-presenter", () ->
         file = files[0]
         reader = new FileReader()
         reader.onload = (e) ->
-          alert "loaded"
           view.setHeaderUrl e.target.result
+          
         reader.readAsDataURL file
 
       model.on "remove", (args...) ->

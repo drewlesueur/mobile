@@ -1,12 +1,15 @@
-# jquery helper
 define "file-droppable", () ->
+ eventer = require "drews-event" 
  fileDroppable = (el) -> 
+   self = eventer {}
+   {emit} = self
+   el ||= $ "<div></div>"   
    el.bind "dragover", (e) ->
-     el.trigger "filedroppableover"
+     emit "filedroppableover"
      e.preventDefault()
      e.stopPropagation()
    el.bind "dragleave", (e) ->
-     el.trigger "filedroppableleave"
+     emit "filedroppableleave"
      e.preventDefault()
      e.stopPropagation()
    el.bind "dragenter", (e) -> #ie?
@@ -17,6 +20,7 @@ define "file-droppable", () ->
      e = e.originalEvent #jQuery stuff
      files = e.dataTransfer.files
      if files.length > 0
-       el.trigger "filedroppablefiles", [files]
+       emit "filedroppablefiles", files
      else
-       el.trigger "filedroppableurls", e.dataTransfer.getData('text')
+       emit "filedroppableurls", e.dataTransfer.getData('text')
+   self

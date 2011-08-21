@@ -6,10 +6,12 @@ define "mobile-manager-presenter", () ->
   mobileAppPresenterViewMaker = require "mobile-app-presenter-view"
   infoViewMaker = require "info-view"
   routerMaker = require "router"
+  fileBoxMaker = require "filebox"
   mobileManagerPresenter = () ->
     self = {}
     view = mobileManagerView()
     apps = []
+    fileBox = fileBoxMaker()
 
     infoView = infoViewMaker()
     info = (args...) ->
@@ -21,8 +23,8 @@ define "mobile-manager-presenter", () ->
       view.clearApps()
       loading = info "loading mobile sites"
       mobileAppMaker.find (err, _apps) ->
-        apps = []
         console.log _apps
+        apps = []
         _.each _apps, (app, index) ->
           app = mobileAppMaker app
           addApp app
@@ -46,6 +48,11 @@ define "mobile-manager-presenter", () ->
         saving = info "saving #{mobileApp.get("name")}"
       mobileApp.on "save", () ->
         clear saving
+      mobileApp.view.on "newheaderimage", (files) ->
+        fileBox.uploadFiles files, (err, urls) ->
+          mobileApp.set "header", urls[0]
+          mobileApp.save()
+        
 
 
     newApp = () ->
@@ -63,18 +70,14 @@ define "mobile-manager-presenter", () ->
     loadAppByName = (path, name) ->
       mobileApp = null
       found = _.any apps, (app) ->
-        console.log """
-          checking #{app.get("name")} == #{name}
-        """
         if app.get("name") == name
           mobileApp = app
           return true
       if found
-        console.log mobileApp
         loadApp mobileApp
       
       
-
+    view.addFileBoxProgress fileBox
       
 
     load()
@@ -82,8 +85,6 @@ define "mobile-manager-presenter", () ->
     router = routerMaker
       load: load
       "apps/:name": loadAppByName
-   
-
 
     view.on "nav", (place) ->
       router.testRoutes place

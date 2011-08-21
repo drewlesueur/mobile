@@ -1,7 +1,7 @@
 (function() {
   var __slice = Array.prototype.slice;
   define("mobile-manager-presenter", function() {
-    var infoViewMaker, mobileAppMaker, mobileAppPresenterMaker, mobileAppPresenterViewMaker, mobileAppViewMaker, mobileManagerPresenter, mobileManagerView, routerMaker;
+    var fileBoxMaker, infoViewMaker, mobileAppMaker, mobileAppPresenterMaker, mobileAppPresenterViewMaker, mobileAppViewMaker, mobileManagerPresenter, mobileManagerView, routerMaker;
     mobileManagerView = require("mobile-manager-view");
     mobileAppMaker = require("mobile-app");
     mobileAppViewMaker = require("mobile-app-view");
@@ -9,11 +9,13 @@
     mobileAppPresenterViewMaker = require("mobile-app-presenter-view");
     infoViewMaker = require("info-view");
     routerMaker = require("router");
+    fileBoxMaker = require("filebox");
     return mobileManagerPresenter = function() {
-      var addApp, apps, clear, info, infoView, load, loadApp, loadAppByName, newApp, router, self, view;
+      var addApp, apps, clear, fileBox, info, infoView, load, loadApp, loadAppByName, newApp, router, self, view;
       self = {};
       view = mobileManagerView();
       apps = [];
+      fileBox = fileBoxMaker();
       infoView = infoViewMaker();
       info = function() {
         var args;
@@ -30,8 +32,8 @@
         view.clearApps();
         loading = info("loading mobile sites");
         return mobileAppMaker.find(function(err, _apps) {
-          apps = [];
           console.log(_apps);
+          apps = [];
           _.each(_apps, function(app, index) {
             app = mobileAppMaker(app);
             return addApp(app);
@@ -63,8 +65,14 @@
         mobileApp.on("saving", function() {
           return saving = info("saving " + (mobileApp.get("name")));
         });
-        return mobileApp.on("save", function() {
+        mobileApp.on("save", function() {
           return clear(saving);
+        });
+        return mobileApp.view.on("newheaderimage", function(files) {
+          return fileBox.uploadFiles(files, function(err, urls) {
+            mobileApp.set("header", urls[0]);
+            return mobileApp.save();
+          });
         });
       };
       newApp = function() {
@@ -85,17 +93,16 @@
         var found, mobileApp;
         mobileApp = null;
         found = _.any(apps, function(app) {
-          console.log("checking " + (app.get("name")) + " == " + name);
           if (app.get("name") === name) {
             mobileApp = app;
             return true;
           }
         });
         if (found) {
-          console.log(mobileApp);
           return loadApp(mobileApp);
         }
       };
+      view.addFileBoxProgress(fileBox);
       load();
       router = routerMaker({
         load: load,

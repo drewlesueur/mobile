@@ -1,32 +1,38 @@
 (function() {
   define("file-droppable", function() {
-    var fileDroppable;
+    var eventer, fileDroppable;
+    eventer = require("drews-event");
     return fileDroppable = function(el) {
+      var emit, self;
+      self = eventer({});
+      emit = self.emit;
+      el || (el = $("<div></div>"));
       el.bind("dragover", function(e) {
-        el.trigger("filedroppableover");
+        emit("filedroppableover");
         e.preventDefault();
         return e.stopPropagation();
       });
       el.bind("dragleave", function(e) {
-        el.trigger("filedroppableleave");
+        emit("filedroppableleave");
         e.preventDefault();
         return e.stopPropagation();
       });
       el.bind("dragenter", function(e) {
         return false;
       });
-      return el.bind("drop", function(e) {
+      el.bind("drop", function(e) {
         var files;
         e.preventDefault();
         e.stopPropagation();
         e = e.originalEvent;
         files = e.dataTransfer.files;
         if (files.length > 0) {
-          return el.trigger("filedroppablefiles", [files]);
+          return emit("filedroppablefiles", files);
         } else {
-          return el.trigger("filedroppableurls", e.dataTransfer.getData('text'));
+          return emit("filedroppableurls", e.dataTransfer.getData('text'));
         }
       });
+      return self;
     };
   });
 }).call(this);

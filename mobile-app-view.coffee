@@ -11,10 +11,15 @@ define "mobile-app-view", () ->
   mobileAppViewMaker = (self={}) ->
     self = eventer self
     {emit, model} = self
-
+    headerImgHtml = ""
+    if model.get("header")
+      headerImgHtml = """
+        <img src="#{model.get("header")}" />
+      """
     html = """
       <div id="mobile-wrapper">
         <div class="header">
+          #{headerImgHtml}
         </div>
         <div class="hours-phone">
           <span class="editable" data-prop="hours"></span>
@@ -28,20 +33,20 @@ define "mobile-app-view", () ->
     form = editableFormMaker html, model
     form.setEmittee self
     el = form.getEl()
-    header = el.find ".header" 
-    fileDroppable header
-    header.bind "filedroppablefiles", (event, files) ->
-      console.log "hellow orld"
-      console.log files
+    headerEl = el.find ".header" 
+    header = fileDroppable el.find headerEl
+    header.on "filedroppablefiles", (files) ->
+      headerEl.removeClass "header-selected"
       emit "newheaderimage", files
-    header.bind "filedroppableover", () ->
-      header.addClass "header-selected"
-    header.bind "filedroppableleave", () ->
-      header.removeClass "header-selected"
+    header.on "filedroppableover", () ->
+      headerEl.addClass "header-selected"
+    header.on "filedroppableleave", () ->
+      headerEl.removeClass "header-selected"
 
     self.setHeaderUrl = (url) ->
-      header.empty()
-      header.append """
+      console.log headerEl
+      headerEl.empty()
+      headerEl.append """
         <img src="#{url}" />
       """
 

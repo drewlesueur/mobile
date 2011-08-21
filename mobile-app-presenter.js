@@ -38,7 +38,6 @@
           file = files[0];
           reader = new FileReader();
           reader.onload = function(e) {
-            alert("loaded");
             return view.setHeaderUrl(e.target.result);
           };
           return reader.readAsDataURL(file);

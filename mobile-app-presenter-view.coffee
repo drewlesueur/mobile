@@ -9,7 +9,6 @@ define "mobile-app-presenter-view", () ->
   mobileAppPresenterViewMaker = (self={}) ->
     self = eventer self
     {model, emit} = self
-    console.log model
     name = model.get "name"
     el = $ """
       <li>
