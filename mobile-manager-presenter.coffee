@@ -15,38 +15,22 @@ define "mobile-app-presenter", () ->
     {emit} = self
     self.model = () -> model
     self.view = () -> view 
+
+    models = []
    
 
-    initModel = (_model) ->
-      model = mobileAppMaker _model
+    initOneModel = (_model) ->
+      model = _model
+      presenter = mobileAppPresenterMaker
+      presenter.initModel model
       view = mobileAppViewMaker model: model
       model.view = view
-      initView()
       model
-    self.initModel = initModel
 
-    self.loadModel = (info) ->
-      mobileAppMaker.find info, (err, _models) ->
-        initModel _models[0]
-        model
+    loadModels = self.loadModels = ->
+      mobileAppMaker.find (err, _models) ->
+        models = []
+        _.each _models, (_model, index) ->
+          initModel model
+        initView()
 
-    initView = () ->
-      view.on "change", (model, prop, val) ->
-        model.set prop, val
-        model.save()
-
-
-
-      
-
-
-
-         
-
-
-
-
-
-
-
-    self
