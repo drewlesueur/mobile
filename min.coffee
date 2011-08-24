@@ -1,29 +1,28 @@
-define "mobile-app", () ->
+define "min", () ->
   $ = require "jquery" 
   _ = require "underscore"
   nimble = require "nimble"
   drews = require "drews-mixins"
   severus = require "severus"
   severus.db = "mobilemin_dev"
-  eventer = require "drews-event"
-  mobileAppMaker = (attrs={}) ->
-    
-    self = eventer {}
+  eventBus = require "event-bus"
+  Min = {}
+  Min.init = (attrs={}) ->
     self.attrs = attrs
-    {emit} = self
+    emit = eventBus.selfEmitter self
     
     save = (cb=->) ->
       emit "saving"
-      severus.save "mobileapps", attrs, (err, _mobileApp) ->
+      severus.save "mins", attrs, (err, _mobileApp) ->
         _.extend attrs, _mobileApp
-        emit "save", self
+        emit "save"
         cb err, self
     self.save = save
 
     remove = (cb) ->
       emit "removing"
-      severus.remove "mobileapps", attrs._id, (args...) ->
-        emit "remove", self
+      severus.remove "mins", attrs._id, (args...) ->
+        emit "remove"
         cb args...
     self.remove = remove
 
@@ -36,7 +35,13 @@ define "mobile-app", () ->
     self.get = (prop) -> attrs[prop]
     self
 
+  Min.find = (args..., cb) ->
+    emit = eventBus.selfEmitter Min
+    emit "finding"
+    models = []
+    severus.find "mins", args..., (err, models) ->
+      for model in models
+        models.push Min.init model
+      cb err, models
 
-  mobileAppMaker.find = (args...) ->
-    severus.find "mobileapps", args...
-  mobileAppMaker
+  Min
