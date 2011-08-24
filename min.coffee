@@ -1,3 +1,8 @@
+emitAller = (emit, name) ->
+  (event, args...) ->
+    emit name, event, args...
+    emit "min.#{event}", args...
+  
 define "min", () ->
   $ = require "jquery" 
   _ = require "underscore"
@@ -9,12 +14,14 @@ define "min", () ->
   Min = {}
   Min.init = (attrs={}) ->
     self.attrs = attrs
-    emit = eventBus.selfEmitter self
+    _emit = eventBus.selfEmitter self
+    emit = emitAller _emit, "action"
     
     save = (cb=->) ->
       emit "saving"
       severus.save "mins", attrs, (err, _mobileApp) ->
         _.extend attrs, _mobileApp
+        emit "action", "save"
         emit "save"
         cb err, self
     self.save = save
@@ -33,6 +40,7 @@ define "min", () ->
         _.extend attrs, obj
 
     self.get = (prop) -> attrs[prop]
+    emit "init"
     self
 
   Min.find = (args..., cb) ->
@@ -42,6 +50,7 @@ define "min", () ->
     severus.find "mins", args..., (err, models) ->
       for model in models
         models.push Min.init model
+      emit "find", models, Min
       cb err, models
 
   Min
