@@ -22,3 +22,9 @@ define "min-manager-presenter", () ->
     bind "min.action", (action, min) ->
       info action
       
+    bind "minmanagerview.change", (min, prop, val) ->
+      min.set prop, val
+
+    bind "minmanagerview.header"
+
+

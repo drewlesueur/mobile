@@ -19,6 +19,12 @@ define "min-presenter", () ->
     bind "phonenumber.save", (phone) ->
       view.confirmPhoneSaved()
 
+    bind "minview.sendtext", (text) ->
+      text = Text.init text
+      text.save()
+
+
+
 
 
 
