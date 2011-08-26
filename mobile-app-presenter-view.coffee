@@ -17,9 +17,9 @@ define "mobile-app-presenter-view", () ->
         <label>Monday</label>
         <div class="input">
           <div class="inline-inputs">
-            <input name="monday_start" class="mini" type="text" value="">
+            <input name="mondayStart" class="mini" type="text">
             to
-            <input name="monday_end" class="mini" type="text" value="">
+            <input name="mondayEnd" class="mini" type="text">
           </div>
         </div>
       </div> <!-- /clearfix -->
@@ -31,31 +31,42 @@ define "mobile-app-presenter-view", () ->
       low = day.toLowerCase()
       dayEl = dayInput.clone()
       dayEl.find("label").text cap 
-      dayEl.find('[name="monday_start"]').attr "name", "#{low}_start"
-      dayEl.find('[name="monday_end"]').attr "name", "#{low}_end"
-      dayEl.html()
+      start = dayEl.find('[name="mondayStart"]')
+      start.attr "name", "#{low}Start"
+      startVal = model.get("hours")?[day]?.start || ""
+      start.val startVal
+      console.log model.get("hours")?[day]?.end
+
+      end = dayEl.find('[name="mondayEnd"]')
+      endVal = model.get("hours")?[day]?.end || ""
+      end.val endVal
+      end.attr "name", "#{low}End"
+      dayEl
       
     saveHtml = """
       <div class="actions">
         <button type="submit" class="btn primary">Save</button>
       </div>
     """
-    hoursHtml = """
+    hoursEl = $ """
+      <div class="form-togglee hours">
       <form>
         <fieldset>
          <legend>Hours</legend>
-           #{_makeDayForm "monday"}
-           #{_makeDayForm "tuesday"}
-           #{_makeDayForm "wednesday"}
-           #{_makeDayForm "thursday"}
-           #{_makeDayForm "friday"}
-           #{_makeDayForm "saturday"}
-           #{_makeDayForm "sunday"}
         </fieldset>
         #{saveHtml}
       </form>
+      </div>
     """
-    contactHtml = """
+    hoursEl.find("fieldset").append _makeDayForm "monday"
+    hoursEl.find("fieldset").append _makeDayForm "tuesday"
+    hoursEl.find("fieldset").append _makeDayForm "wednesday"
+    hoursEl.find("fieldset").append _makeDayForm "thursday"
+    hoursEl.find("fieldset").append _makeDayForm "friday"
+    hoursEl.find("fieldset").append _makeDayForm "saturday"
+    hoursEl.find("fieldset").append _makeDayForm "sunday"
+    contactEl = $ """
+      <div class="form-togglee contact">
       <form>
         <fieldset>
           <legend>Contact</legend>
@@ -82,9 +93,11 @@ define "mobile-app-presenter-view", () ->
         </fieldset>
         #{saveHtml}
       </form>
+      </div>
     """
 
-    headerHtml = """
+    headerInfoEl = $ """
+      <div class="form-togglee header-info">
       <form>
         <fieldset>
           <legend>Header</legend>
@@ -97,40 +110,49 @@ define "mobile-app-presenter-view", () ->
         </fieldset>
         #{saveHtml}
       </form>
+      </div>
     """
 
     formEl = $ """
+      <div>
       <ul class="pills">
         <li class="active"><a href="#" class="hours">Hours</a></li>
         <li><a href="#" class="contact">Contact</a></li>
         <li><a href="#" class="header-info">Header</a></li>
       </ul>
       <div class="form-toggler">
-        <div class="form-togglee hours">
-         #{hoursHtml}
-        </div>
-        <div class="form-togglee contact">
-         #{contactHtml}
-        </div>
-        <div class="form-togglee header-info">
-         #{headerHtml }
-        </div>
       </div>
-    
+      </div>
     """
+    formEl.find(".form-toggler").append(hoursEl).append(contactEl).append(headerInfoEl)
     formEl.find(".form-togglee").hide()
     formEl.find(".form-togglee.hours").show()
     formEl.find("li a").bind "click", (e) ->
       e.preventDefault()
       klass = $(this).attr("class")
-      console.log klass
       formEl.find(".form-togglee").hide()
       formEl.find("li").removeClass("active")
       formEl.find("li a.#{klass}").parents("li").eq(0).addClass "active"
       formEl.find(".form-togglee.#{klass}").show()
+    
+    getHourValues = (day) ->
+      day = day.toLowerCase()
+      start = hoursEl.find("[name=\"#{day}Start\"]").val()
+      end = hoursEl.find("[name=\"#{day}End\"]").val()
+      [start, end]
 
-    formEl.find("form").bind "submit", (e) ->
+    hoursEl.find("form").bind "submit", (e) ->
       e.preventDefault()
+      days = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"]
+      hours = {}
+      for day in days
+        values = getHourValues day 
+        hours[day] =
+          start: values[0]
+          end: values[1]
+      emit "modelviewvalchanged", model, "hours", hours
+      
+
     
     el = $ """
       <li>

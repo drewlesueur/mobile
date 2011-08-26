@@ -41,7 +41,6 @@ define "mobile-app-presenter", () ->
 
     loadApp = (name, cb) ->
       mobileAppMaker.find name:name, (err, _app) ->
-        console.log _app
         model = mobileAppMaker _app[0]
         setApp model
         cb null

@@ -12,6 +12,7 @@ define "mobile-manager-presenter", () ->
     view = mobileManagerView()
     apps = []
     fileBox = fileBoxMaker()
+    mobileApp = null
 
     infoView = infoViewMaker()
     info = (args...) ->
@@ -23,7 +24,6 @@ define "mobile-manager-presenter", () ->
       view.clearApps()
       loading = info "loading mobile sites"
       mobileAppMaker.find (err, _apps) ->
-        console.log _apps
         apps = []
         _.each _apps, (app, index) ->
           app = mobileAppMaker app
@@ -31,7 +31,8 @@ define "mobile-manager-presenter", () ->
         clear loading
         view.initNav()
 
-    addApp = (mobileApp) ->
+    addApp = (_mobileApp) ->
+      mobileApp = _mobileApp
       apps.push mobileApp
       mobileAppPresenter = mobileAppPresenterMaker()
       mobileAppPresenter.setApp mobileApp
@@ -52,6 +53,11 @@ define "mobile-manager-presenter", () ->
         fileBox.uploadFiles files, (err, urls) ->
           mobileApp.set "header", urls[0]
           mobileApp.save()
+      mobileApp.poopy = true
+      mobileAppPresenter.view.on "modelviewvalchanged", (model, prop, val) ->
+        mobileApp.set prop, val
+        mobileApp.save()
+        
         
 
 

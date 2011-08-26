@@ -11,11 +11,12 @@
     routerMaker = require("router");
     fileBoxMaker = require("filebox");
     return mobileManagerPresenter = function() {
-      var addApp, apps, clear, fileBox, info, infoView, load, loadApp, loadAppByName, newApp, router, self, view;
+      var addApp, apps, clear, fileBox, info, infoView, load, loadApp, loadAppByName, mobileApp, newApp, router, self, view;
       self = {};
       view = mobileManagerView();
       apps = [];
       fileBox = fileBoxMaker();
+      mobileApp = null;
       infoView = infoViewMaker();
       info = function() {
         var args;
@@ -32,7 +33,6 @@
         view.clearApps();
         loading = info("loading mobile sites");
         return mobileAppMaker.find(function(err, _apps) {
-          console.log(_apps);
           apps = [];
           _.each(_apps, function(app, index) {
             app = mobileAppMaker(app);
@@ -42,8 +42,9 @@
           return view.initNav();
         });
       };
-      addApp = function(mobileApp) {
+      addApp = function(_mobileApp) {
         var mobileAppPresenter, saving;
+        mobileApp = _mobileApp;
         apps.push(mobileApp);
         mobileAppPresenter = mobileAppPresenterMaker();
         mobileAppPresenter.setApp(mobileApp);
@@ -68,15 +69,20 @@
         mobileApp.on("save", function() {
           return clear(saving);
         });
-        return mobileApp.view.on("newheaderimage", function(files) {
+        mobileApp.view.on("newheaderimage", function(files) {
           return fileBox.uploadFiles(files, function(err, urls) {
             mobileApp.set("header", urls[0]);
             return mobileApp.save();
           });
         });
+        mobileApp.poopy = true;
+        return mobileAppPresenter.view.on("modelviewvalchanged", function(model, prop, val) {
+          mobileApp.set(prop, val);
+          return mobileApp.save();
+        });
       };
       newApp = function() {
-        var mobileApp, saving;
+        var saving;
         mobileApp = mobileAppMaker({
           name: prompt("name")
         });
@@ -90,7 +96,7 @@
         return view.showApp(mobileApp);
       };
       loadAppByName = function(path, name) {
-        var found, mobileApp;
+        var found;
         mobileApp = null;
         found = _.any(apps, function(app) {
           if (app.get("name") === name) {

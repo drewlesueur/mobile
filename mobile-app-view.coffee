@@ -11,7 +11,6 @@ define "mobile-app-view", () ->
   mobileAppViewMaker = (self={}) ->
     self = eventer self
     {emit, model} = self
-    console.log model
     headerImgHtml = ""
     if model.get("header")
       headerImgHtml = """
@@ -33,7 +32,6 @@ define "mobile-app-view", () ->
         
       </div>
     """
-    console.log html 
     form = editableFormMaker html, model
     form.setEmittee self
     el = form.getEl()
@@ -48,7 +46,6 @@ define "mobile-app-view", () ->
       headerEl.removeClass "header-selected"
 
     self.setHeaderUrl = (url) ->
-      console.log headerEl
       headerEl.empty()
       headerEl.append """
         <img src="#{url}" />

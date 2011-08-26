@@ -58,7 +58,6 @@
         return mobileAppMaker.find({
           name: name
         }, function(err, _app) {
-          console.log(_app);
           model = mobileAppMaker(_app[0]);
           setApp(model);
           return cb(null);
