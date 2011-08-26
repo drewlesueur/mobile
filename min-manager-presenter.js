@@ -1,38 +1,44 @@
 (function() {
   define("min-manager-presenter", function() {
-    var Min, MinManagerPresenter, eventBus;
+    var Min, MinManagerPresenter, MinManagerView, SubMinManagerView, eventBus, eventer;
     eventBus = require("event-bus");
+    eventer = require("drews-event");
     Min = require("min");
+    MinManagerView = require("min-manager-view");
+    SubMinManagerView = require("sub-min-manager-view");
     MinManagerPresenter = {};
-    return MinManagerPresenter.init = function(self) {
-      var bind, clear, emit, info, mins, view;
+    MinManagerPresenter.init = function(self) {
+      var emit, mins, view;
       if (self == null) {
         self = {};
       }
-      emit = eventBus.selfEmitter(self);
-      bind = eventBus.bind;
+      self = eventer(self);
+      emit = self.emit;
       view = MinManagerView.init();
-      info = infoView.info, clear = infoView.clear;
       mins = [];
-      min.find(null, function(err, _mins) {
+      Min.find(null, function(err, _mins) {
         return mins = _mins;
       });
-      bind("min.init", function(min) {
+      Min.on("init", function(min) {
+        min.subView = SubMinManagerView.init({
+          model: min
+        });
         return view.addMin(min);
       });
-      bind("subminmanagerview.selectmin", function(min) {
+      SubMinManagerView.on("selectmin", function(min) {
         return view.model(model);
       });
-      bind("subminmanagerview.remove", function(min) {
+      SubMinManagerView.on("remove", function(min) {
         return min.remove();
       });
-      bind("min.action", function(action, min) {
-        return info(action);
-      });
-      bind("minmanagerview.change", function(min, prop, val) {
+      Min.on("action", function(action, min) {});
+      view.on("change", function(min, prop, val) {
         return min.set(prop, val);
       });
-      return bind("minmanagerview.header");
+      return view.on("new", function(name) {
+        return console.log(name);
+      });
     };
+    return MinManagerPresenter;
   });
 }).call(this);

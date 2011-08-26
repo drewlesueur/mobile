@@ -1,34 +1,43 @@
 define "min-manager-presenter", () ->
   eventBus = require "event-bus"
+  eventer = require "drews-event"
   Min = require "min"
+  MinManagerView = require "min-manager-view"
+  SubMinManagerView = require "sub-min-manager-view"
   MinManagerPresenter = {}
   MinManagerPresenter.init = (self={}) ->
-    emit = eventBus.selfEmitter self
-    bind = eventBus.bind
+    self = eventer self
+    {emit} = self
     
     view = MinManagerView.init()
     #infoView = InfoView.init()
-    {info, clear} = infoView
+    #{info, clear} = infoView
     mins = []
 
-    min.find null, (err, _mins) ->
+    Min.find null, (err, _mins) ->
       mins = _mins
 
-    bind "min.init", (min) ->
+    Min.on "init", (min) ->
+      min.subView = SubMinManagerView.init model: min
       view.addMin min
 
-    bind "subminmanagerview.selectmin", (min) ->
+    SubMinManagerView.on "selectmin", (min) ->
       view.model model
 
-    bind "subminmanagerview.remove", (min) ->
+    SubMinManagerView.on "remove", (min) ->
       min.remove()
       
-    bind "min.action", (action, min) ->
-      info action
+    Min.on "action", (action, min) ->
+      #info action
       
-    bind "minmanagerview.change", (min, prop, val) ->
+    view.on "change", (min, prop, val) ->
       min.set prop, val
 
-    bind "minmanagerview.header"
+    view.on "new", (name) ->
+      console.log name
+
+
+
+  MinManagerPresenter
 
 

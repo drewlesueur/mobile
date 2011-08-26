@@ -1,16 +1,7 @@
 (function() {
-  var emitAller;
   var __slice = Array.prototype.slice;
-  emitAller = function(emit, name) {
-    return function() {
-      var args, event;
-      event = arguments[0], args = 2 <= arguments.length ? __slice.call(arguments, 1) : [];
-      emit.apply(null, [name, event].concat(__slice.call(args)));
-      return emit.apply(null, ["min." + event].concat(__slice.call(args)));
-    };
-  };
   define("min", function() {
-    var $, Min, drews, eventBus, nimble, severus, _;
+    var $, Min, drews, eventBus, eventer, nimble, severus, _;
     $ = require("jquery");
     _ = require("underscore");
     nimble = require("nimble");
@@ -18,15 +9,18 @@
     severus = require("severus");
     severus.db = "mobilemin_dev";
     eventBus = require("event-bus");
-    Min = {};
+    eventer = require("drews-event");
+    Min = eventer({});
     Min.init = function(attrs) {
-      var emit, remove, save, _emit;
+      var emit, remove, save, self;
       if (attrs == null) {
         attrs = {};
       }
       self.attrs = attrs;
-      _emit = eventBus.selfEmitter(self);
-      emit = emitAller(_emit, "action");
+      self = eventer(self);
+      emit = {
+        self: self
+      };
       save = function(cb) {
         if (cb == null) {
           cb = function() {};
@@ -64,10 +58,8 @@
       return self;
     };
     Min.find = function() {
-      var args, cb, emit, models, _i;
+      var args, cb, models, _i;
       args = 2 <= arguments.length ? __slice.call(arguments, 0, _i = arguments.length - 1) : (_i = 0, []), cb = arguments[_i++];
-      emit = eventBus.selfEmitter(Min);
-      emit("finding");
       models = [];
       return severus.find.apply(severus, ["mins"].concat(__slice.call(args), [function(err, models) {
         var model, _j, _len;
@@ -75,7 +67,7 @@
           model = models[_j];
           models.push(Min.init(model));
         }
-        emit("find", models, Min);
+        Min.emit("find", models, Min);
         return cb(err, models);
       }]));
     };

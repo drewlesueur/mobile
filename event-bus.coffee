@@ -1,6 +1,8 @@
 define "event-bus", () ->
   eventer = require "drews-event"
-  EventBus = eventer {}
-  EventBus.selfEmitter = (obj) ->
+  eventBus = eventer {}
+  eventBus.selfEmitter = (obj) ->
     (args...) ->
-      EventBus.emit obj, args...
+      eventBus.emit obj, args...
+  eventBus.bind = eventBus.on
+  eventBus
