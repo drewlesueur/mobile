@@ -16,6 +16,13 @@
       emit = self.emit;
       view = MinManagerView.init();
       mins = [];
+      SubMinManagerView.on("selectmin", function(min) {
+        return view.model(model);
+      });
+      SubMinManagerView.on("remove", function(min) {
+        console.log("goint ot remove");
+        return min.remove();
+      });
       Min.find(null, function(err, _mins) {
         return mins = _mins;
       });
@@ -23,19 +30,22 @@
         min.subView = SubMinManagerView.init({
           model: min
         });
-        return view.addMin(min);
-      });
-      SubMinManagerView.on("selectmin", function(min) {
-        return view.model(model);
-      });
-      SubMinManagerView.on("remove", function(min) {
-        return min.remove();
+        view.addMin(min);
+        return console.log("added " + (min.get("name")));
       });
       Min.on("action", function(action, min) {});
+      Min.on("remove", function(min) {
+        return view.removeMin(min);
+      });
       view.on("change", function(min, prop, val) {
         return min.set(prop, val);
       });
       return view.on("new", function(name) {
+        var model;
+        model = Min.init({
+          name: name
+        });
+        model.save();
         return console.log(name);
       });
     };

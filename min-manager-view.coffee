@@ -7,13 +7,18 @@ define 'min-manager-view', () ->
     {model, emit} = self
     
     self.addMin = (min) ->
-      $('.apps').append min.subView.el()
+      console.log min.subView
+      $('.apps').append min.subView.el
        
     $('.new').bind "click", (e) ->
-      e.preventDefault()
+      e.preventDefault( )
       name = prompt "Name?"
       emit "new", name
       return false
+
+    self.removeMin = (min) ->
+      min.subView.remove()
+
 
     self
 

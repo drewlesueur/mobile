@@ -12,14 +12,19 @@
     eventer = require("drews-event");
     Min = eventer({});
     Min.init = function(attrs) {
-      var emit, remove, save, self;
+      var emit, remove, save, self, _emit;
       if (attrs == null) {
         attrs = {};
       }
+      self = {};
       self.attrs = attrs;
       self = eventer(self);
-      emit = {
-        self: self
+      _emit = self.emit;
+      emit = function() {
+        var args, event;
+        event = arguments[0], args = 2 <= arguments.length ? __slice.call(arguments, 1) : [];
+        _emit.apply(null, [event].concat(__slice.call(args)));
+        return Min.emit.apply(Min, [event, self].concat(__slice.call(args)));
       };
       save = function(cb) {
         if (cb == null) {
@@ -35,6 +40,9 @@
       };
       self.save = save;
       remove = function(cb) {
+        if (cb == null) {
+          cb = function() {};
+        }
         emit("removing");
         return severus.remove("mins", attrs._id, function() {
           var args;
@@ -54,7 +62,7 @@
       self.get = function(prop) {
         return attrs[prop];
       };
-      emit("init");
+      Min.emit("init", self);
       return self;
     };
     Min.find = function() {

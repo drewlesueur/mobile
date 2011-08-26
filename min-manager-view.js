@@ -12,7 +12,8 @@
       self = eventer(self);
       model = self.model, emit = self.emit;
       self.addMin = function(min) {
-        return $('.apps').append(min.subView.el());
+        console.log(min.subView);
+        return $('.apps').append(min.subView.el);
       };
       $('.new').bind("click", function(e) {
         var name;
@@ -21,6 +22,9 @@
         emit("new", name);
         return false;
       });
+      self.removeMin = function(min) {
+        return min.subView.remove();
+      };
       return self;
     };
     return MinManagerView;

@@ -10,9 +10,13 @@ define "min", () ->
   eventer = require "drews-event"
   Min = eventer {}
   Min.init = (attrs={}) ->
+    self = {}
     self.attrs = attrs
     self = eventer self
-    emit = {self}
+    _emit = self.emit
+    emit = (event, args...) ->
+      _emit event, args...
+      Min.emit event, self, args...
     
     save = (cb=->) ->
       emit "saving"
@@ -23,7 +27,7 @@ define "min", () ->
         cb err, self
     self.save = save
 
-    remove = (cb) ->
+    remove = (cb=->) ->
       emit "removing"
       severus.remove "mins", attrs._id, (args...) ->
         emit "remove"
@@ -37,7 +41,8 @@ define "min", () ->
         _.extend attrs, obj
 
     self.get = (prop) -> attrs[prop]
-    emit "init"
+    Min.emit "init", self
+
     self
 
   Min.find = (args..., cb) ->
