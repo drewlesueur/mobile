@@ -1,0 +1,87 @@
+<!doctype html>
+<html>
+  <head>
+    <title></title>
+    <!-- TODO concat all javascript files together and put at end of page  -->
+    <link rel="stylesheet" href="http://twitter.github.com/bootstrap/assets/css/bootstrap-1.0.0.min.css">
+    <!--<link rel="stylesheet" type="text/css" href="styles.css" /> -->
+    <script src="module.js"></script>
+    <script src="jquery-1.6.min.js"></script>
+    <script src="underscore.js"></script>
+    <script src="nimble.js"></script>
+    <script src="drews-mixins.js"></script>
+    <script src="drews-event.js"></script>
+    <script src="event-bus.js"></script>
+    <!--<script src="http://severus.drewl.us/severus.js"></script>--><!--because slicehost is down-->
+    <script src="filebox.js"></script>
+    <script src="file-droppable.js"></script>
+    <!--<script src="router.js"></script>-->
+    <!--<script src="config.js"></script>-->
+    <script>
+      // for javascripts that done use the define, require pattern
+      define("jquery", function(){return jQuery;});
+      define("underscore", function(){return _;});
+      define("json", function(){return JSON;});
+      define("nimble", function(){return _;});
+    </script>
+    <script src="index.js"></script>
+
+  </head>
+  <body>
+  <div>
+    <ul class="pills">
+      <li class="active"><a href="#" class="hours">Hours</a></li>
+      <li><a href="#" class="contact">Contact</a></li>
+      <li><a href="#" class="header-info">Header</a></li>
+    </ul>
+    <div class="form-toggler">
+      <div class="form-togglee contact">
+        <form>
+          <fieldset>
+            <legend>Contact</legend>
+            <div class="clearfix">
+              <label for="phone">Phone</label>
+              <div class="input">
+                <input id="phone" name="phone" type="text">
+              </div>
+            </div> <!-- /clearfix -->
+            <div class="clearfix">
+              <label for="googleMapName">Google Map Name</label>
+              <div class="input">
+                <input id="googleMapName" name="googleMapName" type="text">
+                <span class="help-block">the name to search for when searching on Google Maps</span>
+              </div>
+            </div> <!-- /clearfix -->
+            <div class="clearfix">
+              <label for="address">Address</label>
+              <div class="input">
+                <input id="address" name="address" type="text">
+                <span class="help-block">Leave blank if multiple addresses</span>
+              </div>
+            </div> <!-- /clearfix -->
+          </fieldset>
+          <div class="actions">
+            <button type="submit" class="btn primary">Save</button>
+          </div>
+        </form>
+      </div>
+      <div class="form-togglee header-info">
+        <form>
+          <fieldset>
+            <legend>Header</legend>
+            <div class="clearfix">
+              <label for="headerUrl">Header Url</label>
+              <div class="input">
+                <input id="headerUrl" name="headerUrl" type="text">
+              </div>
+            </div> <!-- /clearfix -->
+          </fieldset>
+          <div class="actions">
+            <button type="submit" class="btn primary">Save</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+  </body>
+</html>
