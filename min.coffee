@@ -53,4 +53,5 @@ define "min", () ->
       emit "find", models, Min
       cb err, models
 
+
   Min

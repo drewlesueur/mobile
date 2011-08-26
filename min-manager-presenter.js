@@ -5,17 +5,21 @@
     Min = require("min");
     MinManagerPresenter = {};
     return MinManagerPresenter.init = function(self) {
-      var bind, clear, emit, info, infoView, view;
+      var bind, clear, emit, info, mins, view;
       if (self == null) {
         self = {};
       }
       emit = eventBus.selfEmitter(self);
       bind = eventBus.bind;
       view = MinManagerView.init();
-      infoView = InfoView.init();
       info = infoView.info, clear = infoView.clear;
-      SubMinManagerPresenter.init();
-      MinManagerPresenter.init();
+      mins = [];
+      min.find(null, function(err, _mins) {
+        return mins = _mins;
+      });
+      bind("min.init", function(min) {
+        return view.addMin(min);
+      });
       bind("subminmanagerview.selectmin", function(min) {
         return view.model(model);
       });

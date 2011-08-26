@@ -28,60 +28,196 @@
 
   </head>
   <body>
-  <div>
-    <ul class="pills">
-      <li class="active"><a href="#" class="hours">Hours</a></li>
-      <li><a href="#" class="contact">Contact</a></li>
-      <li><a href="#" class="header-info">Header</a></li>
-    </ul>
-    <div class="form-toggler">
-      <div class="form-togglee contact">
-        <form>
-          <fieldset>
-            <legend>Contact</legend>
-            <div class="clearfix">
-              <label for="phone">Phone</label>
-              <div class="input">
-                <input id="phone" name="phone" type="text">
-              </div>
-            </div> <!-- /clearfix -->
-            <div class="clearfix">
-              <label for="googleMapName">Google Map Name</label>
-              <div class="input">
-                <input id="googleMapName" name="googleMapName" type="text">
-                <span class="help-block">the name to search for when searching on Google Maps</span>
-              </div>
-            </div> <!-- /clearfix -->
-            <div class="clearfix">
-              <label for="address">Address</label>
-              <div class="input">
-                <input id="address" name="address" type="text">
-                <span class="help-block">Leave blank if multiple addresses</span>
-              </div>
-            </div> <!-- /clearfix -->
-          </fieldset>
-          <div class="actions">
-            <button type="submit" class="btn primary">Save</button>
+
+
+ <div class="container">
+       <div class="row show-grid">
+         <div class="apps span4 column">
+           <ul class="unstyled zebra-striped">
+           </ul>
+         </div>
+         <div class="phone span4 column">
+           <div class="screen">
+            </div>
+         </div>
+         <div class="ctrls span8 column">
+          <a class="new" href="#">New app</a>
+          <div class="uploads">
           </div>
-        </form>
-      </div>
-      <div class="form-togglee header-info">
-        <form>
-          <fieldset>
-            <legend>Header</legend>
-            <div class="clearfix">
-              <label for="headerUrl">Header Url</label>
-              <div class="input">
-                <input id="headerUrl" name="headerUrl" type="text">
-              </div>
-            </div> <!-- /clearfix -->
-          </fieldset>
-          <div class="actions">
-            <button type="submit" class="btn primary">Save</button>
-          </div>
-        </form>
+   <div class="forms">
+      <ul class="pills">
+        <li class="active"><a href="#" class="hours">Hours</a></li>
+        <li><a href="#" class="contact">Contact</a></li>
+        <li><a href="#" class="header-info">Header</a></li>
+      </ul>
+      <div class="form-toggler">
+
+        <div class="form-togglee hours">
+          <form>
+            <fieldset>
+              <legend>Hours</legend>
+              <div class="clearfix">
+                <label>
+                  <input type="checkbox" name="optionsCheckboxes" value="option1">
+                  Monday
+                </label>
+                <div class="input">
+                  <div class="inline-inputs">
+                    <input name="mondayStart" class="mini" type="text">
+                    to
+                    <input name="mondayEnd" class="mini" type="text">
+                  </div>
+                </div>
+              </div> <!-- /clearfix -->
+              <div class="clearfix">
+                <label>
+                
+                <input type="checkbox" name="optionsCheckboxes" value="option1">
+                Tuesday
+                </label>
+                <div class="input">
+                  <div class="inline-inputs">
+                    <input name="mondayStart" class="mini" type="text">
+                    to
+                    <input name="mondayEnd" class="mini" type="text">
+
+                  </div>
+                </div>
+              </div> <!-- /clearfix -->
+              <div class="clearfix">
+                <label>
+                
+                <input type="checkbox" name="optionsCheckboxes" value="option1">
+                  Wednesday
+                </label>
+                <div class="input">
+                  <div class="inline-inputs">
+                    <input name="mondayStart" class="mini" type="text">
+                    to
+                    <input name="mondayEnd" class="mini" type="text">
+                  </div>
+                </div>
+              </div> <!-- /clearfix -->
+              <div class="clearfix">
+                <label>
+                
+                <input type="checkbox" name="optionsCheckboxes" value="option1">
+                  Thursday
+                </label>
+                <div class="input">
+                  <div class="inline-inputs">
+                    <input name="mondayStart" class="mini" type="text">
+                    to
+                    <input name="mondayEnd" class="mini" type="text">
+                  </div>
+                </div>
+              </div> <!-- /clearfix -->
+
+              <div class="clearfix">
+                <label>
+                <input type="checkbox" name="optionsCheckboxes" value="option1">
+                  Friday
+                </label>
+                <div class="input">
+                  <div class="inline-inputs">
+                    <input name="mondayStart" class="mini" type="text">
+                    to
+                    <input name="mondayEnd" class="mini" type="text">
+                  </div>
+                </div>
+              </div> <!-- /clearfix -->
+
+              <div class="clearfix">
+                <label>
+                <input type="checkbox" name="optionsCheckboxes" value="option1">
+                  Saturday
+                </label>
+                <div class="input">
+                  <div class="inline-inputs">
+                    <input name="mondayStart" class="mini" type="text">
+                    to
+                    <input name="mondayEnd" class="mini" type="text">
+                  </div>
+                </div>
+              </div> <!-- /clearfix -->
+
+              <div class="clearfix">
+                <label>
+                <input type="checkbox" name="optionsCheckboxes" value="option1">
+                Sunday
+                </label>
+                <div class="input">
+                  <div class="inline-inputs">
+                    <input name="mondayStart" class="mini" type="text">
+                    to
+                    <input name="mondayEnd" class="mini" type="text">
+                  </div>
+                </div>
+              </div> <!-- /clearfix -->
+
+
+
+            </fieldset>
+            <div class="actions">
+              <button type="submit" class="btn primary">Save</button>
+            </div>
+
+          </form>
+        </div>
+
+        <div class="form-togglee contact">
+          <form>
+            <fieldset>
+              <legend>Contact</legend>
+              <div class="clearfix">
+                <label for="phone">Phone</label>
+                <div class="input">
+                  <input id="phone" name="phone" type="text">
+                </div>
+              </div> <!-- /clearfix -->
+              <div class="clearfix">
+                <label for="googleMapName">Google Map Name</label>
+                <div class="input">
+                  <input id="googleMapName" name="googleMapName" type="text">
+                  <span class="help-block">the name to search for when searching on Google Maps</span>
+                </div>
+              </div> <!-- /clearfix -->
+              <div class="clearfix">
+                <label for="address">Address</label>
+                <div class="input">
+                  <input id="address" name="address" type="text">
+                  <span class="help-block">Leave blank if multiple addresses</span>
+                </div>
+              </div> <!-- /clearfix -->
+            </fieldset>
+            <div class="actions">
+              <button type="submit" class="btn primary">Save</button>
+            </div>
+          </form>
+        </div>
+        <div class="form-togglee header-info">
+          <form>
+            <fieldset>
+              <legend>Header</legend>
+              <div class="clearfix">
+                <label for="headerUrl">Header Url</label>
+                <div class="input">
+                  <input id="headerUrl" name="headerUrl" type="text">
+                </div>
+              </div> <!-- /clearfix -->
+            </fieldset>
+            <div class="actions">
+              <button type="submit" class="btn primary">Save</button>
+            </div>
+          </form>
+        </div>
       </div>
     </div>
-  </div>
-  </body>
+  </div><!--end forms -->
+         </div>
+       </div>
+     </div>
+
+
+</body>
 </html>
