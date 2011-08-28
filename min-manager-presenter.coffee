@@ -62,7 +62,8 @@ define "min-manager-presenter", () ->
     view.on "save", (hash) ->
       currentMin.set hash
       console.log JSON.stringify currentMin.attrs
-      currentMin.save()
+      currentMin.save () ->
+        currentMin.export()
 
 
 

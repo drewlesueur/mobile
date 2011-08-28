@@ -36,9 +36,24 @@ define "min", () ->
         cb args...
     self.remove = remove
 
+    toHtml = self.toHtml = () -> """
+      <!doctype html>
+      <html>
+      <head>
+        <title>#{attrs.title}</title>
+        <meta name="viewport" content="width=device-width" />
+      </head>
+      <body>
+        <h1><img src="#{attrs.header}" /></h1>
+        <div>
+          #{attrs.phone}
+        </div>
+      </body>
+    """
+
 
     self.export = () ->
-      mobilemin.saveSite attrs.name, "hello world #{attrs.name}!!!"
+      mobilemin.saveSite attrs.name, toHtml()
 
     self.set = (obj, val) ->
       if _.isString obj

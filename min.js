@@ -13,7 +13,7 @@
     eventer = require("drews-event");
     Min = eventer({});
     Min.init = function(attrs) {
-      var emit, remove, save, self, _emit;
+      var emit, remove, save, self, toHtml, _emit;
       if (attrs == null) {
         attrs = {};
       }
@@ -55,8 +55,11 @@
         });
       };
       self.remove = remove;
+      toHtml = self.toHtml = function() {
+        return "<!doctype html>\n<html>\n<head>\n  <title>" + attrs.title + "</title>\n  <meta name=\"viewport\" content=\"width=device-width\" />\n</head>\n<body>\n  <h1><img src=\"" + attrs.header + "\" /></h1>\n  <div>\n    " + attrs.phone + "\n  </div>\n</body>";
+      };
       self["export"] = function() {
-        return mobilemin.saveSite(attrs.name, "hello world " + attrs.name + "!!!");
+        return mobilemin.saveSite(attrs.name, toHtml());
       };
       self.set = function(obj, val) {
         if (_.isString(obj)) {
