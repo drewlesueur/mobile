@@ -54,8 +54,6 @@
         callback || (callback = function(e) {
           var hash;
           hash = location.hash.slice(1);
-          console.log("hash is ");
-          console.log(hash);
           return testRoutes(hash);
         });
         callback();

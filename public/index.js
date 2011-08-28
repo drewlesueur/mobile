@@ -52,6 +52,9 @@
       var displayDirections, displayHours, initHome, model, nav, self;
       model = options.model;
       self = {};
+      $("h1").bind("click", function() {
+        return location.href = "#";
+      });
       nav = self.nav = function(className) {
         if (className === "") {
           className = "home";
@@ -70,15 +73,14 @@
           };
           return navHtml += "<div>\n<a href=\"#" + navItem + "\">" + (_.capitalize(navItem)) + "</a>\n</div>";
         });
-        navHtml = "<div class=\"home tile\">\n  " + navHtml + "\n</div>";
+        navHtml = "<div class=\"home tile hidden\">\n  " + navHtml + "\n</div>";
+        $(".content").append(navHtml);
         router = Router.init(routes);
-        router.initHashWatch();
-        return $(".content").append(navHtml);
+        return router.initHashWatch();
       };
-      initHome();
       displayDirections = function() {
         var directionsHtml;
-        directionsHtml = "";
+        directionsHtml = "<div class=\"tile directions hidden\">\n  We are located at " + model.address + " \n  <br />\n  <a target=\"blank\" href=\"http://maps.google.com/maps?daddr=" + model.address + "\">Google Map Directions</a>\n</div>";
         return $(".content").append(directionsHtml);
       };
       displayDirections();
@@ -106,14 +108,13 @@
         openTime = timeToMili(openText);
         closeTime = timeToMili(closeText);
         time = drews.time();
-        console.log(new Date(openTime).getHours());
-        console.log(new Date(time).getHours());
         if (time >= openTime && time <= closeTime) {
           return $(".open").text("We are open until " + closeText);
         } else {
           return $(".open").text("Closed");
         }
       };
+      initHome();
       return self;
     };
     return AppView;

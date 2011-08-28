@@ -41,8 +41,6 @@ define "router", () ->
     self.initHashWatch = (callback) ->
       callback ||= (e) ->
         hash = location.hash.slice 1
-        console.log "hash is "
-        console.log hash
         testRoutes hash
       callback()
       $(window).bind "hashchange", callback

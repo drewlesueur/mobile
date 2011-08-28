@@ -55,7 +55,8 @@ define "app-view", () ->
   AppView.init = (options) ->
     {model} = options
     self = {}
-
+    $("h1").bind "click", () ->
+      location.href = "#"
     nav = self.nav = (className) ->
       if className == ""
         className = "home"
@@ -84,23 +85,23 @@ define "app-view", () ->
         """
 
       navHtml = """
-        <div class="home tile">
+        <div class="home tile hidden">
           #{navHtml}
         </div>
       """
+      $(".content").append navHtml
       router = Router.init routes
       router.initHashWatch()
-      $(".content").append navHtml
-    initHome()
 
-    
     displayDirections = () ->
       directionsHtml =  """
-
+       <div class="tile directions hidden">
+         We are located at #{model.address} 
+         <br />
+         <a target="blank" href="http://maps.google.com/maps?daddr=#{model.address}">Google Map Directions</a>
+       </div>
       """
       $(".content").append directionsHtml
-
-
     displayDirections()
       
 
@@ -136,13 +137,12 @@ define "app-view", () ->
       closeTime = timeToMili closeText
 
       time = drews.time()
-      console.log new Date(openTime).getHours()
-      console.log new Date(time).getHours()
       if time >= openTime and time <= closeTime
         $(".open").text "We are open until #{closeText}"
       else
         $(".open").text "Closed"
 
+    initHome()
     self
   AppView
 
