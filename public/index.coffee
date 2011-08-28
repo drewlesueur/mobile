@@ -9,7 +9,7 @@ define "app-view", () ->
   AppView
 
 define "app-presenter", () ->
-  AppView = require "AppView"
+  AppView = require "app-view"
   AppPresenter = {}
   AppPresenter.init = () ->
     view = AppView.init() 

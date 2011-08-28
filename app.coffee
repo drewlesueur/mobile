@@ -51,17 +51,32 @@ saveSite = (name, html, cb) ->
   
   path = "/home/drew/sites/mobilemin-sites/#{name}"
   mkdir = (cb) ->
-    fs.mkdir path, 0777, (err) ->
-      cb()
+    console.log "makeing dir"
+    fs.mkdir path, 0777, (err) -> cb()
+
   addFile = (cb) ->
-    fs.writeFile "#{path}/index.html", html, (err) ->
-      cb err
+    console.log "writing file"
+    fs.writeFile "#{path}/index.html", html, cb
+
+  addModule = (cb) ->
+    console.log "adding module"
+    exec "cp /home/drew/sites/inc.the.tl/module.js #{path}/module.js", cb
 
   addZepto = (cb) ->
-    exec "cp /home/drew/sites/inc.the.tl/zepto/dist/zepto.min.js #{path}/zepto.min.js", (err) ->
+    console.log "adding zepto"
+    exec "cp /home/drew/sites/inc.the.tl/zepto/dist/zepto.min.js #{path}/zepto.min.js", cb
+
+  doCoffee = (cb) ->
+    console.log "doing coffee"
+    exec "cp /home/drew/sites/mobilemin/public/index.coffee #{path}/index.coffee", (err) ->
+      console.log err
       cb err
 
-  series [mkdir, addFile, addZepto], (err, results) ->
+  compileCoffee = (cb) ->
+    console.log "compiling coffee"
+    exec "coffee -c #{path}/index.coffee", cb
+
+  series [mkdir, addFile, addModule, addZepto, doCoffee, compileCoffee], (err, results) ->
     cb err, "http://#{name}.mobilemin.com"
 
   
