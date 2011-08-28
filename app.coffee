@@ -4,6 +4,7 @@ _ = require "underscore"
 drews = require("drews-mixins")
 nimble = require "nimble"
 fs = require "fs"
+exec = require("child_process").exec
 {wait, trigger, bind, once, log} = _
 {series, parallel} = nimble
 
@@ -47,15 +48,20 @@ pg = (p, f) ->
 saveSite = (name, html, cb) ->
   if name.length < 1 then return cb "bad name"
   #command = "rm -r /home/drew/sites/#{name}"
-
+  
+  path = "/home/drew/sites/mobilemin-sites/#{name}"
   mkdir = (cb) ->
-    fs.mkdir "/home/drew/sites/mobilemin-sites/#{name}", 0777, (err) ->
+    fs.mkdir path, 0777, (err) ->
       cb()
   addFile = (cb) ->
-    fs.writeFile "/home/drew/sites/mobilemin-sites/#{name}/index.html", html, (err) ->
+    fs.writeFile "#{path}/index.html", html, (err) ->
       cb err
 
-  series [mkdir, addFile], (err, results) ->
+  addZepto = (cb) ->
+    exec "cp /home/drew/sites/inc.the.tl/zepto/dist/zepto.min.js #{path}/zepto.min.js", (err) ->
+      cb err
+
+  series [mkdir, addFile, addZepto], (err, results) ->
     cb err, "http://#{name}.mobilemin.com"
 
   
