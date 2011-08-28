@@ -53,14 +53,14 @@ define "min", () ->
           <link rel="stylesheet" href="http://drewl.us:8010/styles.css" />
         </head>
         <body>
-          <div class="home">
+          <div class="header">
             <h1><img src="#{attrs.headerUrl}" class="header-image"/></h1>
             <div class="phone">
               #{attrs.phone}
             </div>
             <div class="open">
             </div>
-          </div> <!-- home div -->
+          </div> <!-- header div -->
           <div class="content">
           </div>
           <script src="module.js"></script>
