@@ -20,6 +20,8 @@ define "min", () ->
     
     save = (cb=->) ->
       emit "saving"
+      console.log "saving"
+      console.log JSON.stringify attrs
       severus.save "mins", attrs, (err, _mobileApp) ->
         _.extend attrs, _mobileApp
         emit "action", "save"

@@ -13,6 +13,7 @@ define "min-manager-presenter", () ->
     #infoView = InfoView.init()
     #{info, clear} = infoView
     mins = []
+    currentMin = null
 
     #subMinManagerViews = SubMinManagerViewCollection.init()
     #subMinManagerViews.on "remove", (min) ->
@@ -26,12 +27,14 @@ define "min-manager-presenter", () ->
       view.model model
 
     SubMinManagerView.on "remove", (min) ->
-      console.log "goint ot remove"
       min.remove()
 
     SubMinManagerView.on "export", (min) ->
-      console.log "going to export"
       min.export()
+
+    SubMinManagerView.on "load", (min) ->
+      view.loadMin min
+
 
     Min.find null, (err, _mins) ->
       mins = _mins
@@ -39,7 +42,8 @@ define "min-manager-presenter", () ->
     Min.on "init", (min) ->
       min.subView = SubMinManagerView.init model: min
       view.addMin min
-      console.log "added #{min.get("name")}"
+      view.loadMin min
+      currentMin = min
 
       
     Min.on "action", (action, min) ->
@@ -54,7 +58,11 @@ define "min-manager-presenter", () ->
     view.on "new", (name) ->
       model = Min.init name: name
       model.save()
-      console.log name
+
+    view.on "save", (hash) ->
+      currentMin.set hash
+      console.log JSON.stringify currentMin.attrs
+      currentMin.save()
 
 
 

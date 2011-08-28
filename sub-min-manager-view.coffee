@@ -15,9 +15,15 @@ define "sub-min-manager-view", () ->
 
     el = $ """
       <div>
-        <span>#{model.get "name"}</span>
+        <a href="#" class="load">#{model.get "name"}</a>
+        <div>
+          <a target="_blank" href="http://#{model.get "name"}.mobilemin.com">http://#{model.get "name"}.mobilemin.com</a>
+        </div>
+        <div>
         <a href="#" class="remove">Delete</a>
         <a href="#" class="export">Export</a>
+        </div>
+        <br />
       </div>
     """
     el.find('.remove').click (e) ->
@@ -28,6 +34,10 @@ define "sub-min-manager-view", () ->
     el.find('.export').click (e) ->
       e.preventDefault()
       emit "export"
+
+    el.find('.load').click (e) ->
+      e.preventDefault()
+      emit "load"
 
     self.el = el
     self.remove = -> el.remove()

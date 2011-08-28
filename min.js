@@ -32,6 +32,8 @@
           cb = function() {};
         }
         emit("saving");
+        console.log("saving");
+        console.log(JSON.stringify(attrs));
         return severus.save("mins", attrs, function(err, _mobileApp) {
           _.extend(attrs, _mobileApp);
           emit("action", "save");

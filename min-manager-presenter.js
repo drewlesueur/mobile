@@ -8,7 +8,7 @@
     SubMinManagerView = require("sub-min-manager-view");
     MinManagerPresenter = {};
     MinManagerPresenter.init = function(self) {
-      var emit, mins, view;
+      var currentMin, emit, mins, view;
       if (self == null) {
         self = {};
       }
@@ -16,16 +16,18 @@
       emit = self.emit;
       view = MinManagerView.init();
       mins = [];
+      currentMin = null;
       SubMinManagerView.on("selectmin", function(min) {
         return view.model(model);
       });
       SubMinManagerView.on("remove", function(min) {
-        console.log("goint ot remove");
         return min.remove();
       });
       SubMinManagerView.on("export", function(min) {
-        console.log("going to export");
         return min["export"]();
+      });
+      SubMinManagerView.on("load", function(min) {
+        return view.loadMin(min);
       });
       Min.find(null, function(err, _mins) {
         return mins = _mins;
@@ -35,7 +37,8 @@
           model: min
         });
         view.addMin(min);
-        return console.log("added " + (min.get("name")));
+        view.loadMin(min);
+        return currentMin = min;
       });
       Min.on("action", function(action, min) {});
       Min.on("remove", function(min) {
@@ -44,13 +47,17 @@
       view.on("change", function(min, prop, val) {
         return min.set(prop, val);
       });
-      return view.on("new", function(name) {
+      view.on("new", function(name) {
         var model;
         model = Min.init({
           name: name
         });
-        model.save();
-        return console.log(name);
+        return model.save();
+      });
+      return view.on("save", function(hash) {
+        currentMin.set(hash);
+        console.log(JSON.stringify(currentMin.attrs));
+        return currentMin.save();
       });
     };
     return MinManagerPresenter;
