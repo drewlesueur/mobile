@@ -37,20 +37,31 @@ define "min", () ->
     self.remove = remove
 
     toHtml = self.toHtml = () ->
+      days = [
+        "sunday", "monday", "tuesday", "wednesday"
+        "thursday", "friday", "saturday"
+      ]
+      daysHtml = {}
+      for day in days
+        daysHtml = {}
       """
         <!doctype html>
         <html>
         <head>
           <title>#{attrs.title}</title>
           <meta name="viewport" content="width=device-width" />
-          <link rel="stylesheet" href="styles.css" />
+          <link rel="stylesheet" href="http://drewl.us:8010/styles.css" />
         </head>
         <body>
-          <h1><img src="#{attrs.headerUrl}" class="header-image"/></h1>
-          <div class="phone">
-            #{attrs.phone}
-          </div>
-          <div class="open">
+          <div class="home">
+            <h1><img src="#{attrs.headerUrl}" class="header-image"/></h1>
+            <div class="phone">
+              #{attrs.phone}
+            </div>
+            <div class="open">
+            </div>
+          </div> <!-- home div -->
+          <div class="content">
           </div>
           <script src="module.js"></script>
           <script src="http://inc.the.tl/underscore.js"></script>
@@ -62,7 +73,9 @@ define "min", () ->
               return #{JSON.stringify self.attrs};
             });
           </script>
-          <script src="index.js"></script>
+          <!--<script src="index.js"></script>-->
+          <script src="http://drewl.us:8010/router.js"></script>
+          <script src="http://drewl.us:8010/index.js"></script>
         </body>
       """
 
