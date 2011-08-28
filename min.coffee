@@ -44,8 +44,8 @@ define "min", () ->
         <meta name="viewport" content="width=device-width" />
       </head>
       <body>
-        <h1><img src="#{attrs.headerUrl}" style="height: 50px;" /></h1>
-        <div>
+        <h1><img src="#{attrs.headerUrl}" class="header-image"/></h1>
+        <div class="phone">
           #{attrs.phone}
         </div>
       </body>

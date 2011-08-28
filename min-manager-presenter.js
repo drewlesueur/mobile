@@ -54,7 +54,6 @@
       });
       return view.on("save", function(hash) {
         currentMin.set(hash);
-        console.log(JSON.stringify(currentMin.attrs));
         return currentMin.save(function() {
           return currentMin["export"]();
         });

@@ -56,7 +56,7 @@
       };
       self.remove = remove;
       toHtml = self.toHtml = function() {
-        return "<!doctype html>\n<html>\n<head>\n  <title>" + attrs.title + "</title>\n  <meta name=\"viewport\" content=\"width=device-width\" />\n</head>\n<body>\n  <h1><img src=\"" + attrs.headerUrl + "\" style=\"height: 50px;\" /></h1>\n  <div>\n    " + attrs.phone + "\n  </div>\n</body>";
+        return "<!doctype html>\n<html>\n<head>\n  <title>" + attrs.title + "</title>\n  <meta name=\"viewport\" content=\"width=device-width\" />\n</head>\n<body>\n  <h1><img src=\"" + attrs.headerUrl + "\" class=\"header-image\"/></h1>\n  <div class=\"phone\">\n    " + attrs.phone + "\n  </div>\n</body>";
       };
       self["export"] = function() {
         return mobilemin.saveSite(attrs.name, toHtml());

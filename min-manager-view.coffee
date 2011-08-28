@@ -15,7 +15,12 @@ define 'min-manager-view', () ->
       $('.info-form').each () ->
         this.reset()
       _.each _.keys(min.attrs), (prop) ->
-        $(".info-form [name=\"#{prop}\"]").val min.get prop
+        console.log "#{prop} set to #{min.get prop}"
+        input = $(".info-form [name=\"#{prop}\"]")
+        if input.is('[type="checkbox"]')
+          input.prop "checked", min.get prop
+        else
+          input.val min.get prop
 
        
     $('.new').bind "click", (e) ->
@@ -29,8 +34,14 @@ define 'min-manager-view', () ->
       hash = {}
       $(".info-form [name]").each () ->
         prop = $(this).attr("name")
-        val = $(this).val()
+        if $(this).is('[type="checkbox"]')
+          val = $(this).is(":checked")
+          console.log "#{prop} is #{val}"
+        else 
+          val = $(this).val()
+
         hash[prop] = val 
+        true #coffeescript
       emit "save", hash
 
     self.removeMin = (min) ->

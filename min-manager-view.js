@@ -21,7 +21,14 @@
           return this.reset();
         });
         return _.each(_.keys(min.attrs), function(prop) {
-          return $(".info-form [name=\"" + prop + "\"]").val(min.get(prop));
+          var input;
+          console.log("" + prop + " set to " + (min.get(prop)));
+          input = $(".info-form [name=\"" + prop + "\"]");
+          if (input.is('[type="checkbox"]')) {
+            return input.prop("checked", min.get(prop));
+          } else {
+            return input.val(min.get(prop));
+          }
         });
       };
       $('.new').bind("click", function(e) {
@@ -38,8 +45,14 @@
         $(".info-form [name]").each(function() {
           var prop, val;
           prop = $(this).attr("name");
-          val = $(this).val();
-          return hash[prop] = val;
+          if ($(this).is('[type="checkbox"]')) {
+            val = $(this).is(":checked");
+            console.log("" + prop + " is " + val);
+          } else {
+            val = $(this).val();
+          }
+          hash[prop] = val;
+          return true;
         });
         return emit("save", hash);
       });
