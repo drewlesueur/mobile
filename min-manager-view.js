@@ -22,7 +22,6 @@
         });
         return _.each(_.keys(min.attrs), function(prop) {
           var input;
-          console.log("" + prop + " set to " + (min.get(prop)));
           input = $(".info-form [name=\"" + prop + "\"]");
           if (input.is('[type="checkbox"]')) {
             return input.prop("checked", min.get(prop));

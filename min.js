@@ -56,7 +56,7 @@
       };
       self.remove = remove;
       toHtml = self.toHtml = function() {
-        return "<!doctype html>\n<html>\n<head>\n  <title>" + attrs.title + "</title>\n  <meta name=\"viewport\" content=\"width=device-width\" />\n</head>\n<body>\n  <h1><img src=\"" + attrs.headerUrl + "\" class=\"header-image\"/></h1>\n  <div class=\"phone\">\n    " + attrs.phone + "\n  </div>\n</body>";
+        return "<!doctype html>\n<html>\n<head>\n  <title>" + attrs.title + "</title>\n  <meta name=\"viewport\" content=\"width=device-width\" />\n  <link rel=\"stylesheet\" href=\"styles.css\" />\n</head>\n<body>\n  <h1><img src=\"" + attrs.headerUrl + "\" class=\"header-image\"/></h1>\n  <div class=\"phone\">\n    " + attrs.phone + "\n  </div>\n  <div class=\"open\">\n  </div>\n  <script src=\"module.js\"></script>\n  <script src=\"http://inc.the.tl/underscore.js\"></script>\n  <script src=\"http://inc.the.tl/nimble.js\"></script>\n  <script src=\"http://inc.the.tl/drews-mixins.js\"></script>\n  <script src=\"zepto.min.js\"></script>\n  <script>\n    define(\"model\", function() {\n      return " + (JSON.stringify(self.attrs)) + ";\n    });\n  </script>\n  <script src=\"index.js\"></script>\n</body>";
       };
       self["export"] = function() {
         return mobilemin.saveSite(attrs.name, toHtml());

@@ -36,20 +36,35 @@ define "min", () ->
         cb args...
     self.remove = remove
 
-    toHtml = self.toHtml = () -> """
-      <!doctype html>
-      <html>
-      <head>
-        <title>#{attrs.title}</title>
-        <meta name="viewport" content="width=device-width" />
-      </head>
-      <body>
-        <h1><img src="#{attrs.headerUrl}" class="header-image"/></h1>
-        <div class="phone">
-          #{attrs.phone}
-        </div>
-      </body>
-    """
+    toHtml = self.toHtml = () ->
+      """
+        <!doctype html>
+        <html>
+        <head>
+          <title>#{attrs.title}</title>
+          <meta name="viewport" content="width=device-width" />
+          <link rel="stylesheet" href="styles.css" />
+        </head>
+        <body>
+          <h1><img src="#{attrs.headerUrl}" class="header-image"/></h1>
+          <div class="phone">
+            #{attrs.phone}
+          </div>
+          <div class="open">
+          </div>
+          <script src="module.js"></script>
+          <script src="http://inc.the.tl/underscore.js"></script>
+          <script src="http://inc.the.tl/nimble.js"></script>
+          <script src="http://inc.the.tl/drews-mixins.js"></script>
+          <script src="zepto.min.js"></script>
+          <script>
+            define("model", function() {
+              return #{JSON.stringify self.attrs};
+            });
+          </script>
+          <script src="index.js"></script>
+        </body>
+      """
 
 
     self.export = () ->

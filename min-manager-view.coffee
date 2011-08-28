@@ -15,7 +15,6 @@ define 'min-manager-view', () ->
       $('.info-form').each () ->
         this.reset()
       _.each _.keys(min.attrs), (prop) ->
-        console.log "#{prop} set to #{min.get prop}"
         input = $(".info-form [name=\"#{prop}\"]")
         if input.is('[type="checkbox"]')
           input.prop "checked", min.get prop
