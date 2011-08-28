@@ -17,9 +17,6 @@
       view = MinManagerView.init();
       mins = [];
       currentMin = null;
-      SubMinManagerView.on("selectmin", function(min) {
-        return view.model(model);
-      });
       SubMinManagerView.on("remove", function(min) {
         return min.remove();
       });
@@ -27,6 +24,7 @@
         return min["export"]();
       });
       SubMinManagerView.on("load", function(min) {
+        currentMin = min;
         return view.loadMin(min);
       });
       Min.find(null, function(err, _mins) {
@@ -36,9 +34,9 @@
         min.subView = SubMinManagerView.init({
           model: min
         });
+        currentMin = min;
         view.addMin(min);
-        view.loadMin(min);
-        return currentMin = min;
+        return view.loadMin(min);
       });
       Min.on("action", function(action, min) {});
       Min.on("remove", function(min) {

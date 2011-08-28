@@ -12,7 +12,8 @@ define 'min-manager-view', () ->
       $('.apps').append min.subView.el
 
     self.loadMin = (min) ->
-      
+      $('.info-form').each () ->
+        this.reset()
       _.each _.keys(min.attrs), (prop) ->
         $(".info-form [name=\"#{prop}\"]").val min.get prop
 

@@ -17,6 +17,9 @@
         return $('.apps').append(min.subView.el);
       };
       self.loadMin = function(min) {
+        $('.info-form').each(function() {
+          return this.reset();
+        });
         return _.each(_.keys(min.attrs), function(prop) {
           return $(".info-form [name=\"" + prop + "\"]").val(min.get(prop));
         });

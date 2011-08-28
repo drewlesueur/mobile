@@ -23,8 +23,6 @@ define "min-manager-presenter", () ->
     #  if min in myList
     #    emit "remove"
 
-    SubMinManagerView.on "selectmin", (min) ->
-      view.model model
 
     SubMinManagerView.on "remove", (min) ->
       min.remove()
@@ -33,6 +31,7 @@ define "min-manager-presenter", () ->
       min.export()
 
     SubMinManagerView.on "load", (min) ->
+      currentMin = min
       view.loadMin min
 
 
@@ -41,9 +40,9 @@ define "min-manager-presenter", () ->
 
     Min.on "init", (min) ->
       min.subView = SubMinManagerView.init model: min
+      currentMin = min
       view.addMin min
       view.loadMin min
-      currentMin = min
 
       
     Min.on "action", (action, min) ->
