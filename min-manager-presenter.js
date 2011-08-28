@@ -23,6 +23,10 @@
         console.log("goint ot remove");
         return min.remove();
       });
+      SubMinManagerView.on("export", function(min) {
+        console.log("going to export");
+        return min["export"]();
+      });
       Min.find(null, function(err, _mins) {
         return mins = _mins;
       });

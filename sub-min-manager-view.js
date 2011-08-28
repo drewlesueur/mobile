@@ -21,12 +21,16 @@
         _emit.apply(null, [event].concat(__slice.call(args)));
         return SubMinManagerView.emit.apply(SubMinManagerView, [event, model].concat(__slice.call(args)));
       };
-      el = $("<div>\n  <span>" + (model.get("name")) + "</span>\n  <a href=\"#\" class=\"remove\">Delete</a>\n</div>");
+      el = $("<div>\n  <span>" + (model.get("name")) + "</span>\n  <a href=\"#\" class=\"remove\">Delete</a>\n  <a href=\"#\" class=\"export\">Export</a>\n</div>");
       el.find('.remove').click(function(e) {
         e.preventDefault();
         if (confirm("Are you sure you want to delete?")) {
           return emit("remove");
         }
+      });
+      el.find('.export').click(function(e) {
+        e.preventDefault();
+        return emit("export");
       });
       self.el = el;
       self.remove = function() {

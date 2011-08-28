@@ -22,6 +22,10 @@
         emit("new", name);
         return false;
       });
+      $('.info-form').bind("submit", function(e) {
+        e.preventDefault();
+        return emit("save");
+      });
       self.removeMin = function(min) {
         return min.subView.remove();
       };

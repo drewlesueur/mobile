@@ -1,13 +1,14 @@
 (function() {
   var __slice = Array.prototype.slice;
   define("min", function() {
-    var $, Min, drews, eventBus, eventer, nimble, severus, _;
+    var $, Min, drews, eventBus, eventer, mobilemin, nimble, severus, _;
     $ = require("jquery");
     _ = require("underscore");
     nimble = require("nimble");
     drews = require("drews-mixins");
     severus = require("severus");
     severus.db = "mobilemin_dev";
+    mobilemin = require("mobilemin");
     eventBus = require("event-bus");
     eventer = require("drews-event");
     Min = eventer({});
@@ -52,6 +53,9 @@
         });
       };
       self.remove = remove;
+      self["export"] = function() {
+        return mobilemin.saveSite(attrs.name, "hello world " + attrs.name + "!!!");
+      };
       self.set = function(obj, val) {
         if (_.isString(obj)) {
           return attrs[obj] = val;

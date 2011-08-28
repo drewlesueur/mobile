@@ -1,4 +1,3 @@
-  
 define "min", () ->
   $ = require "jquery" 
   _ = require "underscore"
@@ -6,6 +5,7 @@ define "min", () ->
   drews = require "drews-mixins"
   severus = require "severus"
   severus.db = "mobilemin_dev"
+  mobilemin = require "mobilemin"
   eventBus = require "event-bus"
   eventer = require "drews-event"
   Min = eventer {}
@@ -33,6 +33,10 @@ define "min", () ->
         emit "remove"
         cb args...
     self.remove = remove
+
+
+    self.export = () ->
+      mobilemin.saveSite attrs.name, "hello world #{attrs.name}!!!"
 
     self.set = (obj, val) ->
       if _.isString obj

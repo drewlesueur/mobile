@@ -17,12 +17,18 @@ define "sub-min-manager-view", () ->
       <div>
         <span>#{model.get "name"}</span>
         <a href="#" class="remove">Delete</a>
+        <a href="#" class="export">Export</a>
       </div>
     """
     el.find('.remove').click (e) ->
       e.preventDefault()
       if confirm "Are you sure you want to delete?"
         emit "remove"
+
+    el.find('.export').click (e) ->
+      e.preventDefault()
+      emit "export"
+
     self.el = el
     self.remove = -> el.remove()
 

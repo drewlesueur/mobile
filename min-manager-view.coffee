@@ -9,6 +9,7 @@ define 'min-manager-view', () ->
     self.addMin = (min) ->
       console.log min.subView
       $('.apps').append min.subView.el
+
        
     $('.new').bind "click", (e) ->
       e.preventDefault( )
@@ -16,9 +17,12 @@ define 'min-manager-view', () ->
       emit "new", name
       return false
 
+    $('.info-form').bind "submit", (e) ->
+      e.preventDefault()
+      emit "save"
+
     self.removeMin = (min) ->
       min.subView.remove()
-
 
     self
 

@@ -29,6 +29,10 @@ define "min-manager-presenter", () ->
       console.log "goint ot remove"
       min.remove()
 
+    SubMinManagerView.on "export", (min) ->
+      console.log "going to export"
+      min.export()
+
     Min.find null, (err, _mins) ->
       mins = _mins
 
