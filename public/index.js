@@ -49,19 +49,17 @@
     Router = require("router");
     AppView = {};
     AppView.init = function(options) {
-      var displayHours, initNav, model, nav, self;
+      var displayDirections, displayHours, initHome, model, nav, self;
       model = options.model;
       self = {};
       nav = self.nav = function(className) {
-        console.log("naving {" + className + "}");
         if (className === "") {
-          className = "nav";
-          console.log("yea");
+          className = "home";
         }
         $(".content .tile").hide();
         return $(".content .tile." + className).show();
       };
-      initNav = function() {
+      initHome = function() {
         var navHtml, navItems, router, routes;
         navItems = ["hours", "items", "directions", "facebook", "twitter", ""];
         routes = {};
@@ -72,12 +70,18 @@
           };
           return navHtml += "<div>\n<a href=\"#" + navItem + "\">" + (_.capitalize(navItem)) + "</a>\n</div>";
         });
-        navHtml = "<div class=\"nav tile\">\n  " + navHtml + "\n</div>";
+        navHtml = "<div class=\"home tile\">\n  " + navHtml + "\n</div>";
         router = Router.init(routes);
         router.initHashWatch();
         return $(".content").append(navHtml);
       };
-      initNav();
+      initHome();
+      displayDirections = function() {
+        var directionsHtml;
+        directionsHtml = "";
+        return $(".content").append(directionsHtml);
+      };
+      displayDirections();
       displayHours = function() {
         var day, dayRows, hoursTable, _i, _len;
         dayRows = "";

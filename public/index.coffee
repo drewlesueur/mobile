@@ -57,15 +57,13 @@ define "app-view", () ->
     self = {}
 
     nav = self.nav = (className) ->
-      console.log "naving {#{className}}"
       if className == ""
-        className = "nav"
-        console.log "yea"
+        className = "home"
       $(".content .tile").hide()
       $(".content .tile.#{className}").show()
      
 
-    initNav = () ->
+    initHome = () ->
       navItems = [
         "hours"
         "items"
@@ -86,16 +84,24 @@ define "app-view", () ->
         """
 
       navHtml = """
-        <div class="nav tile">
+        <div class="home tile">
           #{navHtml}
         </div>
       """
       router = Router.init routes
       router.initHashWatch()
       $(".content").append navHtml
-    initNav()
+    initHome()
+
+    
+    displayDirections = () ->
+      directionsHtml =  """
+
+      """
+      $(".content").append directionsHtml
 
 
+    displayDirections()
       
 
 
