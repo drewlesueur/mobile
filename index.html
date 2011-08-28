@@ -35,208 +35,227 @@
   <body>
 
 
- <div class="container">
-       <div class="row show-grid">
-         <div class="apps span4 column">
-           <ul class="unstyled zebra-striped">
-           </ul>
-         </div>
-         <div class="phone span4 column">
-           <div class="screen">
-            </div>
-         </div>
-         <div class="ctrls span8 column">
+    <div class="container">
+      <div class="row show-grid">
+        <div class="apps span4 column">
+          <ul class="unstyled zebra-striped">
+          </ul>
+        </div>
+        <div class="phone span4 column">
+          <div class="screen">
+          </div>
+        </div>
+        <div class="ctrls span8 column">
           <a class="new" href="#">New app</a>
           <div class="uploads">
           </div>
-   <div class="forms">
-      <!--
-      <ul class="pills">
-        <li class="active"><a href="#" class="hours">Hours</a></li>
-        <li><a href="#" class="contact">Contact</a></li>
-        <li><a href="#" class="header-info">Header</a></li>
-      </ul>
-      -->
-      <div class="form-toggler">
+          <div class="forms">
+            <!--
+            <ul class="pills">
+              <li class="active"><a href="#" class="hours">Hours</a></li>
+              <li><a href="#" class="contact">Contact</a></li>
+              <li><a href="#" class="header-info">Header</a></li>
+            </ul>
+            -->
+            <div class="form-toggler">
 
 
-        <div class="form-togglee contact">
-          <form class="info-form">
-            <fieldset>
-              <legend>Contact</legend>
-              <div class="clearfix">
-                <label for="name">Name</label>
-                <div class="input">
-                  <input id="name" name="name" type="text">
-                </div>
-              </div> <!-- /clearfix -->
-              <div class="clearfix">
-                <label for="title">Title</label>
-                <div class="input">
-                  <input id="title" name="title" type="text">
-                </div>
-              </div> <!-- /clearfix -->
-              <div class="clearfix">
-                <label for="phone">Phone</label>
-                <div class="input">
-                  <input id="phone" name="phone" type="text">
-                </div>
-              </div> <!-- /clearfix -->
-              <div class="clearfix">
-                <label for="googleMapName">Google Map Name</label>
-                <div class="input">
-                  <input id="googleMapName" name="googleMapName" type="text">
-                  <span class="help-block">the name to search for when searching on Google Maps</span>
-                </div>
-              </div> <!-- /clearfix -->
-              <div class="clearfix">
-                <label for="address">Address</label>
-                <div class="input">
-                  <input id="address" name="address" type="text">
-                  <span class="help-block">Leave blank if multiple addresses</span>
-                </div>
-              </div> <!-- /clearfix -->
-            </fieldset>
-            <div class="actions">
-              <button type="submit" class="btn primary save">Save</button>
+              <div class="form-togglee contact">
+                <form class="info-form">
+                  <fieldset>
+                    <legend>Contact</legend>
+                    <div class="clearfix">
+                      <label for="name">Name</label>
+                      <div class="input">
+                        <input id="name" name="name" type="text">
+                      </div>
+                    </div> <!-- /clearfix -->
+                    <div class="clearfix">
+                      <label for="title">Title</label>
+                      <div class="input">
+                        <input id="title" name="title" type="text">
+                      </div>
+                    </div> <!-- /clearfix -->
+                    <div class="clearfix">
+                      <label for="phone">Phone</label>
+                      <div class="input">
+                        <input id="phone" name="phone" type="text">
+                      </div>
+                    </div> <!-- /clearfix -->
+                    <div class="clearfix">
+                      <label for="googleMapName">Google Map Name</label>
+                      <div class="input">
+                        <input id="googleMapName" name="googleMapName" type="text">
+                        <span class="help-block">the name to search for when searching on Google Maps</span>
+                      </div>
+                    </div> <!-- /clearfix -->
+                    <div class="clearfix">
+                      <label for="address">Address</label>
+                      <div class="input">
+                        <input id="address" name="address" type="text">
+                        <span class="help-block">Leave blank if multiple addresses</span>
+                      </div>
+                    </div> <!-- /clearfix -->
+                  </fieldset>
+                  <div class="actions">
+                    <button type="submit" class="btn primary save">Save</button>
+                  </div>
+                </form>
+              </div>
+              <div class="form-togglee header-info">
+                <form class="info-form">
+                  <fieldset>
+                    <legend>Header</legend>
+                    <div class="clearfix">
+                      <label for="headerUrl">Header Url</label>
+                      <div class="input">
+                        <input id="headerUrl" name="headerUrl" type="text">
+                      </div>
+                    </div> <!-- /clearfix -->
+                  </fieldset>
+                  <div class="actions">
+                    <button type="submit" class="btn primary save">Save</button>
+                  </div>
+                </form>
+              </div> <!-- end header info -->
+
+              <div class="form-togglee hours">
+                <form class="info-form">
+                  <fieldset>
+                    <legend>Hours</legend>
+                    <div class="clearfix">
+                      <label>
+                        <input type="checkbox" name="mondayOpen" value="true">
+                        Monday
+                      </label>
+                      <div class="input">
+                        <div class="inline-inputs">
+                          <input name="mondayStart" class="mini" type="text">
+                          to
+                          <input name="mondayEnd" class="mini" type="text">
+                        </div>
+                      </div>
+                    </div> <!-- /clearfix -->
+                    <div class="clearfix">
+                      <label>
+
+                        <input type="checkbox" name="tuesdayOpen" value="true">
+                        Tuesday
+                      </label>
+                      <div class="input">
+                        <div class="inline-inputs">
+                          <input name="tuesdayStart" class="mini" type="text">
+                          to
+                          <input name="tuesdayEnd" class="mini" type="text">
+
+                        </div>
+                      </div>
+                    </div> <!-- /clearfix -->
+                    <div class="clearfix">
+                      <label>
+
+                        <input type="checkbox" name="wednesdayOpen" value="true">
+                        Wednesday
+                      </label>
+                      <div class="input">
+                        <div class="inline-inputs">
+                          <input name="wednesdayStart" class="mini" type="text">
+                          to
+                          <input name="wednesdayEnd" class="mini" type="text">
+                        </div>
+                      </div>
+                    </div> <!-- /clearfix -->
+                    <div class="clearfix">
+                      <label>
+
+                        <input type="checkbox" name="thursdayOpen" value="true">
+                        Thursday
+                      </label>
+                      <div class="input">
+                        <div class="inline-inputs">
+                          <input name="thursdayStart" class="mini" type="text">
+                          to
+                          <input name="thursdayEnd" class="mini" type="text">
+                        </div>
+                      </div>
+                    </div> <!-- /clearfix -->
+
+                    <div class="clearfix">
+                      <label>
+                        <input type="checkbox" name="fridayOpen" value="true">
+                        Friday
+                      </label>
+                      <div class="input">
+                        <div class="inline-inputs">
+                          <input name="fridayStart" class="mini" type="text">
+                          to
+                          <input name="fridayEnd" class="mini" type="text">
+                        </div>
+                      </div>
+                    </div> <!-- /clearfix -->
+
+                    <div class="clearfix">
+                      <label>
+                        <input type="checkbox" name="saturdayOpen" value="true">
+                        Saturday
+                      </label>
+                      <div class="input">
+                        <div class="inline-inputs">
+                          <input name="saturdayStart" class="mini" type="text">
+                          to
+                          <input name="saturdayEnd" class="mini" type="text">
+                        </div>
+                      </div>
+                    </div> <!-- /clearfix -->
+
+                    <div class="clearfix">
+                      <label>
+                        <input type="checkbox" name="sundayOpen" value="true">
+                        Sunday
+                      </label>
+                      <div class="input">
+                        <div class="inline-inputs">
+                          <input name="sundayStart" class="mini" type="text">
+                          to
+                          <input name="sundayEnd" class="mini" type="text">
+                        </div>
+                      </div>
+                    </div> <!-- /clearfix -->
+
+
+
+                  </fieldset>
+                  <div class="actions">
+                    <button type="submit" class="btn primary save">Save</button>
+                  </div>
+
+                </form>
+              </div>
             </div>
-          </form>
-        </div>
-        <div class="form-togglee header-info">
-          <form class="info-form">
-            <fieldset>
-              <legend>Header</legend>
-              <div class="clearfix">
-                <label for="headerUrl">Header Url</label>
-                <div class="input">
-                  <input id="headerUrl" name="headerUrl" type="text">
-                </div>
-              </div> <!-- /clearfix -->
-            </fieldset>
-            <div class="actions">
-              <button type="submit" class="btn primary save">Save</button>
-            </div>
-          </form>
-        </div> <!-- end header info -->
-        
-        <div class="form-togglee hours">
-          <form class="info-form">
-            <fieldset>
-              <legend>Hours</legend>
-              <div class="clearfix">
-                <label>
-                  <input type="checkbox" name="mondayOpen" value="true">
-                  Monday
-                </label>
-                <div class="input">
-                  <div class="inline-inputs">
-                    <input name="mondayStart" class="mini" type="text">
-                    to
-                    <input name="mondayEnd" class="mini" type="text">
-                  </div>
-                </div>
-              </div> <!-- /clearfix -->
-              <div class="clearfix">
-                <label>
-                
-                <input type="checkbox" name="tuesdayOpen" value="true">
-                Tuesday
-                </label>
-                <div class="input">
-                  <div class="inline-inputs">
-                    <input name="tuesdayStart" class="mini" type="text">
-                    to
-                    <input name="tuesdayEnd" class="mini" type="text">
-
-                  </div>
-                </div>
-              </div> <!-- /clearfix -->
-              <div class="clearfix">
-                <label>
-                
-                <input type="checkbox" name="wednesdayOpen" value="true">
-                  Wednesday
-                </label>
-                <div class="input">
-                  <div class="inline-inputs">
-                    <input name="wednesdayStart" class="mini" type="text">
-                    to
-                    <input name="wednesdayEnd" class="mini" type="text">
-                  </div>
-                </div>
-              </div> <!-- /clearfix -->
-              <div class="clearfix">
-                <label>
-                
-                <input type="checkbox" name="thursdayOpen" value="true">
-                  Thursday
-                </label>
-                <div class="input">
-                  <div class="inline-inputs">
-                    <input name="thursdayStart" class="mini" type="text">
-                    to
-                    <input name="thursdayEnd" class="mini" type="text">
-                  </div>
-                </div>
-              </div> <!-- /clearfix -->
-
-              <div class="clearfix">
-                <label>
-                <input type="checkbox" name="fridayOpen" value="true">
-                  Friday
-                </label>
-                <div class="input">
-                  <div class="inline-inputs">
-                    <input name="fridayStart" class="mini" type="text">
-                    to
-                    <input name="fridayEnd" class="mini" type="text">
-                  </div>
-                </div>
-              </div> <!-- /clearfix -->
-
-              <div class="clearfix">
-                <label>
-                <input type="checkbox" name="saturdayOpen" value="true">
-                  Saturday
-                </label>
-                <div class="input">
-                  <div class="inline-inputs">
-                    <input name="saturdayStart" class="mini" type="text">
-                    to
-                    <input name="saturdayEnd" class="mini" type="text">
-                  </div>
-                </div>
-              </div> <!-- /clearfix -->
-
-              <div class="clearfix">
-                <label>
-                <input type="checkbox" name="sundayOpen" value="true">
-                Sunday
-                </label>
-                <div class="input">
-                  <div class="inline-inputs">
-                    <input name="sundayStart" class="mini" type="text">
-                    to
-                    <input name="sundayEnd" class="mini" type="text">
-                  </div>
-                </div>
-              </div> <!-- /clearfix -->
-
-
-
-            </fieldset>
-            <div class="actions">
-              <button type="submit" class="btn primary save">Save</button>
-            </div>
-
-          </form>
-        </div>
+          </div>
+        </div><!--end forms -->
+      </div><!-- end main row -->
+      <div class="row show-grid">
+        <table class="zebra-striped">
+          <thead>
+            <tr>
+              <th>Id</th>
+              <th>Image</th>
+              <th>Title</th>
+              <th>Price</th>
+              <th>Description</th>
+              <th>extra</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td></td>
+            </tr>
+          </tbody>
+        </table>
       </div>
     </div>
-  </div><!--end forms -->
-         </div>
-       </div>
-     </div>
+  </div>
 
 
 </body>
