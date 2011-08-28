@@ -62,9 +62,14 @@ saveSite = (name, html, cb) ->
     console.log "adding module"
     exec "cp /home/drew/sites/inc.the.tl/module.js #{path}/module.js", cb
 
+
   addZepto = (cb) ->
     console.log "adding zepto"
     exec "cp /home/drew/sites/inc.the.tl/zepto/dist/zepto.min.js #{path}/zepto.min.js", cb
+
+  addCss = (cb) ->
+    console.log "adding css"
+    exec "cp /home/drew/sites/mobilemin/public/styles.css #{path}/styles.css", cb
 
   doCoffee = (cb) ->
     console.log "doing coffee"
@@ -76,7 +81,15 @@ saveSite = (name, html, cb) ->
     console.log "compiling coffee"
     exec "coffee -c #{path}/index.coffee", cb
 
-  series [mkdir, addFile, addModule, addZepto, doCoffee, compileCoffee], (err, results) ->
+  series [
+    mkdir
+    addFile
+    addModule
+    addCss
+    addZepto
+    doCoffee
+    compileCoffee
+  ], (err, results) ->
     cb err, "http://#{name}.mobilemin.com"
 
   
