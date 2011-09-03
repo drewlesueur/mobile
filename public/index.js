@@ -55,6 +55,7 @@
       $("h1").bind("click", function() {
         return location.href = "#";
       });
+      $(".content").append("<div class=\"clear\"></div>");
       nav = self.nav = function(className) {
         if (className === "") {
           className = "home";
@@ -80,7 +81,7 @@
       };
       displayDirections = function() {
         var directionsHtml;
-        directionsHtml = "<div class=\"tile directions hidden\">\n  We are located at " + model.address + " \n  <br />\n  <a target=\"blank\" href=\"http://maps.google.com/maps?daddr=" + model.address + "\">Google Map Directions</a>\n</div>";
+        directionsHtml = "<div class=\"tile directions hidden\">\n  We are located at " + model.address + " \n  <br />\n  <a target=\"blank\" href=\"http://maps.google.com/maps?daddr=" + model.address + "\">Google Map Directions</a>\n  <img src=\"http://maps.googleapis.com/maps/api/staticmap?center=" + model.address + "&zoom=14&size=320x320&markers=color:red|" + model.address + "&maptype=roadmap&sensor=false\" />\n</div>";
         return $(".content").append(directionsHtml);
       };
       displayDirections();

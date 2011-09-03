@@ -10,3 +10,19 @@
 .hidden {
   display: none;
 }
+
+.clear {
+  clear: both;
+}
+
+body {
+  font-family: Helvetica, Arial, sans-serif;
+  font-size: 1.2em;
+}
+
+.home a {
+  float: left;
+  display: block;
+  width: 106px;
+  height: 106px;
+}

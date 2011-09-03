@@ -57,6 +57,8 @@ define "app-view", () ->
     self = {}
     $("h1").bind "click", () ->
       location.href = "#"
+
+    $(".content").append """<div class="clear"></div>"""
     nav = self.nav = (className) ->
       if className == ""
         className = "home"
@@ -99,6 +101,7 @@ define "app-view", () ->
          We are located at #{model.address} 
          <br />
          <a target="blank" href="http://maps.google.com/maps?daddr=#{model.address}">Google Map Directions</a>
+         <img src="http://maps.googleapis.com/maps/api/staticmap?center=#{model.address}&zoom=14&size=320x320&markers=color:red|#{model.address}&maptype=roadmap&sensor=false" />
        </div>
       """
       $(".content").append directionsHtml
