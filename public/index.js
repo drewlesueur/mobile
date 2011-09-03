@@ -54,9 +54,10 @@
     Router = require("router");
     AppView = {};
     AppView.init = function(options) {
-      var displayDirections, displayHours, initHome, model, nav, self;
+      var displayDirections, displayHours, emit, initHome, model, nav, self;
       model = options.model;
-      self = {};
+      self = eventer({});
+      emit = self.emit;
       $("h1").bind("click", function() {
         return location.href = "#";
       });
@@ -82,7 +83,8 @@
         navHtml = $("<div class=\"home tile hidden\">\n  <div class=\"promo\">\n    <img src=\"" + model.promo + "\" />\n    <div class=\"promo-text\">\n      " + model.promoText + "\n    </div>\n    <form class=\"phone-form\" action=\"/\" method=\"POST\">\n      <div class=\"clearfix\">\n        <div class=\"input\">\n          <input id=\"phone\" name=\"phone\" type=\"text\">\n          <input type=\"submit\" value=\"send\">\n        </div>\n      </div> <!-- /clearfix -->\n    </form>\n  </div>\n  " + navHtml + "\n</div>");
         $(".content").append(navHtml);
         navHtml.find("form").bind("submit", function(e) {
-          return e.preventDefault();
+          e.preventDefault();
+          return emit("phone", $("#phone").val());
         });
         router = Router.init(routes);
         return router.initHashWatch();
@@ -135,10 +137,20 @@
     AppPresenter = {};
     AppPresenter.init = function() {
       var view;
+      severus.db = "mobilemin_" + model.name;
       view = AppView.init({
         model: model
       });
-      return view.doHours();
+      view.doHours();
+      return view.on("phone", function(phone) {
+        alert(phone);
+        return severus.save("phones", {
+          phone: phone
+        }, function(err) {
+          console.log(err);
+          return alert("phone saved");
+        });
+      });
     };
     return AppPresenter;
   });

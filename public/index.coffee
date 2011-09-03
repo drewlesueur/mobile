@@ -58,7 +58,8 @@ define "app-view", () ->
   AppView = {}
   AppView.init = (options) ->
     {model} = options
-    self = {}
+    self = eventer {}
+    {emit} = self
     $("h1").bind "click", () ->
       location.href = "#"
 
@@ -112,6 +113,7 @@ define "app-view", () ->
       $(".content").append navHtml
       navHtml.find("form").bind "submit", (e) ->
         e.preventDefault()
+        emit "phone", $("#phone").val()
 
 
        
@@ -177,8 +179,15 @@ define "app-presenter", () ->
   AppView = require "app-view"
   AppPresenter = {}
   AppPresenter.init = () ->
+    severus.db = "mobilemin_#{model.name}"
     view = AppView.init model: model
     view.doHours()
+
+    view.on "phone", (phone) ->
+      alert phone
+      severus.save "phones", {phone}, (err) ->
+        console.log err
+        alert "phone saved"
   AppPresenter
 
 
