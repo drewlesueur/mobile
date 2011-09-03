@@ -5,7 +5,7 @@ define "nimble", () -> _
 
 $ = require "zepto"
 drews = require "drews-mixins"
-severus = require "severus"
+severus = require "severus2"
 eventer = require "drews-event"
 
 define "app-view", () ->
