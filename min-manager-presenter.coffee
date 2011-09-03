@@ -1,6 +1,8 @@
 define "min-manager-presenter", () ->
   eventBus = require "event-bus"
   eventer = require "drews-event"
+  drews = require "drews-mixins"
+  severus = require("severus2")()
   Min = require "min"
   MinManagerView = require "min-manager-view"
   SubMinManagerView = require "sub-min-manager-view"
@@ -31,18 +33,32 @@ define "min-manager-presenter", () ->
       min.export()
 
     SubMinManagerView.on "load", (min) ->
-      currentMin = min
-      view.loadMin min
+      setCurrentMin min
 
 
     Min.find null, (err, _mins) ->
       mins = _mins
 
+
+    loadPhones = () ->
+      severus.find "phones", (err, phones) ->
+        view.setPhones _.map phones, (phone) -> phone.phone
+
     Min.on "init", (min) ->
       min.subView = SubMinManagerView.init model: min
-      currentMin = min
       view.addMin min
+   
+    setCurrentMin = (min) ->
+      currentMin = min
+      severus.db = "mobilemin_" + currentMin.get "name"
+      severus.db = "mobilemin_" + currentMin.get "name"
+      loadPhones()
       view.loadMin min
+
+    Min.on "find", (mins) ->
+      min = drews.s(mins, -1)[0]
+      setCurrentMin min
+
 
       
     Min.on "action", (action, min) ->
@@ -62,6 +78,7 @@ define "min-manager-presenter", () ->
       currentMin.set hash
       currentMin.save () ->
         currentMin.export()
+
 
 
 

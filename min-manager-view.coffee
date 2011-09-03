@@ -7,11 +7,15 @@ define 'min-manager-view', () ->
   MinManagerView.init = (self={}) ->
     self = eventer self
     {model, emit} = self
-    
+   
+    self.setPhones = (phones) ->
+      $(".phones-textarea").val phones.join "\n"
     self.addMin = (min) ->
       $('.apps').append min.subView.el
 
     self.loadMin = (min) ->
+      $(".phones-textarea").val ""
+
       $('.info-form').each () ->
         this.reset()
       _.each _.keys(min.attrs), (prop) ->
@@ -35,7 +39,6 @@ define 'min-manager-view', () ->
         prop = $(this).attr("name")
         if $(this).is('[type="checkbox"]')
           val = $(this).is(":checked")
-          console.log "#{prop} is #{val}"
         else 
           val = $(this).val()
 

@@ -6,7 +6,7 @@
     _ = require("underscore");
     nimble = require("nimble");
     drews = require("drews-mixins");
-    severus = require("severus");
+    severus = require("severus2")();
     severus.db = "mobilemin_dev";
     mobilemin = require("mobilemin");
     eventBus = require("event-bus");
@@ -32,8 +32,6 @@
           cb = function() {};
         }
         emit("saving");
-        console.log("saving");
-        console.log(JSON.stringify(attrs));
         return severus.save("mins", attrs, function(err, _mobileApp) {
           _.extend(attrs, _mobileApp);
           emit("action", "save");
@@ -63,7 +61,7 @@
           day = days[_i];
           daysHtml = {};
         }
-        return "<!doctype html>\n<html>\n<head>\n  <title>" + attrs.title + "</title>\n  <meta name=\"viewport\" content=\"width=device-width\" />\n  <link rel=\"stylesheet\" href=\"http://drewl.us:8010/styles.css\" />\n</head>\n<body>\n  <div class=\"header\">\n    <h1><img src=\"" + attrs.headerUrl + "\" class=\"header-image\"/></h1>\n    <div class=\"phone\">\n      " + attrs.phone + "\n    </div>\n    <div class=\"open\">\n    </div>\n  </div> <!-- header div -->\n  <div class=\"content\">\n  </div>\n  <script src=\"module.js\"></script>\n  <script src=\"http://inc.the.tl/underscore.js\"></script>\n  <script src=\"http://inc.the.tl/nimble.js\"></script>\n  <script src=\"http://inc.the.tl/drews-mixins.js\"></script>\n  <script src=\"zepto.min.js\"></script>\n  <script>\n    define(\"model\", function() {\n      return " + (JSON.stringify(self.attrs)) + ";\n    });\n  </script>\n  <!--<script src=\"index.js\"></script>-->\n  <script src=\"http://drewl.us:8010/router.js\"></script>\n  <script src=\"http://drewl.us:8010/index.js\"></script>\n</body>";
+        return "<!doctype html>\n<html>\n<head>\n  <title>" + attrs.title + "</title>\n  <meta name=\"viewport\" content=\"width=device-width\" />\n  <link rel=\"stylesheet\" href=\"http://drewl.us:8010/styles.css\" />\n</head>\n<body>\n  <div class=\"header\">\n    <h1><img src=\"" + attrs.headerUrl + "\" class=\"header-image\"/></h1>\n    <div class=\"phone\">\n      " + attrs.phone + "\n    </div>\n    <div class=\"open\">\n    </div>\n  </div> <!-- header div -->\n  <div class=\"content\">\n  </div>\n  <script src=\"module.js\"></script>\n  <script src=\"http://inc.the.tl/underscore.js\"></script>\n  <script src=\"http://inc.the.tl/nimble.js\"></script>\n  <script src=\"http://inc.the.tl/drews-mixins.js\"></script>\n  <script src=\"http://severus.drewl.us/severus2.js\"></script>\n  <script src=\"zepto.min.js\"></script>\n  <script src=\"http://inc.the.tl/drews-event.js\"></script>\n  <script>\n    define(\"model\", function() {\n      return " + (JSON.stringify(self.attrs)) + ";\n    });\n  </script>\n  <!--<script src=\"index.js\"></script>-->\n  <script src=\"http://drewl.us:8010/router.js\"></script>\n  <script src=\"http://drewl.us:8010/index.js\"></script>\n</body>";
       };
       self["export"] = function() {
         return mobilemin.saveSite(attrs.name, toHtml());

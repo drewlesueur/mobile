@@ -13,10 +13,14 @@
       }
       self = eventer(self);
       model = self.model, emit = self.emit;
+      self.setPhones = function(phones) {
+        return $(".phones-textarea").val(phones.join("\n"));
+      };
       self.addMin = function(min) {
         return $('.apps').append(min.subView.el);
       };
       self.loadMin = function(min) {
+        $(".phones-textarea").val("");
         $('.info-form').each(function() {
           return this.reset();
         });
@@ -46,7 +50,6 @@
           prop = $(this).attr("name");
           if ($(this).is('[type="checkbox"]')) {
             val = $(this).is(":checked");
-            console.log("" + prop + " is " + val);
           } else {
             val = $(this).val();
           }

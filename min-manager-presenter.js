@@ -1,14 +1,16 @@
 (function() {
   define("min-manager-presenter", function() {
-    var Min, MinManagerPresenter, MinManagerView, SubMinManagerView, eventBus, eventer;
+    var Min, MinManagerPresenter, MinManagerView, SubMinManagerView, drews, eventBus, eventer, severus;
     eventBus = require("event-bus");
     eventer = require("drews-event");
+    drews = require("drews-mixins");
+    severus = require("severus2")();
     Min = require("min");
     MinManagerView = require("min-manager-view");
     SubMinManagerView = require("sub-min-manager-view");
     MinManagerPresenter = {};
     MinManagerPresenter.init = function(self) {
-      var currentMin, emit, mins, view;
+      var currentMin, emit, loadPhones, mins, setCurrentMin, view;
       if (self == null) {
         self = {};
       }
@@ -24,19 +26,35 @@
         return min["export"]();
       });
       SubMinManagerView.on("load", function(min) {
-        currentMin = min;
-        return view.loadMin(min);
+        return setCurrentMin(min);
       });
       Min.find(null, function(err, _mins) {
         return mins = _mins;
       });
+      loadPhones = function() {
+        return severus.find("phones", function(err, phones) {
+          return view.setPhones(_.map(phones, function(phone) {
+            return phone.phone;
+          }));
+        });
+      };
       Min.on("init", function(min) {
         min.subView = SubMinManagerView.init({
           model: min
         });
+        return view.addMin(min);
+      });
+      setCurrentMin = function(min) {
         currentMin = min;
-        view.addMin(min);
+        severus.db = "mobilemin_" + currentMin.get("name");
+        severus.db = "mobilemin_" + currentMin.get("name");
+        loadPhones();
         return view.loadMin(min);
+      };
+      Min.on("find", function(mins) {
+        var min;
+        min = drews.s(mins, -1)[0];
+        return setCurrentMin(min);
       });
       Min.on("action", function(action, min) {});
       Min.on("remove", function(min) {

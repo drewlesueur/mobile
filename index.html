@@ -6,7 +6,7 @@
     <script src="module.js"></script>
     <link rel="stylesheet" href="http://twitter.github.com/bootstrap/assets/css/bootstrap-1.0.0.min.css">
     <!--<link rel="stylesheet" type="text/css" href="styles.css" /> -->
-    <script src="http://severus.drewl.us/severus.js"></script>
+    <script src="http://severus.drewl.us/severus2.js"></script>
     <script src="http://filebox.drewl.us/filebox.js"></script>
     <script src="http://drewl.us:8010/mobilemin.js"></script>
     <script src="jquery-1.6.min.js"></script>
@@ -41,9 +41,10 @@
           <ul class="unstyled zebra-striped">
           </ul>
         </div>
-        <div class="phone span4 column">
+        <div class="phone-area span4 column">
           <div class="screen">
           </div>
+          <textarea class="phones-textarea" rows="20"></textarea>
         </div>
         <div class="ctrls span8 column">
           <a class="new" href="#">New app</a>
@@ -83,6 +84,12 @@
                       </div>
                     </div> <!-- /clearfix -->
                     <div class="clearfix">
+                      <label for="email">Email</label>
+                      <div class="input">
+                        <input id="email" name="email" type="text">
+                      </div>
+                    </div> <!-- /clearfix -->
+                    <div class="clearfix">
                       <label for="googleMapName">Google Map Name</label>
                       <div class="input">
                         <input id="googleMapName" name="googleMapName" type="text">
@@ -116,6 +123,12 @@
                       <label for="promo">Promo Image</label>
                       <div class="input">
                         <input id="promo" name="promo" type="text">
+                      </div>
+                    </div> <!-- /clearfix -->
+                    <div class="clearfix">
+                      <label for="promoText">Promo Text</label>
+                      <div class="input">
+                        <input id="promoText" name="promoText" type="text">
                       </div>
                     </div> <!-- /clearfix -->
                   </fieldset>
@@ -254,9 +267,6 @@
             </tr>
           </thead>
           <tbody>
-            <tr>
-              <td></td>
-            </tr>
           </tbody>
         </table>
       </div>

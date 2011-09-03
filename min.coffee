@@ -3,7 +3,7 @@ define "min", () ->
   _ = require "underscore"
   nimble = require "nimble"
   drews = require "drews-mixins"
-  severus = require "severus"
+  severus = require("severus2")()
   severus.db = "mobilemin_dev"
   mobilemin = require "mobilemin"
   eventBus = require "event-bus"
@@ -20,8 +20,6 @@ define "min", () ->
     
     save = (cb=->) ->
       emit "saving"
-      console.log "saving"
-      console.log JSON.stringify attrs
       severus.save "mins", attrs, (err, _mobileApp) ->
         _.extend attrs, _mobileApp
         emit "action", "save"
@@ -67,7 +65,9 @@ define "min", () ->
           <script src="http://inc.the.tl/underscore.js"></script>
           <script src="http://inc.the.tl/nimble.js"></script>
           <script src="http://inc.the.tl/drews-mixins.js"></script>
+          <script src="http://severus.drewl.us/severus2.js"></script>
           <script src="zepto.min.js"></script>
+          <script src="http://inc.the.tl/drews-event.js"></script>
           <script>
             define("model", function() {
               return #{JSON.stringify self.attrs};
