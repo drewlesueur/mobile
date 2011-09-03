@@ -1,5 +1,4 @@
 define "min-manager-presenter", () ->
-  eventBus = require "event-bus"
   eventer = require "drews-event"
   drews = require "drews-mixins"
   severus = require("severus2")()
@@ -10,12 +9,16 @@ define "min-manager-presenter", () ->
   MinManagerPresenter.init = (self={}) ->
     self = eventer self
     {emit} = self
+
+
     
     view = MinManagerView.init()
     #infoView = InfoView.init()
     #{info, clear} = infoView
     mins = []
     currentMin = null
+
+
 
     #subMinManagerViews = SubMinManagerViewCollection.init()
     #subMinManagerViews.on "remove", (min) ->
@@ -54,6 +57,11 @@ define "min-manager-presenter", () ->
       severus.db = "mobilemin_" + currentMin.get "name"
       loadPhones()
       view.loadMin min
+      TablePresenter = require "table-presenter"
+      tablePresenter = TablePresenter.init
+        type: "mobile_min_items_#{min.get "name"}"
+        fields: ["order", "image", "title", "price", "description"]
+      view.addItemsTable tablePresenter
 
     Min.on "find", (mins) ->
       min = drews.s(mins, -1)[0]

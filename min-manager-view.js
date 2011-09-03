@@ -1,9 +1,8 @@
 (function() {
   define('min-manager-view', function() {
-    var MinManagerView, eventBus, eventer, nimble, _;
+    var MinManagerView, eventer, nimble, _;
     _ = require("underscore");
     nimble = require("nimble");
-    eventBus = require("event-bus");
     eventer = require("drews-event");
     MinManagerView = eventer({});
     MinManagerView.init = function(self) {
@@ -13,6 +12,9 @@
       }
       self = eventer(self);
       model = self.model, emit = self.emit;
+      self.addItemsTable = function(tablePresenter) {
+        return $(".items").empty().append(tablePresenter.getEl());
+      };
       self.setPhones = function(phones) {
         return $(".phones-textarea").val(phones.join("\n"));
       };

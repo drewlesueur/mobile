@@ -1,7 +1,6 @@
 (function() {
   define("min-manager-presenter", function() {
-    var Min, MinManagerPresenter, MinManagerView, SubMinManagerView, drews, eventBus, eventer, severus;
-    eventBus = require("event-bus");
+    var Min, MinManagerPresenter, MinManagerView, SubMinManagerView, drews, eventer, severus;
     eventer = require("drews-event");
     drews = require("drews-mixins");
     severus = require("severus2")();
@@ -45,11 +44,18 @@
         return view.addMin(min);
       });
       setCurrentMin = function(min) {
+        var TablePresenter, tablePresenter;
         currentMin = min;
         severus.db = "mobilemin_" + currentMin.get("name");
         severus.db = "mobilemin_" + currentMin.get("name");
         loadPhones();
-        return view.loadMin(min);
+        view.loadMin(min);
+        TablePresenter = require("table-presenter");
+        tablePresenter = TablePresenter.init({
+          type: "mobile_min_items_" + (min.get("name")),
+          fields: ["order", "image", "title", "price", "description"]
+        });
+        return view.addItemsTable(tablePresenter);
       };
       Min.on("find", function(mins) {
         var min;

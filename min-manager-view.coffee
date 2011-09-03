@@ -1,13 +1,17 @@
 define 'min-manager-view', () ->
   _ = require "underscore"
   nimble = require "nimble"
-  eventBus = require "event-bus" 
   eventer = require "drews-event"
   MinManagerView = eventer {}
   MinManagerView.init = (self={}) ->
     self = eventer self
     {model, emit} = self
    
+    self.addItemsTable = (tablePresenter) ->
+      $(".items").empty().append tablePresenter.getEl()
+
+      
+
     self.setPhones = (phones) ->
       $(".phones-textarea").val phones.join "\n"
     self.addMin = (min) ->
