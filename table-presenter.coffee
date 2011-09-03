@@ -1,4 +1,4 @@
-define "table-presenter", (type) ->
+define "table-presenter", () ->
   eventer = require "drews-event"
   drews = require "drews-mixins"
   TableView = require "table-view"
@@ -9,14 +9,14 @@ define "table-presenter", (type) ->
   # tablePresenter = TablePresenter.init type: "menu", fields: 
   TablePresenter.init = (self={}) ->
     self = eventer self
-    {emit, type, fields} = self
-    Obj = rowMaker type
+    {emit, type, fields, db} = self
+    Obj = rowMaker
+      db: db
+      type: type
     view = TableView.init fields
     objs = []
 
     Obj.on "init", (obj) ->
-      console.log "inited"
-      console.log obj
       obj.view = RowView.init model: obj, fields: fields, emittee: view
       view.addObj obj
       

@@ -52,7 +52,8 @@
         view.loadMin(min);
         TablePresenter = require("table-presenter");
         tablePresenter = TablePresenter.init({
-          type: "mobile_min_items_" + (min.get("name")),
+          type: "items",
+          db: "mobilemin_" + (min.get("name")),
           fields: ["order", "image", "title", "price", "description"]
         });
         return view.addItemsTable(tablePresenter);

@@ -1,14 +1,15 @@
 (function() {
   var __slice = Array.prototype.slice;
   define("row-maker", function() {
-    return function(type) {
-      var $, Row, drews, eventer, nimble, severus, _;
+    return function(_arg) {
+      var $, Row, db, drews, eventer, nimble, severus, type, _;
+      type = _arg.type, db = _arg.db;
       $ = require("jquery");
       _ = require("underscore");
       nimble = require("nimble");
       drews = require("drews-mixins");
       severus = require("severus2")();
-      severus.db = type;
+      severus.db = db;
       eventer = require("drews-event");
       Row = eventer({});
       Row.init = function(attrs) {
@@ -31,7 +32,7 @@
             cb = function() {};
           }
           emit("saving");
-          return severus.save("Rows", attrs, function(err, _mobileApp) {
+          return severus.save(type, attrs, function(err, _mobileApp) {
             _.extend(attrs, _mobileApp);
             emit("action", "save");
             emit("save");
@@ -44,7 +45,7 @@
             cb = function() {};
           }
           emit("removing");
-          return severus.remove("Rows", attrs._id, function() {
+          return severus.remove(type, attrs._id, function() {
             var args;
             args = 1 <= arguments.length ? __slice.call(arguments, 0) : [];
             emit("remove");
@@ -82,7 +83,7 @@
         var args, cb, models, _i;
         args = 2 <= arguments.length ? __slice.call(arguments, 0, _i = arguments.length - 1) : (_i = 0, []), cb = arguments[_i++];
         models = [];
-        return severus.find.apply(severus, ["Rows"].concat(__slice.call(args), [function(err, models) {
+        return severus.find.apply(severus, [type].concat(__slice.call(args), [function(err, models) {
           var model, _j, _len;
           for (_j = 0, _len = models.length; _j < _len; _j++) {
             model = models[_j];

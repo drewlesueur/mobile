@@ -1,10 +1,10 @@
-define "row-maker", () -> (type) ->
+define "row-maker", () -> ({type, db}) ->
   $ = require "jquery" 
   _ = require "underscore"
   nimble = require "nimble"
   drews = require "drews-mixins"
   severus = require("severus2")()
-  severus.db = type 
+  severus.db = db
   eventer = require "drews-event"
   Row = eventer {}
   Row.init = (attrs={}) ->
@@ -18,7 +18,7 @@ define "row-maker", () -> (type) ->
     
     save = (cb=->) ->
       emit "saving"
-      severus.save "Rows", attrs, (err, _mobileApp) ->
+      severus.save type, attrs, (err, _mobileApp) ->
         _.extend attrs, _mobileApp
         emit "action", "save"
         emit "save"
@@ -27,7 +27,7 @@ define "row-maker", () -> (type) ->
 
     remove = (cb=->) ->
       emit "removing"
-      severus.remove "Rows", attrs._id, (args...) ->
+      severus.remove type, attrs._id, (args...) ->
         emit "remove"
         cb args...
     self.remove = remove
@@ -94,7 +94,7 @@ define "row-maker", () -> (type) ->
 
   Row.find = (args..., cb) ->
     models = []
-    severus.find "Rows", args..., (err, models) ->
+    severus.find type, args..., (err, models) ->
       for model in models
         models.push Row.init model
       Row.emit "find", models, Row

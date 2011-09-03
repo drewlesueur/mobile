@@ -1,5 +1,5 @@
 (function() {
-  define("table-presenter", function(type) {
+  define("table-presenter", function() {
     var RowView, TablePresenter, TableView, drews, eventer, rowMaker;
     eventer = require("drews-event");
     drews = require("drews-mixins");
@@ -8,18 +8,19 @@
     TablePresenter = {};
     rowMaker = require("row-maker");
     TablePresenter.init = function(self) {
-      var Obj, emit, fields, objs, view;
+      var Obj, db, emit, fields, objs, type, view;
       if (self == null) {
         self = {};
       }
       self = eventer(self);
-      emit = self.emit, type = self.type, fields = self.fields;
-      Obj = rowMaker(type);
+      emit = self.emit, type = self.type, fields = self.fields, db = self.db;
+      Obj = rowMaker({
+        db: db,
+        type: type
+      });
       view = TableView.init(fields);
       objs = [];
       Obj.on("init", function(obj) {
-        console.log("inited");
-        console.log(obj);
         obj.view = RowView.init({
           model: obj,
           fields: fields,
