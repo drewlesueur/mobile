@@ -44,7 +44,8 @@ pg = (p, f) ->
   app.get p, f
 
 # Routes
-
+#TODO: make it so it just sends the JSON?, not the html
+#would have to change the min.coffee file in the other branch
 saveSite = (name, html, cb) ->
   if name.length < 1 then return cb "bad name"
   #command = "rm -r /home/drew/sites/#{name}"

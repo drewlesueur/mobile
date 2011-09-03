@@ -6,6 +6,9 @@
 .header-img {
   height: 50px;
 }
+.promo {
+  width: 320px;
+}
 
 .hidden {
   display: none;
@@ -15,9 +18,13 @@
   clear: both;
 }
 
-body {
+body, input {
   font-family: Helvetica, Arial, sans-serif;
   font-size: 1.2em;
+}
+
+#phone {
+  width: 200px;
 }
 
 .home a {

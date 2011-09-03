@@ -1,13 +1,18 @@
 (function() {
-  var $, AppPresenter, drews;
+  var $, AppPresenter, drews, eventer, severus;
   define("zepto", function() {
     return Zepto;
   });
   define("underscore", function() {
     return _;
   });
+  define("nimble", function() {
+    return _;
+  });
   $ = require("zepto");
   drews = require("drews-mixins");
+  severus = require("severus");
+  eventer = require("drews-event");
   define("app-view", function() {
     var AppView, Router, days, daysMonday, getDayRow, timeToMili;
     days = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"];
@@ -74,8 +79,11 @@
           };
           return navHtml += "<div>\n<a href=\"#" + navItem + "\">" + (_.capitalize(navItem)) + "</a>\n</div>";
         });
-        navHtml = "<div class=\"home tile hidden\">\n  " + navHtml + "\n</div>";
+        navHtml = $("<div class=\"home tile hidden\">\n  <div class=\"promo\">\n    <img src=\"" + model.promo + "\" />\n    <div class=\"promo-text\">\n      " + model.promoText + "\n    </div>\n    <form class=\"phone-form\" action=\"/\" method=\"POST\">\n      <div class=\"clearfix\">\n        <div class=\"input\">\n          <input id=\"phone\" name=\"phone\" type=\"text\">\n          <input type=\"submit\" value=\"send\">\n        </div>\n      </div> <!-- /clearfix -->\n    </form>\n  </div>\n  " + navHtml + "\n</div>");
         $(".content").append(navHtml);
+        navHtml.find("form").bind("submit", function(e) {
+          return e.preventDefault();
+        });
         router = Router.init(routes);
         return router.initHashWatch();
       };

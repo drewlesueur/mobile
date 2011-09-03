@@ -1,8 +1,12 @@
 define "zepto", () -> Zepto
 define "underscore", () -> _
+define "nimble", () -> _
+
 
 $ = require "zepto"
 drews = require "drews-mixins"
+severus = require "severus"
+eventer = require "drews-event"
 
 define "app-view", () ->
   days = [
@@ -86,12 +90,31 @@ define "app-view", () ->
           </div>
         """
 
-      navHtml = """
+      navHtml = $ """
         <div class="home tile hidden">
+          <div class="promo">
+            <img src="#{model.promo}" />
+            <div class="promo-text">
+              #{model.promoText}
+            </div>
+            <form class="phone-form" action="/" method="POST">
+              <div class="clearfix">
+                <div class="input">
+                  <input id="phone" name="phone" type="text">
+                  <input type="submit" value="send">
+                </div>
+              </div> <!-- /clearfix -->
+            </form>
+          </div>
           #{navHtml}
         </div>
       """
       $(".content").append navHtml
+      navHtml.find("form").bind "submit", (e) ->
+        e.preventDefault()
+
+
+       
       router = Router.init routes
       router.initHashWatch()
 
