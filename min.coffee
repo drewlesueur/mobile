@@ -67,7 +67,7 @@ define "min", () ->
             </div>
             <div class="second-bar">
               <div class="crossStreets left">
-                <a href="#directions">
+                <a href="#map">
                 #{attrs.crossStreets}
                 </a>
               </div>
