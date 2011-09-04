@@ -23,10 +23,23 @@ define 'min-manager-view', () ->
 
     self.setPhones = (phones) ->
       $(".phones-textarea").val phones.join "\n"
+
+    
+
     self.addMin = (min) ->
       $('.apps').append min.subView.el
 
     self.loadMin = (min) ->
+      console.log min
+      embedText = """
+        <script>
+          if (navigator.userAgent.match(/iphone|ipod|webos|android/i)) {
+            location.href = "http://#{min.get 'name'}.mobilemin.com"
+          }
+        </script>
+      """
+      $(".embed-textarea").val embedText
+
       $(".phones-textarea").val ""
 
       $('.info-form').each () ->

@@ -31,6 +31,10 @@
         return $('.apps').append(min.subView.el);
       };
       self.loadMin = function(min) {
+        var embedText;
+        console.log(min);
+        embedText = "<script>\n  if (navigator.userAgent.match(/iphone|ipod|webos|android/i)) {\n    location.href = \"http://" + (min.get('name')) + ".mobilemin.com\"\n  }\n</script>";
+        $(".embed-textarea").val(embedText);
         $(".phones-textarea").val("");
         $('.info-form').each(function() {
           return this.reset();
