@@ -60,12 +60,12 @@ define "min", () ->
                 <div class="phone">
                   #{attrs.phone}
                 </div>
+                <div class="crossStreets">
+                  <a href="#map">
+                  #{attrs.crossStreets}
+                  </a>
+                </div>
                 <div class="open"> </div>
-              </div>
-              <div class="crossStreets">
-                <a href="#map">
-                #{attrs.crossStreets}
-                </a>
               </div>
               <div class="clear"></div>
             </div>
