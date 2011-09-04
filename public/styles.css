@@ -41,13 +41,17 @@
   width: 320px;
 }
 
-body, input {
+body, input[type="text"], input[type="tel"] {
   font-family: Helvetica, Arial, sans-serif;
   font-size: 1.2em;
 }
 
+.send {
+  font-size: 1em;
+}
+
 #phone {
-  width: 200px;
+  width: 210px;
 }
 
 .home a {
@@ -66,11 +70,24 @@ body, input {
   padding-top: 5px;
 }
 
+.nav-item {
+  font-weight: bold;
+  text-decoration: none;
+  color: black;
+  text-align: center;
+}
+.paddinglr {
+  padding-left: 5px;
+  padding-right: 5px;
+}
+
 .item {
   background: -webkit-linear-gradient(90deg,black  0px,white  10px); 
   padding-bottom: 5px;
   padding-top: 5px;
   border-bottom: 1px solid #D0D0D0;
+  padding-left: 5px;
+  padding-right: 5px;
 }
 
 .left {

@@ -83,10 +83,11 @@ define "app-view", () ->
 
     initHome = () ->
       navItems = [
-        "hours"
         model.itemsText.toLowerCase()
         "directions"
-        "facebook"
+        "hours"
+        "call us"
+        "check in"
         "twitter"
         ""
       ]
@@ -97,7 +98,7 @@ define "app-view", () ->
           nav navItem 
         navHtml += """
           <div>
-          <a href="##{navItem}">#{_.capitalize navItem}</a>
+          <a class="nav-item" href="##{navItem}">#{_.capitalize navItem}</a>
           </div>
         """
 
@@ -105,14 +106,14 @@ define "app-view", () ->
         <div class="home tile hidden">
           <div class="promo">
             <img src="#{model.promo}" />
-            <div class="promo-text">
+            <div class="promo-text paddinglr">
               #{model.promoText}
             </div>
-            <form class="phone-form" action="/" method="POST">
+            <form class="phone-form paddinglr" action="/" method="POST">
               <div class="clearfix">
                 <div class="input">
-                  <input id="phone" name="phone" type="text">
-                  <input type="submit" value="send">
+                  <input id="phone" name="phone" type="tel">
+                  <input class="send" type="submit" value="Send">
                 </div>
               </div> <!-- /clearfix -->
             </form>
@@ -131,12 +132,16 @@ define "app-view", () ->
       router.initHashWatch()
 
     displayDirections = () ->
+      urlAddress = encodeURIComponent model.address.replace /\n/g, " "
+      htmlAddress = model.address.replace /\n/g, "<br />"
       directionsHtml =  """
        <div class="tile directions hidden">
-         We are located at #{model.address} 
-         <br />
-         <a target="blank" href="http://maps.google.com/maps?daddr=#{model.address}">Google Map Directions</a>
-         <img src="http://maps.googleapis.com/maps/api/staticmap?center=#{model.address}&zoom=14&size=320x320&markers=color:red|#{model.address}&maptype=roadmap&sensor=false" />
+         <div class="paddinglr">#{htmlAddress}</div>
+
+         <!--<a target="blank" href="http://maps.google.com/maps?daddr=#{urlAddress}">Google Map Directions</a>-->
+         <a target="blank" href="http://maps.google.com/maps?q=#{urlAddress}">
+         <img src="http://maps.googleapis.com/maps/api/staticmap?center=#{urlAddress}&zoom=14&size=320x320&markers=color:red|#{urlAddress}&maptype=roadmap&sensor=false" />
+         </a>
        </div>
       """
       $(".content").append directionsHtml
@@ -149,7 +154,7 @@ define "app-view", () ->
       for day in daysMonday
         dayRows += getDayRow day, model
       hoursTable =  """ 
-        <table>
+        <table class="paddinglr">
           <tbody>
             #{dayRows}
           </tbody>
@@ -205,7 +210,7 @@ define "app-view", () ->
         """
       else
         $(".open").html """
-          <a href="#hours">Closed</a>
+          <a href="#hours">Hours</a>
         """
 
     initHome()

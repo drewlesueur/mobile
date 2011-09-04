@@ -78,16 +78,16 @@
       };
       initHome = function() {
         var navHtml, navItems, router, routes;
-        navItems = ["hours", model.itemsText.toLowerCase(), "directions", "facebook", "twitter", ""];
+        navItems = [model.itemsText.toLowerCase(), "directions", "hours", "call us", "check in", "twitter", ""];
         routes = {};
         navHtml = "";
         _.each(navItems, function(navItem) {
           routes[navItem] = function() {
             return nav(navItem);
           };
-          return navHtml += "<div>\n<a href=\"#" + navItem + "\">" + (_.capitalize(navItem)) + "</a>\n</div>";
+          return navHtml += "<div>\n<a class=\"nav-item\" href=\"#" + navItem + "\">" + (_.capitalize(navItem)) + "</a>\n</div>";
         });
-        navHtml = $("<div class=\"home tile hidden\">\n  <div class=\"promo\">\n    <img src=\"" + model.promo + "\" />\n    <div class=\"promo-text\">\n      " + model.promoText + "\n    </div>\n    <form class=\"phone-form\" action=\"/\" method=\"POST\">\n      <div class=\"clearfix\">\n        <div class=\"input\">\n          <input id=\"phone\" name=\"phone\" type=\"text\">\n          <input type=\"submit\" value=\"send\">\n        </div>\n      </div> <!-- /clearfix -->\n    </form>\n  </div>\n  " + navHtml + "\n</div>");
+        navHtml = $("<div class=\"home tile hidden\">\n  <div class=\"promo\">\n    <img src=\"" + model.promo + "\" />\n    <div class=\"promo-text paddinglr\">\n      " + model.promoText + "\n    </div>\n    <form class=\"phone-form paddinglr\" action=\"/\" method=\"POST\">\n      <div class=\"clearfix\">\n        <div class=\"input\">\n          <input id=\"phone\" name=\"phone\" type=\"tel\">\n          <input class=\"send\" type=\"submit\" value=\"Send\">\n        </div>\n      </div> <!-- /clearfix -->\n    </form>\n  </div>\n  " + navHtml + "\n</div>");
         $(".content").append(navHtml);
         navHtml.find("form").bind("submit", function(e) {
           e.preventDefault();
@@ -97,8 +97,10 @@
         return router.initHashWatch();
       };
       displayDirections = function() {
-        var directionsHtml;
-        directionsHtml = "<div class=\"tile directions hidden\">\n  We are located at " + model.address + " \n  <br />\n  <a target=\"blank\" href=\"http://maps.google.com/maps?daddr=" + model.address + "\">Google Map Directions</a>\n  <img src=\"http://maps.googleapis.com/maps/api/staticmap?center=" + model.address + "&zoom=14&size=320x320&markers=color:red|" + model.address + "&maptype=roadmap&sensor=false\" />\n</div>";
+        var directionsHtml, htmlAddress, urlAddress;
+        urlAddress = encodeURIComponent(model.address.replace(/\n/g, " "));
+        htmlAddress = model.address.replace(/\n/g, "<br />");
+        directionsHtml = "<div class=\"tile directions hidden\">\n  <div class=\"paddinglr\">" + htmlAddress + "</div>\n\n  <!--<a target=\"blank\" href=\"http://maps.google.com/maps?daddr=" + urlAddress + "\">Google Map Directions</a>-->\n  <a target=\"blank\" href=\"http://maps.google.com/maps?q=" + urlAddress + "\">\n  <img src=\"http://maps.googleapis.com/maps/api/staticmap?center=" + urlAddress + "&zoom=14&size=320x320&markers=color:red|" + urlAddress + "&maptype=roadmap&sensor=false\" />\n  </a>\n</div>";
         return $(".content").append(directionsHtml);
       };
       displayDirections();
@@ -109,7 +111,7 @@
           day = daysMonday[_i];
           dayRows += getDayRow(day, model);
         }
-        hoursTable = " \n<table>\n  <tbody>\n    " + dayRows + "\n  </tbody>\n</table>";
+        hoursTable = " \n<table class=\"paddinglr\">\n  <tbody>\n    " + dayRows + "\n  </tbody>\n</table>";
         return $(".content").append("<div class=\"hours tile hidden\">" + hoursTable + "</hours>");
       };
       displayHours();
@@ -145,7 +147,7 @@
         if (time >= openTime && time <= closeTime) {
           return $(".open").html("Open 'til <a href=\"#hours\">" + closeText + "</a>");
         } else {
-          return $(".open").html("<a href=\"#hours\">Closed</a>");
+          return $(".open").html("<a href=\"#hours\">Hours</a>");
         }
       };
       initHome();
