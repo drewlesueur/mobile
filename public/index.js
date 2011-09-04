@@ -56,7 +56,7 @@
     Router = require("router");
     AppView = {};
     AppView.init = function(options) {
-      var addItems, addSpecials, displayDirections, displayHours, displayItems, displaySpecials, emit, extraStyles, initHome, model, nav, self, showSpecials;
+      var addItems, addSpecials, displayDirections, displayHours, displayItems, displaySpecials, emit, extraStyles, initHome, model, nav, navItems, self, showPage;
       model = options.model;
       self = eventer({});
       emit = self.emit;
@@ -65,11 +65,25 @@
       $("h1").bind("click", function() {
         return location.href = "#";
       });
-      showSpecials = function() {
+      showPage = function(className) {
         $(".content .tile").hide();
-        return $(".content .tile.specials").show();
+        $(".content .tile." + className).show();
+        if (className === "home") {
+          className = "";
+        }
+        return $(".headline").text(navItems[className]);
       };
       $(".content").append("<div class=\"clear\"></div>");
+      navItems = {
+        specials: "Specials",
+        menu: model.itemsText,
+        map: "Map",
+        hours: "Hours",
+        call: "Call Us",
+        facebook: "facebook",
+        twitter: "Twitter",
+        "": model.headline
+      };
       nav = self.nav = function(className) {
         var existingPhone, phone;
         scrollTo(0, 0, 1);
@@ -79,9 +93,10 @@
         if (className === "specials") {
           existingPhone = localStorage.existingPhone;
           if (existingPhone != null ? existingPhone.match(/[\d]{10}/) : void 0) {
-            return showSpecials();
+            showPage("specials");
+            return;
           }
-          phone = prompt("Sign up for " + model.title + " Specials! Enter your 10 digit phone number.");
+          phone = prompt("Enter your 10 digit phone number to view the Specials!");
           if (phone) {
             phone = phone.replace(/[^\d]/g, "");
             if (!phone.match(/[\d]{10}/)) {
@@ -91,27 +106,16 @@
             }
             emit("phone", phone);
             localStorage.existingPhone = phone;
-            return showSpecials();
+            return showPage("specials");
           } else {
             return location.href = "#";
           }
         } else {
-          $(".content .tile").hide();
-          return $(".content .tile." + className).show();
+          return showPage(className);
         }
       };
       initHome = function() {
-        var navHtml, navItems, promoImage, router, routes;
-        navItems = {
-          specials: "specials",
-          menu: model.itemsText.toLowerCase(),
-          map: "map",
-          hours: "hours",
-          call: "call us",
-          facebook: "facebook",
-          twitter: "twitter",
-          "": ""
-        };
+        var navHtml, promoImage, router, routes;
         routes = {};
         navHtml = "";
         _.each(navItems, function(navItemText, navItem) {
@@ -121,7 +125,7 @@
           routes[navItem] = function() {
             return nav(navItem);
           };
-          if (navItemText === "") {
+          if (navItem === "") {
             return;
           }
           href = "#" + navItem;

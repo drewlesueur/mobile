@@ -127,21 +127,37 @@ define "app-view", () ->
     $("h1").bind "click", () ->
       location.href = "#"
 
-    showSpecials = () ->
+    showPage = (className) ->
       $(".content .tile").hide()
-      $(".content .tile.specials").show()
+      $(".content .tile.#{className}").show()
+      if className == "home"
+        className = ""
+      $(".headline").text navItems[className]
 
     $(".content").append """<div class="clear"></div>"""
+
+
+    navItems =
+      specials: "Specials"
+      menu: model.itemsText
+      map: "Map"
+      hours: "Hours"
+      call: "Call Us"
+      facebook:"facebook"
+      twitter: "Twitter"
+      "": model.headline
+
     nav = self.nav = (className) ->
-      
       scrollTo 0, 0, 1
+
       if className == ""
         className = "home"
       if className == "specials"
         existingPhone = localStorage.existingPhone
         if existingPhone?.match /[\d]{10}/
-          return showSpecials()
-        phone = prompt("Sign up for #{model.title} Specials! Enter your 10 digit phone number.")
+          showPage "specials"
+          return
+        phone = prompt("Enter your 10 digit phone number to view the Specials!")
 
         if phone
           phone = phone.replace /[^\d]/g, ""
@@ -151,25 +167,15 @@ define "app-view", () ->
             return
           emit "phone", phone
           localStorage.existingPhone = phone
-          showSpecials()
+          showPage "specials"
         else
           location.href = "#"
       else
-        $(".content .tile").hide()
-        $(".content .tile.#{className}").show()
+        showPage className
 
      
 
     initHome = () ->
-      navItems =
-        specials: "specials"
-        menu: model.itemsText.toLowerCase()
-        map: "map"
-        hours: "hours"
-        call: "call us"
-        facebook:"facebook"
-        twitter: "twitter"
-        "": ""
 
       routes = {}
       navHtml = ""
@@ -179,7 +185,7 @@ define "app-view", () ->
         routes[navItem] = () -> 
           nav navItem 
 
-        if navItemText == ""
+        if navItem == ""
           return
         href = "#" + navItem
         if navItem == "call"
