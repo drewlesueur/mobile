@@ -11,7 +11,7 @@
   });
   $ = require("zepto");
   drews = require("drews-mixins");
-  severus = require("severus2");
+  severus = require("severus2")();
   eventer = require("drews-event");
   define("app-view", function() {
     var AppView, Router, days, daysMonday, getDayRow, timeToMili;
@@ -54,7 +54,7 @@
     Router = require("router");
     AppView = {};
     AppView.init = function(options) {
-      var displayDirections, displayHours, emit, initHome, model, nav, self;
+      var addItems, displayDirections, displayHours, displayItems, emit, initHome, model, nav, self;
       model = options.model;
       self = eventer({});
       emit = self.emit;
@@ -106,6 +106,22 @@
         return $(".content").append("<div class=\"hours tile hidden\">" + hoursTable + "</hours>");
       };
       displayHours();
+      displayItems = function() {
+        var day, dayRows, itemsTable, _i, _len;
+        dayRows = "";
+        for (_i = 0, _len = daysMonday.length; _i < _len; _i++) {
+          day = daysMonday[_i];
+          dayRows += getDayRow(day, model);
+        }
+        itemsTable = " \n<div class=\"items-table\">\n\n</div>";
+        return $(".content").append("<div class=\"items tile hidden\">" + itemsTable + "</hours>");
+      };
+      displayItems();
+      addItems = self.addItems = function(items) {
+        return _.each(items, function(item) {
+          return $(".content .items").append($("<div class=\"item\">\n    <img style=\"float:left;\" src=\"" + (item.url || model.headerUrl) + "\" />\n    <div class=\"title\">" + (item.title || "") + "</div>\n    <div class=\"price\">" + (item.price || "") + "</div>\n  <div class=\"clear\"></div>\n    <div class=\"description\">" + (item.description || "") + "</div>\n</div>"));
+        });
+      };
       self.doHours = function() {
         var closeText, closeTime, date, day, isEvenOpen, openText, openTime, time;
         date = new Date();
@@ -142,6 +158,11 @@
         model: model
       });
       view.doHours();
+      severus.find("items", function(err, items) {
+        console.log("here are the items");
+        console.log(items);
+        return view.addItems(items);
+      });
       return view.on("phone", function(phone) {
         alert(phone);
         return severus.save("phones", {

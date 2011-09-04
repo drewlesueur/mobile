@@ -5,7 +5,7 @@ define "nimble", () -> _
 
 $ = require "zepto"
 drews = require "drews-mixins"
-severus = require "severus2"
+severus = require("severus2")()
 eventer = require "drews-event"
 
 define "app-view", () ->
@@ -138,8 +138,6 @@ define "app-view", () ->
       dayRows = ""
       for day in daysMonday
         dayRows += getDayRow day, model
-
-     
       hoursTable =  """ 
         <table>
           <tbody>
@@ -150,8 +148,34 @@ define "app-view", () ->
       $(".content").append """
         <div class="hours tile hidden">#{hoursTable}</hours>
       """
-
     displayHours()
+
+
+    displayItems = () ->
+      dayRows = ""
+      for day in daysMonday
+        dayRows += getDayRow day, model
+      itemsTable =  """ 
+        <div class="items-table">
+
+        </div>
+      """
+      $(".content").append """
+        <div class="items tile hidden">#{itemsTable}</hours>
+      """
+    displayItems()
+
+    addItems = self.addItems = (items) ->
+      _.each items, (item) ->
+        $(".content .items").append $ """
+          <div class="item">
+              <img style="float:left;" src="#{item.url or model.headerUrl}" />
+              <div class="title">#{item.title or ""}</div>
+              <div class="price">#{item.price or ""}</div>
+            <div class="clear"></div>
+              <div class="description">#{item.description or ""}</div>
+          </div>
+        """
 
     self.doHours = () ->
       date = new Date()
@@ -183,11 +207,19 @@ define "app-presenter", () ->
     view = AppView.init model: model
     view.doHours()
 
+    severus.find "items", (err, items) ->
+      console.log "here are the items"
+      console.log items
+      view.addItems items
+
+
+
     view.on "phone", (phone) ->
       alert phone
       severus.save "phones", {phone}, (err) ->
         console.log err
         alert "phone saved"
+
   AppPresenter
 
 
