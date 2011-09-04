@@ -12,8 +12,17 @@
       }
       self = eventer(self);
       model = self.model, emit = self.emit;
+      self.clearItems = function(tablePresenter) {
+        return $(".items").empty();
+      };
       self.addItemsTable = function(tablePresenter) {
         return $(".items").empty().append(tablePresenter.getEl());
+      };
+      self.addItemsText = function(text) {
+        return $(".items").append("<div style='font-weight: bold;'>" + text + "</div>");
+      };
+      self.addAdditionalItemsTable = function(tablePresenter) {
+        return $(".items").append(tablePresenter.getEl());
       };
       self.setPhones = function(phones) {
         return $(".phones-textarea").val(phones.join("\n"));

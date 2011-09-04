@@ -44,19 +44,28 @@
         return view.addMin(min);
       });
       setCurrentMin = function(min) {
-        var TablePresenter, tablePresenter;
+        var TablePresenter, menuTablePresenter, specialsTablePresenter;
         currentMin = min;
         severus.db = "mobilemin_" + currentMin.get("name");
         severus.db = "mobilemin_" + currentMin.get("name");
         loadPhones();
         view.loadMin(min);
         TablePresenter = require("table-presenter");
-        tablePresenter = TablePresenter.init({
+        menuTablePresenter = TablePresenter.init({
           type: "items",
           db: "mobilemin_" + (min.get("name")),
           fields: ["order", "image", "title", "price", "description"]
         });
-        return view.addItemsTable(tablePresenter);
+        view.clearItems();
+        view.addItemsText("Menu");
+        view.addAdditionalItemsTable(menuTablePresenter);
+        specialsTablePresenter = TablePresenter.init({
+          type: "specials",
+          db: "mobilemin_" + (min.get("name")),
+          fields: ["order", "image", "title", "price", "description"]
+        });
+        view.addItemsText("Specials");
+        return view.addAdditionalItemsTable(specialsTablePresenter);
       };
       Min.on("find", function(mins) {
         var min;

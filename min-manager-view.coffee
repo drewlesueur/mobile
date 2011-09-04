@@ -7,8 +7,17 @@ define 'min-manager-view', () ->
     self = eventer self
     {model, emit} = self
    
+    self.clearItems = (tablePresenter) ->
+      $(".items").empty()
+
     self.addItemsTable = (tablePresenter) ->
       $(".items").empty().append tablePresenter.getEl()
+
+    self.addItemsText = (text) ->
+      $(".items").append  "<div style='font-weight: bold;'>#{text}</div>"
+
+    self.addAdditionalItemsTable = (tablePresenter) ->
+      $(".items").append tablePresenter.getEl()
 
       
 

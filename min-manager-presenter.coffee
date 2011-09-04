@@ -58,11 +58,20 @@ define "min-manager-presenter", () ->
       loadPhones()
       view.loadMin min
       TablePresenter = require "table-presenter"
-      tablePresenter = TablePresenter.init
+      menuTablePresenter = TablePresenter.init
         type: "items"
         db: "mobilemin_#{min.get "name"}"
         fields: ["order", "image", "title", "price", "description"]
-      view.addItemsTable tablePresenter
+      view.clearItems()
+      view.addItemsText "Menu"
+      view.addAdditionalItemsTable menuTablePresenter
+
+      specialsTablePresenter = TablePresenter.init
+        type: "specials"
+        db: "mobilemin_#{min.get "name"}"
+        fields: ["order", "image", "title", "price", "description"]
+      view.addItemsText "Specials"
+      view.addAdditionalItemsTable specialsTablePresenter
 
     Min.on "find", (mins) ->
       min = drews.s(mins, -1)[0]
