@@ -18,7 +18,7 @@
     days = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"];
     daysMonday = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"];
     timeToMili = function(time, date) {
-      var am, hours, minutes, newDate, pm;
+      var am, hours, minutes, newDate, pm, ret;
       if (date == null) {
         date = new Date();
       }
@@ -37,10 +37,12 @@
         hours = time;
       }
       if (pm) {
-        hours += 12;
+        hours = hours - 0 + 12;
       }
+      console.log(pm);
+      console.log(hours);
       newDate = new Date(date.getFullYear(), date.getMonth(), date.getDate(), hours, minutes, 0, 0);
-      return newDate.getTime();
+      return ret = newDate.getTime();
     };
     getDayRow = function(day, model) {
       var dayHtml, hoursHtml;
@@ -66,12 +68,17 @@
         if (className === "") {
           className = "home";
         }
+        if (className === model.itemsText.toLowerCase()) {
+          className = "items";
+        }
         $(".content .tile").hide();
-        return $(".content .tile." + className).show();
+        $(".content .tile." + className).show();
+        console.log($(".content .tile." + className));
+        return console.log(className);
       };
       initHome = function() {
         var navHtml, navItems, router, routes;
-        navItems = ["hours", "items", "directions", "facebook", "twitter", ""];
+        navItems = ["hours", model.itemsText.toLowerCase(), "directions", "facebook", "twitter", ""];
         routes = {};
         navHtml = "";
         _.each(navItems, function(navItem) {
@@ -135,12 +142,10 @@
         openTime = timeToMili(openText);
         closeTime = timeToMili(closeText);
         time = drews.time();
-        console.log(new Date(closeTime));
-        console.log(new Date(openText));
         if (time >= openTime && time <= closeTime) {
           return $(".open").html("Open 'til <a href=\"#hours\">" + closeText + "</a>");
         } else {
-          return $(".open").text("Closed");
+          return $(".open").html("<a href=\"#hours\">Closed</a>");
         }
       };
       initHome();
@@ -161,8 +166,6 @@
       });
       view.doHours();
       severus.find("items", function(err, items) {
-        console.log("here are the items");
-        console.log(items);
         return view.addItems(items);
       });
       return view.on("phone", function(phone) {

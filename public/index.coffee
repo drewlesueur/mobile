@@ -33,9 +33,12 @@ define "app-view", () ->
       minutes = time[1]
     else
       hours = time
-    if pm then hours += 12
+    if pm then hours = hours - 0 + 12
+    console.log pm
+    console.log hours
     newDate = new Date date.getFullYear(), date.getMonth(), date.getDate(), hours, minutes, 0, 0
-    newDate.getTime()
+    ret = newDate.getTime()
+    
   
   getDayRow = (day, model) ->
     if model[day + "Open"]
@@ -67,14 +70,21 @@ define "app-view", () ->
     nav = self.nav = (className) ->
       if className == ""
         className = "home"
+      if className == model.itemsText.toLowerCase()
+        className = "items"
+      
       $(".content .tile").hide()
       $(".content .tile.#{className}").show()
+      console.log $(".content .tile.#{className}")
+
+      console.log className
+
      
 
     initHome = () ->
       navItems = [
         "hours"
-        "items"
+        model.itemsText.toLowerCase()
         "directions"
         "facebook"
         "twitter"
@@ -189,14 +199,14 @@ define "app-view", () ->
       closeTime = timeToMili closeText
 
       time = drews.time()
-      console.log new Date closeTime
-      console.log new Date openText
       if time >= openTime and time <= closeTime
         $(".open").html """
           Open 'til <a href="#hours">#{closeText}</a>
         """
       else
-        $(".open").text "Closed"
+        $(".open").html """
+          <a href="#hours">Closed</a>
+        """
 
     initHome()
     self
@@ -212,11 +222,7 @@ define "app-presenter", () ->
     view.doHours()
 
     severus.find "items", (err, items) ->
-      console.log "here are the items"
-      console.log items
       view.addItems items
-
-
 
     view.on "phone", (phone) ->
       alert phone
