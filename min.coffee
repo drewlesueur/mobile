@@ -60,18 +60,20 @@ define "min", () ->
                 <div class="phone">
                   #{attrs.phone}
                 </div>
-                <br />
                 <div class="open"> </div>
               </div>
-              <div class="clear"></div>
-            </div>
-            <div class="second-bar second-bar-gradient">
-              <div class="crossStreets left">
+              <div class="crossStreets">
                 <a href="#map">
                 #{attrs.crossStreets}
                 </a>
               </div>
-              <div class="clear">
+              <div class="clear"></div>
+            </div>
+            <div class="second-bar second-bar-gradient">
+              <div class="headline">
+                #{attrs.headline}
+              </div>
+              <div class="clear"></div>
             </div>
           </div> <!-- header div -->
           <div class="content content-gradient">
