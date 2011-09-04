@@ -9,7 +9,6 @@
 
 .second-bar {
   padding: 5px;
-  background-color: #e6e6e6;
 }
 
 .header {
@@ -54,7 +53,7 @@ body, input[type="text"], input[type="tel"] {
   width: 210px;
 }
 
-.home a {
+.nav a {
   float: left;
   display: block;
   width: 106px;
@@ -70,19 +69,49 @@ body, input[type="text"], input[type="tel"] {
   padding-top: 5px;
 }
 
+.headline {
+  font-weight: bold;
+  font-size: 1.2em;
+}
 .nav-item {
+  text-shadow: 2px 2px 3px #000;
   font-weight: bold;
   text-decoration: none;
   color: black;
   text-align: center;
+  background-repeat: no-repeat;
+  background-position: center;
+  position: relative;
 }
+
+.nav-item span {
+ position: absolute;
+ bottom: 0;
+ width: 100%;
+ text-align: center;
+}
+
 .paddinglr {
   padding-left: 5px;
   padding-right: 5px;
 }
 
+.paddingr {
+  padding-right: 5px;
+}
+
+.promo img {
+ vertical-align: bottom;
+ opacity: 1;
+ z-index: -1000;
+}
+
+.promo-wrapper {
+  padding-top: 5px;
+  padding-bottom: 5px;
+}
+
 .item {
-  background: -webkit-linear-gradient(90deg,black  0px,white  10px); 
   padding-bottom: 5px;
   padding-top: 5px;
   border-bottom: 1px solid #D0D0D0;

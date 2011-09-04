@@ -63,29 +63,111 @@ define "app-view", () ->
     {model} = options
     self = eventer {}
     {emit} = self
+
+    extraStyles = $ """
+      <style>
+        .top-bar, .top-bar a {
+          color: #{model.headerTextColor} 
+        }
+        body {
+          color: #{model.bodyTextColor} 
+        }
+        .second-bar, .second-bar a {
+          color: #{model.secondBarTextColor}
+        }
+
+        .promo-wrapper {
+          color: #{model.promoTextColor}
+        }
+
+        .nav-item {
+          color: #{model.buttonsTextColor}
+        }
+
+        .item .title {
+          color: #{model.menuTitleTextColor}
+        }
+
+        .item .price{
+          color: #{model.menuPriceTextColor}
+        }
+
+        .item .description{
+          color: #{model.menuDescriptionTextColor}
+        }
+        
+        .menu-gradient {
+          background: -webkit-gradient(linear, left top, left bottom, color-stop(0%,#{model.menuColor1}), color-stop(1,#{model.menuColor2}));
+        }
+
+        .header-gradient {
+          background: -webkit-gradient(linear, left top, left bottom, color-stop(0%,#{model.headerColor1}), color-stop(1,#{model.headerColor2}));
+          
+        }
+
+        .second-bar-gradient {
+          background: -webkit-gradient(linear, left top, left bottom, color-stop(0%,#{model.secondBarColor1}), color-stop(1,#{model.secondBarColor2}));
+          
+        }
+
+        .tile {
+          background: -webkit-gradient(linear, left top, left bottom, color-stop(0%,#{model.bodyColor1}), color-stop(1,#{model.bodyColor2}));
+          
+        }
+
+        .promo-gradient {
+          background: -webkit-gradient(linear, left top, left bottom, color-stop(0%,#{model.promoColor1}), color-stop(1,#{model.promoColor2}));
+        }
+
+      </style>
+    """
+
+    extraStyles.appendTo $ "head"
+
     $("h1").bind "click", () ->
       location.href = "#"
 
+    showSpecials = () ->
+      $(".content .tile").hide()
+      $(".content .tile.specials").show()
+
     $(".content").append """<div class="clear"></div>"""
     nav = self.nav = (className) ->
+      
+      scrollTo 0, 0, 1
       if className == ""
         className = "home"
-      
-      $(".content .tile").hide()
-      $(".content .tile.#{className}").show()
-      console.log $(".content .tile.#{className}")
+      if className == "specials"
+        existingPhone = localStorage.existingPhone
+        if existingPhone?.match /[\d]{10}/
+          return showSpecials()
+        phone = prompt("Sign up for #{model.title} Specials! Enter your 10 digit phone number.")
 
-      console.log className
+        if phone
+          phone = phone.replace /[^\d]/g, ""
+          if not phone.match /[\d]{10}/
+            alert "Phone number must be 10 digits."
+            nav "specials"
+            return
+          emit "phone", phone
+          localStorage.existingPhone = phone
+          showSpecials()
+        else
+          location.href = "#"
+      else
+        $(".content .tile").hide()
+        $(".content .tile.#{className}").show()
 
      
 
     initHome = () ->
       navItems =
+        specials: "specials"
         menu: model.itemsText.toLowerCase()
         map: "map"
         hours: "hours"
         call: "call us"
-        facebook:"check in"
+        facebook:"facebook"
         twitter: "twitter"
         "": ""
 
@@ -96,32 +178,62 @@ define "app-view", () ->
         console.log navItem
         routes[navItem] = () -> 
           nav navItem 
+
+        if navItemText == ""
+          return
         href = "#" + navItem
         if navItem == "call"
           href="tel:#{model.phone}"
+        if navItem == "twitter"
+          if model.twitterUrl
+            href = model.twitterUrl
+          else
+            return
+
+        if navItem == "facebook"
+          if model.facebookUrl
+            href = model.facebookUrl
+          else
+            return
+        
         navHtml += """
           <div>
-          <a class="nav-item" data-nav="#{navItem}" href="#{href}" style="background: url('http://drewl.us:8010/icons/#{navItem}.png')">#{_.capitalize navItemText}</a>
+          <a class="nav-item" data-nav="#{navItem}" href="#{href}" style="background-image: url('http://drewl.us:8010/icons/#{navItem}.png')">
+            <span>#{_.capitalize navItemText}</span>
+          </a>
           </div>
         """
+      
+      if model.promo
+        promoImage = """<img src="#{model.promo}" />"""
+      else
+        promoImage = ""
 
       navHtml = $ """
         <div class="home tile hidden">
-          <div class="promo">
-            <img src="#{model.promo}" />
-            <div class="promo-text paddinglr">
-              #{model.promoText}
+          <div class="promo" style="position:absolute;">
+            #{promoImage}
+            <div class="promo-wrapper promo-gradient" style="display:none;">
+              <div class="promo-text paddinglr">
+                #{model.promoText}
+              </div>
+              <form class="phone-form paddinglr" action="/" method="POST">
+                <div class="clearfix">
+                  <div class="input">
+                    <input id="phone" name="phone" type="tel">
+                    <input class="send" type="submit" value="Send">
+                  </div>
+                </div> <!-- /clearfix -->
+              </form>
             </div>
-            <form class="phone-form paddinglr" action="/" method="POST">
-              <div class="clearfix">
-                <div class="input">
-                  <input id="phone" name="phone" type="tel">
-                  <input class="send" type="submit" value="Send">
-                </div>
-              </div> <!-- /clearfix -->
-            </form>
           </div>
-          #{navHtml}
+          <div class="nav">
+            #{navHtml}
+          </div>
+          <div class="clear">
+          <br />
+          <br />
+        <a class="full-site" href="#{model.fullUrl}">Full Site</a><a href="javascript:delete localStorage.existingPhone;void(0);">.</a>
         </div>
       """
 
@@ -170,26 +282,47 @@ define "app-view", () ->
       """
     displayHours()
 
-
+    
     displayItems = () ->
-      dayRows = ""
-      for day in daysMonday
-        dayRows += getDayRow day, model
       itemsTable =  """ 
         <div class="items-table">
 
         </div>
       """
       $(".content").append """
-        <div class="items tile hidden">#{itemsTable}</hours>
+        <div class="menu tile hidden">#{itemsTable}</hours>
       """
     displayItems()
 
     addItems = self.addItems = (items) ->
       _.each items, (item) ->
         $(".content .menu").append $ """
-          <div class="item">
-              <img style="float:left;" src="#{item.url or model.headerUrl}" />
+          <div class="item menu-gradient">
+              <img class="left paddingr"  src="#{item.image or model.headerUrl}" />
+              <div class="title">#{item.title or ""}</div>
+              <div class="price">#{item.price or ""}</div>
+            <div class="clear"></div>
+              <div class="description">#{item.description or ""}</div>
+          </div>
+        """
+
+
+    displaySpecials = () ->
+      itemsTable =  """ 
+        <div class="items-table">
+
+        </div>
+      """
+      $(".content").append """
+        <div class="specials tile hidden">#{itemsTable}</hours>
+      """
+    displaySpecials()
+
+    addSpecials = self.addSpecials = (items) ->
+      _.each items, (item) ->
+        $(".content .specials").append $ """
+          <div class="item menu-gradient">
+              <img class="left paddingr"  src="#{item.image or model.headerUrl}" />
               <div class="title">#{item.title or ""}</div>
               <div class="price">#{item.price or ""}</div>
             <div class="clear"></div>
@@ -202,7 +335,9 @@ define "app-view", () ->
       day = days[date.getDay()]
       isEvenOpen = model["#{day}Open"]
       if not isEvenOpen
-        return $(".open").text "Closed on #{_.capitalize(day)}s"
+        return $(".open").html """
+          <a href="#hours">Hours</a>
+        """
       openText = model["#{day}Start"]
       closeText = model["#{day}End"]
       openTime = timeToMili openText
@@ -232,12 +367,18 @@ define "app-presenter", () ->
     view.doHours()
 
     severus.find "items", (err, items) ->
+      items = items.sort (a, b)->
+        a.order - b.order
       view.addItems items
 
+    severus.find "specials", (err, items) ->
+      items = items.sort (a, b)->
+        a.order - b.order
+      view.addSpecials items
+
     view.on "phone", (phone) ->
-      alert phone
       severus.save "phones", {phone}, (err) ->
-        alert "Thank you"
+        #alert "Thank you"
 
   AppPresenter
 
@@ -246,3 +387,4 @@ AppPresenter = require "app-presenter"
 
 $ ->
   AppPresenter.init()
+  drews.wait 1000, -> scrollTo 0, 0, 1

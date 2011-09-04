@@ -56,31 +56,59 @@
     Router = require("router");
     AppView = {};
     AppView.init = function(options) {
-      var addItems, displayDirections, displayHours, displayItems, emit, initHome, model, nav, self;
+      var addItems, addSpecials, displayDirections, displayHours, displayItems, displaySpecials, emit, extraStyles, initHome, model, nav, self, showSpecials;
       model = options.model;
       self = eventer({});
       emit = self.emit;
+      extraStyles = $("<style>\n  .top-bar, .top-bar a {\n    color: " + model.headerTextColor + " \n  }\n  body {\n    color: " + model.bodyTextColor + " \n  }\n  .second-bar, .second-bar a {\n    color: " + model.secondBarTextColor + "\n  }\n\n  .promo-wrapper {\n    color: " + model.promoTextColor + "\n  }\n\n  .nav-item {\n    color: " + model.buttonsTextColor + "\n  }\n\n  .item .title {\n    color: " + model.menuTitleTextColor + "\n  }\n\n  .item .price{\n    color: " + model.menuPriceTextColor + "\n  }\n\n  .item .description{\n    color: " + model.menuDescriptionTextColor + "\n  }\n  \n  .menu-gradient {\n    background: -webkit-gradient(linear, left top, left bottom, color-stop(0%," + model.menuColor1 + "), color-stop(1," + model.menuColor2 + "));\n  }\n\n  .header-gradient {\n    background: -webkit-gradient(linear, left top, left bottom, color-stop(0%," + model.headerColor1 + "), color-stop(1," + model.headerColor2 + "));\n    \n  }\n\n  .second-bar-gradient {\n    background: -webkit-gradient(linear, left top, left bottom, color-stop(0%," + model.secondBarColor1 + "), color-stop(1," + model.secondBarColor2 + "));\n    \n  }\n\n  .tile {\n    background: -webkit-gradient(linear, left top, left bottom, color-stop(0%," + model.bodyColor1 + "), color-stop(1," + model.bodyColor2 + "));\n    \n  }\n\n  .promo-gradient {\n    background: -webkit-gradient(linear, left top, left bottom, color-stop(0%," + model.promoColor1 + "), color-stop(1," + model.promoColor2 + "));\n  }\n\n</style>");
+      extraStyles.appendTo($("head"));
       $("h1").bind("click", function() {
         return location.href = "#";
       });
+      showSpecials = function() {
+        $(".content .tile").hide();
+        return $(".content .tile.specials").show();
+      };
       $(".content").append("<div class=\"clear\"></div>");
       nav = self.nav = function(className) {
+        var existingPhone, phone;
+        scrollTo(0, 0, 1);
         if (className === "") {
           className = "home";
         }
-        $(".content .tile").hide();
-        $(".content .tile." + className).show();
-        console.log($(".content .tile." + className));
-        return console.log(className);
+        if (className === "specials") {
+          existingPhone = localStorage.existingPhone;
+          if (existingPhone != null ? existingPhone.match(/[\d]{10}/) : void 0) {
+            return showSpecials();
+          }
+          phone = prompt("Sign up for " + model.title + " Specials! Enter your 10 digit phone number.");
+          if (phone) {
+            phone = phone.replace(/[^\d]/g, "");
+            if (!phone.match(/[\d]{10}/)) {
+              alert("Phone number must be 10 digits.");
+              nav("specials");
+              return;
+            }
+            emit("phone", phone);
+            localStorage.existingPhone = phone;
+            return showSpecials();
+          } else {
+            return location.href = "#";
+          }
+        } else {
+          $(".content .tile").hide();
+          return $(".content .tile." + className).show();
+        }
       };
       initHome = function() {
-        var navHtml, navItems, router, routes;
+        var navHtml, navItems, promoImage, router, routes;
         navItems = {
+          specials: "specials",
           menu: model.itemsText.toLowerCase(),
           map: "map",
           hours: "hours",
           call: "call us",
-          facebook: "check in",
+          facebook: "facebook",
           twitter: "twitter",
           "": ""
         };
@@ -93,13 +121,35 @@
           routes[navItem] = function() {
             return nav(navItem);
           };
+          if (navItemText === "") {
+            return;
+          }
           href = "#" + navItem;
           if (navItem === "call") {
             href = "tel:" + model.phone;
           }
-          return navHtml += "<div>\n<a class=\"nav-item\" data-nav=\"" + navItem + "\" href=\"" + href + "\" style=\"background: url('http://drewl.us:8010/icons/" + navItem + ".png')\">" + (_.capitalize(navItemText)) + "</a>\n</div>";
+          if (navItem === "twitter") {
+            if (model.twitterUrl) {
+              href = model.twitterUrl;
+            } else {
+              return;
+            }
+          }
+          if (navItem === "facebook") {
+            if (model.facebookUrl) {
+              href = model.facebookUrl;
+            } else {
+              return;
+            }
+          }
+          return navHtml += "<div>\n<a class=\"nav-item\" data-nav=\"" + navItem + "\" href=\"" + href + "\" style=\"background-image: url('http://drewl.us:8010/icons/" + navItem + ".png')\">\n  <span>" + (_.capitalize(navItemText)) + "</span>\n</a>\n</div>";
         });
-        navHtml = $("<div class=\"home tile hidden\">\n  <div class=\"promo\">\n    <img src=\"" + model.promo + "\" />\n    <div class=\"promo-text paddinglr\">\n      " + model.promoText + "\n    </div>\n    <form class=\"phone-form paddinglr\" action=\"/\" method=\"POST\">\n      <div class=\"clearfix\">\n        <div class=\"input\">\n          <input id=\"phone\" name=\"phone\" type=\"tel\">\n          <input class=\"send\" type=\"submit\" value=\"Send\">\n        </div>\n      </div> <!-- /clearfix -->\n    </form>\n  </div>\n  " + navHtml + "\n</div>");
+        if (model.promo) {
+          promoImage = "<img src=\"" + model.promo + "\" />";
+        } else {
+          promoImage = "";
+        }
+        navHtml = $("<div class=\"home tile hidden\">\n  <div class=\"promo\" style=\"position:absolute;\">\n    " + promoImage + "\n    <div class=\"promo-wrapper promo-gradient\" style=\"display:none;\">\n      <div class=\"promo-text paddinglr\">\n        " + model.promoText + "\n      </div>\n      <form class=\"phone-form paddinglr\" action=\"/\" method=\"POST\">\n        <div class=\"clearfix\">\n          <div class=\"input\">\n            <input id=\"phone\" name=\"phone\" type=\"tel\">\n            <input class=\"send\" type=\"submit\" value=\"Send\">\n          </div>\n        </div> <!-- /clearfix -->\n      </form>\n    </div>\n  </div>\n  <div class=\"nav\">\n    " + navHtml + "\n  </div>\n  <div class=\"clear\">\n  <br />\n  <br />\n<a class=\"full-site\" href=\"" + model.fullUrl + "\">Full Site</a><a href=\"javascript:delete localStorage.existingPhone;void(0);\">.</a>\n</div>");
         $(".content").append(navHtml);
         navHtml.find("form").bind("submit", function(e) {
           e.preventDefault();
@@ -128,19 +178,25 @@
       };
       displayHours();
       displayItems = function() {
-        var day, dayRows, itemsTable, _i, _len;
-        dayRows = "";
-        for (_i = 0, _len = daysMonday.length; _i < _len; _i++) {
-          day = daysMonday[_i];
-          dayRows += getDayRow(day, model);
-        }
+        var itemsTable;
         itemsTable = " \n<div class=\"items-table\">\n\n</div>";
-        return $(".content").append("<div class=\"items tile hidden\">" + itemsTable + "</hours>");
+        return $(".content").append("<div class=\"menu tile hidden\">" + itemsTable + "</hours>");
       };
       displayItems();
       addItems = self.addItems = function(items) {
         return _.each(items, function(item) {
-          return $(".content .menu").append($("<div class=\"item\">\n    <img style=\"float:left;\" src=\"" + (item.url || model.headerUrl) + "\" />\n    <div class=\"title\">" + (item.title || "") + "</div>\n    <div class=\"price\">" + (item.price || "") + "</div>\n  <div class=\"clear\"></div>\n    <div class=\"description\">" + (item.description || "") + "</div>\n</div>"));
+          return $(".content .menu").append($("<div class=\"item menu-gradient\">\n    <img class=\"left paddingr\"  src=\"" + (item.image || model.headerUrl) + "\" />\n    <div class=\"title\">" + (item.title || "") + "</div>\n    <div class=\"price\">" + (item.price || "") + "</div>\n  <div class=\"clear\"></div>\n    <div class=\"description\">" + (item.description || "") + "</div>\n</div>"));
+        });
+      };
+      displaySpecials = function() {
+        var itemsTable;
+        itemsTable = " \n<div class=\"items-table\">\n\n</div>";
+        return $(".content").append("<div class=\"specials tile hidden\">" + itemsTable + "</hours>");
+      };
+      displaySpecials();
+      addSpecials = self.addSpecials = function(items) {
+        return _.each(items, function(item) {
+          return $(".content .specials").append($("<div class=\"item menu-gradient\">\n    <img class=\"left paddingr\"  src=\"" + (item.image || model.headerUrl) + "\" />\n    <div class=\"title\">" + (item.title || "") + "</div>\n    <div class=\"price\">" + (item.price || "") + "</div>\n  <div class=\"clear\"></div>\n    <div class=\"description\">" + (item.description || "") + "</div>\n</div>"));
         });
       };
       self.doHours = function() {
@@ -149,7 +205,7 @@
         day = days[date.getDay()];
         isEvenOpen = model["" + day + "Open"];
         if (!isEvenOpen) {
-          return $(".open").text("Closed on " + (_.capitalize(day)) + "s");
+          return $(".open").html("<a href=\"#hours\">Hours</a>");
         }
         openText = model["" + day + "Start"];
         closeText = model["" + day + "End"];
@@ -180,21 +236,30 @@
       });
       view.doHours();
       severus.find("items", function(err, items) {
+        items = items.sort(function(a, b) {
+          return a.order - b.order;
+        });
         return view.addItems(items);
       });
+      severus.find("specials", function(err, items) {
+        items = items.sort(function(a, b) {
+          return a.order - b.order;
+        });
+        return view.addSpecials(items);
+      });
       return view.on("phone", function(phone) {
-        alert(phone);
         return severus.save("phones", {
           phone: phone
-        }, function(err) {
-          return alert("Thank you");
-        });
+        }, function(err) {});
       });
     };
     return AppPresenter;
   });
   AppPresenter = require("app-presenter");
   $(function() {
-    return AppPresenter.init();
+    AppPresenter.init();
+    return drews.wait(1000, function() {
+      return scrollTo(0, 0, 1);
+    });
   });
 }).call(this);
