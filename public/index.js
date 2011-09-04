@@ -68,9 +68,6 @@
         if (className === "") {
           className = "home";
         }
-        if (className === model.itemsText.toLowerCase()) {
-          className = "items";
-        }
         $(".content .tile").hide();
         $(".content .tile." + className).show();
         console.log($(".content .tile." + className));
@@ -78,14 +75,29 @@
       };
       initHome = function() {
         var navHtml, navItems, router, routes;
-        navItems = [model.itemsText.toLowerCase(), "directions", "hours", "call us", "check in", "twitter", ""];
+        navItems = {
+          menu: model.itemsText.toLowerCase(),
+          map: "map",
+          hours: "hours",
+          call: "call us",
+          facebook: "check in",
+          twitter: "twitter",
+          "": ""
+        };
         routes = {};
         navHtml = "";
-        _.each(navItems, function(navItem) {
+        _.each(navItems, function(navItemText, navItem) {
+          var href;
+          console.log(navItemText);
+          console.log(navItem);
           routes[navItem] = function() {
             return nav(navItem);
           };
-          return navHtml += "<div>\n<a class=\"nav-item\" href=\"#" + navItem + "\">" + (_.capitalize(navItem)) + "</a>\n</div>";
+          href = "#" + navItem;
+          if (navItem === "call") {
+            href = "tel:" + model.phone;
+          }
+          return navHtml += "<div>\n<a class=\"nav-item\" data-nav=\"" + navItem + "\" href=\"" + href + "\" style=\"background: url('http://drewl.us:8010/icons/" + navItem + ".png')\">" + (_.capitalize(navItemText)) + "</a>\n</div>";
         });
         navHtml = $("<div class=\"home tile hidden\">\n  <div class=\"promo\">\n    <img src=\"" + model.promo + "\" />\n    <div class=\"promo-text paddinglr\">\n      " + model.promoText + "\n    </div>\n    <form class=\"phone-form paddinglr\" action=\"/\" method=\"POST\">\n      <div class=\"clearfix\">\n        <div class=\"input\">\n          <input id=\"phone\" name=\"phone\" type=\"tel\">\n          <input class=\"send\" type=\"submit\" value=\"Send\">\n        </div>\n      </div> <!-- /clearfix -->\n    </form>\n  </div>\n  " + navHtml + "\n</div>");
         $(".content").append(navHtml);
@@ -100,7 +112,7 @@
         var directionsHtml, htmlAddress, urlAddress;
         urlAddress = encodeURIComponent(model.address.replace(/\n/g, " "));
         htmlAddress = model.address.replace(/\n/g, "<br />");
-        directionsHtml = "<div class=\"tile directions hidden\">\n  <div class=\"paddinglr\">" + htmlAddress + "</div>\n\n  <!--<a target=\"blank\" href=\"http://maps.google.com/maps?daddr=" + urlAddress + "\">Google Map Directions</a>-->\n  <a target=\"blank\" href=\"http://maps.google.com/maps?q=" + urlAddress + "\">\n  <img src=\"http://maps.googleapis.com/maps/api/staticmap?center=" + urlAddress + "&zoom=14&size=320x320&markers=color:red|" + urlAddress + "&maptype=roadmap&sensor=false\" />\n  </a>\n</div>";
+        directionsHtml = "<div class=\"tile map hidden\">\n  <div class=\"paddinglr\">" + htmlAddress + "</div>\n\n  <!--<a target=\"blank\" href=\"http://maps.google.com/maps?daddr=" + urlAddress + "\">Google Map Directions</a>-->\n  <a target=\"blank\" href=\"http://maps.google.com/maps?q=" + urlAddress + "\">\n  <img src=\"http://maps.googleapis.com/maps/api/staticmap?center=" + urlAddress + "&zoom=14&size=320x320&markers=color:red|" + urlAddress + "&maptype=roadmap&sensor=false\" />\n  </a>\n</div>";
         return $(".content").append(directionsHtml);
       };
       displayDirections();
@@ -128,7 +140,7 @@
       displayItems();
       addItems = self.addItems = function(items) {
         return _.each(items, function(item) {
-          return $(".content .items").append($("<div class=\"item\">\n    <img style=\"float:left;\" src=\"" + (item.url || model.headerUrl) + "\" />\n    <div class=\"title\">" + (item.title || "") + "</div>\n    <div class=\"price\">" + (item.price || "") + "</div>\n  <div class=\"clear\"></div>\n    <div class=\"description\">" + (item.description || "") + "</div>\n</div>"));
+          return $(".content .menu").append($("<div class=\"item\">\n    <img style=\"float:left;\" src=\"" + (item.url || model.headerUrl) + "\" />\n    <div class=\"title\">" + (item.title || "") + "</div>\n    <div class=\"price\">" + (item.price || "") + "</div>\n  <div class=\"clear\"></div>\n    <div class=\"description\">" + (item.description || "") + "</div>\n</div>"));
         });
       };
       self.doHours = function() {

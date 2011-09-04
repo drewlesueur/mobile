@@ -70,8 +70,6 @@ define "app-view", () ->
     nav = self.nav = (className) ->
       if className == ""
         className = "home"
-      if className == model.itemsText.toLowerCase()
-        className = "items"
       
       $(".content .tile").hide()
       $(".content .tile.#{className}").show()
@@ -82,23 +80,28 @@ define "app-view", () ->
      
 
     initHome = () ->
-      navItems = [
-        model.itemsText.toLowerCase()
-        "directions"
-        "hours"
-        "call us"
-        "check in"
-        "twitter"
-        ""
-      ]
+      navItems =
+        menu: model.itemsText.toLowerCase()
+        map: "map"
+        hours: "hours"
+        call: "call us"
+        facebook:"check in"
+        twitter: "twitter"
+        "": ""
+
       routes = {}
       navHtml = ""
-      _.each navItems, (navItem) ->
+      _.each navItems, (navItemText, navItem) ->
+        console.log navItemText  
+        console.log navItem
         routes[navItem] = () -> 
           nav navItem 
+        href = "#" + navItem
+        if navItem == "call"
+          href="tel:#{model.phone}"
         navHtml += """
           <div>
-          <a class="nav-item" href="##{navItem}">#{_.capitalize navItem}</a>
+          <a class="nav-item" data-nav="#{navItem}" href="#{href}" style="background: url('http://drewl.us:8010/icons/#{navItem}.png')">#{_.capitalize navItemText}</a>
           </div>
         """
 
@@ -121,6 +124,8 @@ define "app-view", () ->
           #{navHtml}
         </div>
       """
+
+
       $(".content").append navHtml
       navHtml.find("form").bind "submit", (e) ->
         e.preventDefault()
@@ -135,7 +140,7 @@ define "app-view", () ->
       urlAddress = encodeURIComponent model.address.replace /\n/g, " "
       htmlAddress = model.address.replace /\n/g, "<br />"
       directionsHtml =  """
-       <div class="tile directions hidden">
+       <div class="tile map hidden">
          <div class="paddinglr">#{htmlAddress}</div>
 
          <!--<a target="blank" href="http://maps.google.com/maps?daddr=#{urlAddress}">Google Map Directions</a>-->
@@ -182,7 +187,7 @@ define "app-view", () ->
 
     addItems = self.addItems = (items) ->
       _.each items, (item) ->
-        $(".content .items").append $ """
+        $(".content .menu").append $ """
           <div class="item">
               <img style="float:left;" src="#{item.url or model.headerUrl}" />
               <div class="title">#{item.title or ""}</div>
