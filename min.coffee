@@ -52,11 +52,26 @@ define "min", () ->
         </head>
         <body>
           <div class="header">
-            <h1><img src="#{attrs.headerUrl}" class="header-image"/></h1>
-            <div class="phone">
-              #{attrs.phone}
+            <div class="top-bar">
+              <div class="headerWrapper left">
+                <h1><img src="#{attrs.headerUrl}" class="header-image"/></h1>
+              </div>
+              <div class="right header-right">
+                <div class="phone">
+                  #{attrs.phone}
+                </div>
+                <br />
+                <div class="open"> </div>
+              </div>
+              <div class="clear">
             </div>
-            <div class="open">
+            <div class="second-bar">
+              <div class="crossStreets left">
+                <a href="#directions">
+                #{attrs.crossStreets}
+                </a>
+              </div>
+              <div class="clear">
             </div>
           </div> <!-- header div -->
           <div class="content">
