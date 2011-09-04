@@ -52,7 +52,7 @@ define "min", () ->
         </head>
         <body>
           <div class="header">
-            <div class="top-bar">
+            <div class="top-bar header-gradient">
               <div class="headerWrapper left">
                 <h1><img src="#{attrs.headerUrl}" class="header-image"/></h1>
               </div>
@@ -63,9 +63,9 @@ define "min", () ->
                 <br />
                 <div class="open"> </div>
               </div>
-              <div class="clear">
+              <div class="clear"></div>
             </div>
-            <div class="second-bar">
+            <div class="second-bar second-bar-gradient">
               <div class="crossStreets left">
                 <a href="#map">
                 #{attrs.crossStreets}
@@ -74,7 +74,7 @@ define "min", () ->
               <div class="clear">
             </div>
           </div> <!-- header div -->
-          <div class="content">
+          <div class="content content-gradient">
           </div>
           <script src="module.js"></script>
           <script src="http://inc.the.tl/underscore.js"></script>
