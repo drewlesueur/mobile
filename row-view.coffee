@@ -17,7 +17,11 @@ define 'row-view', () ->
 
 
     el = $ """
-      <tr>#{tdsHtml}</tr>
+      <tr>
+        #{tdsHtml}
+        <td><input class="delete" type="button" value="delete"></td>
+      
+      </tr>
     """
     el.find("input").bind "keydown", (e) ->
       if e.keyCode in [9, 13]
@@ -27,6 +31,10 @@ define 'row-view', () ->
         values = {}
         values[prop] = val
         emit "update", model, values
+
+    el.find(".delete").bind "click", () ->
+      emit "delete", model
+      el.remove()
 
 
     self.el = el

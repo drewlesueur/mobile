@@ -40,6 +40,9 @@
         console.log(obj);
         return obj.save();
       });
+      view.on("delete", function(obj) {
+        return obj.remove();
+      });
       self.getEl = function() {
         return view.getEl();
       };

@@ -32,6 +32,9 @@ define "table-presenter", () ->
       console.log obj
       obj.save()
 
+    view.on "delete", (obj) ->
+      obj.remove()
+
     self.getEl = -> view.getEl()
     
     self

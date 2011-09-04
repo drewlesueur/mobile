@@ -19,7 +19,7 @@
       _.each(fields, function(field) {
         return emptyRowHtml += "<td><input data-prop=\"" + field + "\" class=\"new\" type=\"text\"></td>";
       });
-      table = $("<div class=\"row show-grid\">\n  <table class=\"zebra-striped\">\n    <thead>\n      <tr>\n        " + headersHtml + "\n      </tr>\n      <tr class=\"new-row\">\n        " + emptyRowHtml + "\n      </tr>\n    </thead>\n    <tbody>\n    </tbody>\n  </table>\n</div>");
+      table = $("<div class=\"row show-grid\">\n  <table class=\"zebra-striped\">\n    <thead>\n      <tr>\n        " + headersHtml + "\n        <th></th>\n      </tr>\n      <tr class=\"new-row\">\n        " + emptyRowHtml + "\n      </tr>\n    </thead>\n    <tbody>\n    </tbody>\n  </table>\n</div>");
       table.find(".new").bind("keydown", function(e) {
         var obj, prop, val, _ref;
         if ((_ref = e.keyCode) === 9 || _ref === 13) {

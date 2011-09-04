@@ -17,7 +17,7 @@
       _.each(fields, function(field) {
         return tdsHtml += "<td><input data-prop=\"" + field + "\" type=\"text\" value=\"" + (model.get(field) || "") + "\" /></td>";
       });
-      el = $("<tr>" + tdsHtml + "</tr>");
+      el = $("<tr>\n  " + tdsHtml + "\n  <td><input class=\"delete\" type=\"button\" value=\"delete\"></td>\n\n</tr>");
       el.find("input").bind("keydown", function(e) {
         var prop, val, values, _ref;
         if ((_ref = e.keyCode) === 9 || _ref === 13) {
@@ -28,6 +28,10 @@
           values[prop] = val;
           return emit("update", model, values);
         }
+      });
+      el.find(".delete").bind("click", function() {
+        emit("delete", model);
+        return el.remove();
       });
       self.el = el;
       self.getEl = function() {

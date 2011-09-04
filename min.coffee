@@ -81,6 +81,7 @@ define "min", () ->
           </div>
           <script src="module.js"></script>
           <script src="http://inc.the.tl/underscore.js"></script>
+          <script src="http://inc.the.tl/json2.js"></script>
           <script src="http://inc.the.tl/nimble.js"></script>
           <script src="http://inc.the.tl/drews-mixins.js"></script>
           <script src="http://severus.drewl.us/severus2.js"></script>

@@ -27,6 +27,7 @@ define 'table-view', () ->
           <thead>
             <tr>
               #{headersHtml}
+              <th></th>
             </tr>
             <tr class="new-row">
               #{emptyRowHtml}
