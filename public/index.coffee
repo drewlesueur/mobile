@@ -189,8 +189,12 @@ define "app-view", () ->
       closeTime = timeToMili closeText
 
       time = drews.time()
+      console.log new Date closeTime
+      console.log new Date openText
       if time >= openTime and time <= closeTime
-        $(".open").text "We are open until #{closeText}"
+        $(".open").html """
+          Open 'til <a href="#hours">#{closeText}</a>
+        """
       else
         $(".open").text "Closed"
 
@@ -217,8 +221,7 @@ define "app-presenter", () ->
     view.on "phone", (phone) ->
       alert phone
       severus.save "phones", {phone}, (err) ->
-        console.log err
-        alert "phone saved"
+        alert "Thank you"
 
   AppPresenter
 

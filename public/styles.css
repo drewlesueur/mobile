@@ -3,6 +3,25 @@
   padding: 0;
 }
 
+.phone {
+
+}
+
+.second-bar {
+  padding: 5px;
+  background-color: #e6e6e6;
+}
+
+.header {
+  width: 320px;
+}
+
+.header-right {
+  width: 160px;
+  text-align: right;
+  padding-top: 8px;
+  padding-right: 8px;
+}
 .header-img {
   height: 50px;
 }
@@ -52,19 +71,13 @@ body, input {
   padding-bottom: 5px;
   padding-top: 5px;
   border-bottom: 1px solid #D0D0D0;
-
 }
-.item .left, .item .right {
+
+.left {
   float: left;
 }
 
-.item .left {
-  width: 100px;
-  overflow: hidden;
+.right {
+  float: right;
 }
-.item .left img {
-  width: 100px;
-}
-.item .right {
-  width: 220px;
-}
+

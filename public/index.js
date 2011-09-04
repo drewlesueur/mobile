@@ -135,8 +135,10 @@
         openTime = timeToMili(openText);
         closeTime = timeToMili(closeText);
         time = drews.time();
+        console.log(new Date(closeTime));
+        console.log(new Date(openText));
         if (time >= openTime && time <= closeTime) {
-          return $(".open").text("We are open until " + closeText);
+          return $(".open").html("Open 'til <a href=\"#hours\">" + closeText + "</a>");
         } else {
           return $(".open").text("Closed");
         }
@@ -168,8 +170,7 @@
         return severus.save("phones", {
           phone: phone
         }, function(err) {
-          console.log(err);
-          return alert("phone saved");
+          return alert("Thank you");
         });
       });
     };
