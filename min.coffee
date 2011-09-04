@@ -53,10 +53,10 @@ define "min", () ->
         <body>
           <div class="header">
             <div class="top-bar header-gradient">
-              <div class="headerWrapper left">
+              <div class="headerWrapper">
                 <h1><img src="#{attrs.headerUrl}" class="header-image"/></h1>
               </div>
-              <div class="right header-right">
+              <!--<div class="right left">
                 <div class="phone">
                   #{attrs.phone}
                 </div>
@@ -68,6 +68,7 @@ define "min", () ->
                 <div class="open"> </div>
               </div>
               <div class="clear"></div>
+              -->
             </div>
             <div class="second-bar second-bar-gradient">
               <div class="headline">
