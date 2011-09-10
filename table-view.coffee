@@ -4,6 +4,8 @@ define 'table-view', () ->
   eventer = require "drews-event"
   TableView = eventer {}
   RowView = require "row-view"
+  InputUpload = require "input-upload"
+
   TableView.init = (fields) ->
     self = {}
     self = eventer self
@@ -38,22 +40,23 @@ define 'table-view', () ->
         </table>
       </div>
     """
+    
+    saveNew = (el) ->
+      prop = $(el).attr("data-prop")
+      val = $(el).val()
+      obj = {}
+      obj[prop] = val
+      table.find(".new").val("")
+      emit "new", obj
 
     table.find(".new").bind "keydown", (e) ->
       if e.keyCode in [9, 13]
-        console.log e.keyCode
-        prop = $(this).attr("data-prop")
-        val = $(this).val()
-        obj = {}
-        obj[prop] = val
-        table.find(".new").val("")
-        emit "new", obj
+        saveNew this
 
     self.addObj = (obj) ->
-      console.log "adding obj"
-      console.log obj.view.getEl()
+      el = obj.view.getEl()
 
-      table.find(".new-row").before(obj.view.getEl())
+      table.find(".new-row").before el
       obj.view.getEl().find("input")[0].focus()
       
       

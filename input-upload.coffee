@@ -3,6 +3,9 @@ InputUpload = {}
 InputUpload.init = (els) ->
   fileDroppable = require "file-droppable"
   FileBox = require "filebox" 
+  eventer = require "drews-event" 
+  self = eventer {}
+  {emit} = self
 
   fileHandler = fileDroppable $(els)
   fileHandler.on "filedroppableover", (el) ->
@@ -14,6 +17,7 @@ InputUpload.init = (els) ->
     el = $(el)
     $(el).css "background-color": "white"
     el.val urls
+    emit "change", $(el)
     
     
 
@@ -31,6 +35,8 @@ InputUpload.init = (els) ->
     el = $(el)
     filebox.uploadFiles files, (err, urls) ->
       el.val urls[0]
+      emit "change", $(el)
       progressBar.remove()
+  self
 
 define "input-upload", -> InputUpload

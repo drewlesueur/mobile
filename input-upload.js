@@ -2,9 +2,12 @@
   var InputUpload;
   InputUpload = {};
   InputUpload.init = function(els) {
-    var FileBox, fileDroppable, fileHandler;
+    var FileBox, emit, eventer, fileDroppable, fileHandler, self;
     fileDroppable = require("file-droppable");
     FileBox = require("filebox");
+    eventer = require("drews-event");
+    self = eventer({});
+    emit = self.emit;
     fileHandler = fileDroppable($(els));
     fileHandler.on("filedroppableover", function(el) {
       return $(el).css({
@@ -21,9 +24,10 @@
       $(el).css({
         "background-color": "white"
       });
-      return el.val(urls);
+      el.val(urls);
+      return emit("change", $(el));
     });
-    return fileHandler.on("filedroppablefiles", function(files, el) {
+    fileHandler.on("filedroppablefiles", function(files, el) {
       var filebox, progressBar;
       el = $(el);
       $(el).css({
@@ -40,9 +44,11 @@
       el = $(el);
       return filebox.uploadFiles(files, function(err, urls) {
         el.val(urls[0]);
+        emit("change", $(el));
         return progressBar.remove();
       });
     });
+    return self;
   };
   define("input-upload", function() {
     return InputUpload;

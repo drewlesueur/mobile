@@ -2,6 +2,7 @@ define 'row-view', () ->
   _ = require "underscore"
   nimble = require "nimble"
   eventer = require "drews-event"
+  InputUpload = require "input-upload"
   RowView = eventer {}
   RowView.init = (self={}) ->
     self = eventer self
@@ -23,14 +24,23 @@ define 'row-view', () ->
       
       </tr>
     """
+    doUpdating = (el) ->
+      prop = $(el).attr("data-prop")
+      val = $(el).val()
+      values = {}
+      values[prop] = val
+      emit "update", model, values
+
     el.find("input").bind "keydown", (e) ->
       if e.keyCode in [9, 13]
         console.log e.keyCode
-        prop = $(this).attr("data-prop")
-        val = $(this).val()
-        values = {}
-        values[prop] = val
-        emit "update", model, values
+        doUpdating this
+
+    input = InputUpload.init el.find("input[type=text]")
+    input.on "change", (el) ->
+      console.log el
+      doUpdating el
+
 
     el.find(".delete").bind "click", () ->
       emit "delete", model
