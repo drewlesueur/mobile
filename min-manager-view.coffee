@@ -3,10 +3,15 @@ define 'min-manager-view', () ->
   nimble = require "nimble"
   eventer = require "drews-event"
   MinManagerView = eventer {}
+  InputUpload = require "input-upload"
+
   MinManagerView.init = (self={}) ->
     self = eventer self
     {model, emit} = self
    
+    InputUpload.init $("input[type=text]")
+      
+
     self.clearItems = (tablePresenter) ->
       $(".items").empty()
 

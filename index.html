@@ -24,6 +24,7 @@
     <script src="table-view.js"></script>
     <script src="row.js"></script>
     <script src="row-view.js"></script>
+    <script src="input-upload.js"></script>
 
     <!--<script src="router.js"></script>-->
     <!--<script src="config.js"></script>-->
@@ -56,6 +57,9 @@
           embed code <br />
           <textarea class="embed-textarea" rows="5">
           </textarea>
+
+          progress bar
+          <div class="main-progress-bars"></div>
         </div>
         <div class="ctrls span8 column">
           <a class="new" href="#">New app</a>
@@ -72,6 +76,65 @@
             <div class="form-toggler">
 
 
+              <div class="form-togglee icons">
+                <form class="info-form">
+                  <fieldset>
+                    <legend>icons</legend>
+                    <div class="clearfix">
+                      <label for="specialsIcon">specials icon</label>
+                      <div class="input">
+                        <input id="specialsIcon" name="specialsIcon" type="text">
+                      </div>
+                    </div> <!-- /clearfix -->
+
+                    <div class="clearfix">
+                      <label for="menuIcon">menu icon</label>
+                      <div class="input">
+                        <input id="menuIcon" name="menuIcon" type="text">
+                      </div>
+                    </div> <!-- /clearfix -->
+
+                    <div class="clearfix">
+                      <label for="mapIcon">map icon</label>
+                      <div class="input">
+                        <input id="mapIcon" name="mapIcon" type="text">
+                      </div>
+                    </div> <!-- /clearfix -->
+
+                    <div class="clearfix">
+                      <label for="hoursIcon">hours icon</label>
+                      <div class="input">
+                        <input id="hoursIcon" name="hoursIcon" type="text">
+                      </div>
+                    </div> <!-- /clearfix -->
+
+                    <div class="clearfix">
+                      <label for="phoneIcon">phone icon</label>
+                      <div class="input">
+                        <input id="phoneIcon" name="phoneIcon" type="text">
+                      </div>
+                    </div> <!-- /clearfix -->
+                    
+                    <div class="clearfix">
+                      <label for="facebookIcon">facebook icon</label>
+                      <div class="input">
+                        <input id="facebookIcon" name="facebookIcon" type="text">
+                      </div>
+                    </div> <!-- /clearfix -->
+
+                    <div class="clearfix">
+                      <label for="twitterIcon">twitter icon</label>
+                      <div class="input">
+                        <input id="twitterIcon" name="twitterIcon" type="text">
+                      </div>
+                    </div> <!-- /clearfix -->
+
+                  </fieldset>
+                  <div class="actions">
+                    <button type="submit" class="btn primary save">Save</button>
+                  </div>
+                </form>
+              </div>
               <div class="form-togglee contact">
                 <form class="info-form">
                   <fieldset>
@@ -170,17 +233,18 @@
                       </div>
                     </div> <!-- /clearfix -->
                     <div class="clearfix">
-                      <label for="promoText">Promo Text</label>
-                      <div class="input">
-                        <input id="promoText" name="promoText" type="text">
-                      </div>
-                    </div>
-                    <div class="clearfix">
                       <label for="itemsText">Item/Menu/Product text</label>
                       <div class="input">
                         <input id="itemsText" name="itemsText" type="text">
                       </div>
                     </div> <!-- /clearfix -->
+
+                    <div class="clearfix">
+                      <label for="headlineColor1">headline color</label>
+                      <div class="input">
+                        <input id="headlineColor" name="headlineColor" type="text">
+                      </div>
+                    </div>
 
                     <div class="clearfix">
                       <label for="phoneColor1">phone Color 1</label>

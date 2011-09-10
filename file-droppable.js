@@ -8,12 +8,12 @@
       emit = self.emit;
       el || (el = $("<div></div>"));
       el.bind("dragover", function(e) {
-        emit("filedroppableover");
+        emit("filedroppableover", e.target);
         e.preventDefault();
         return e.stopPropagation();
       });
       el.bind("dragleave", function(e) {
-        emit("filedroppableleave");
+        emit("filedroppableleave", e.target);
         e.preventDefault();
         return e.stopPropagation();
       });
@@ -27,9 +27,9 @@
         e = e.originalEvent;
         files = e.dataTransfer.files;
         if (files.length > 0) {
-          return emit("filedroppablefiles", files);
+          return emit("filedroppablefiles", files, this);
         } else {
-          return emit("filedroppableurls", e.dataTransfer.getData('text'));
+          return emit("filedroppableurls", e.dataTransfer.getData('text'), this);
         }
       });
       return self;

@@ -1,10 +1,11 @@
 (function() {
   define('min-manager-view', function() {
-    var MinManagerView, eventer, nimble, _;
+    var InputUpload, MinManagerView, eventer, nimble, _;
     _ = require("underscore");
     nimble = require("nimble");
     eventer = require("drews-event");
     MinManagerView = eventer({});
+    InputUpload = require("input-upload");
     MinManagerView.init = function(self) {
       var emit, model;
       if (self == null) {
@@ -12,6 +13,7 @@
       }
       self = eventer(self);
       model = self.model, emit = self.emit;
+      InputUpload.init($("input[type=text]"));
       self.clearItems = function(tablePresenter) {
         return $(".items").empty();
       };
