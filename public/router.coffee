@@ -38,12 +38,26 @@ define "router", () ->
           callback fragment
           return true
 
+
+    oldHash = ""
+    checkUrl = (callback) ->
+      hash = location.hash.slice 1
+      if hash != oldHash
+        callback()
+      oldHash = hash
+      
     self.initHashWatch = (callback) ->
       callback ||= (e) ->
         hash = location.hash.slice 1
         testRoutes hash
       callback()
-      $(window).bind "hashchange", callback
+      if "onhashchange" of window
+        $(window).bind "hashchange", callback
+      else
+        setInterval (() -> checkUrl(callback)), 50
+
+        
+
     self
   Router
         

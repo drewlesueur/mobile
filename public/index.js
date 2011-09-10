@@ -56,30 +56,41 @@
     Router = require("router");
     AppView = {};
     AppView.init = function(options) {
-      var addItems, addSpecials, displayDirections, displayHours, displayItems, displaySpecials, emit, extraStyles, initHome, model, nav, navItems, self, showPage;
+      var addItems, addSpecials, displayDirections, displayHours, displayItems, displaySpecials, emit, extraStyles, initHome, mapText, model, nav, navItems, self, showPage;
       model = options.model;
       self = eventer({});
       emit = self.emit;
-      extraStyles = $("<style>\n  .top-bar, .top-bar a {\n    color: " + model.headerTextColor + " \n  }\n  body {\n    color: " + model.bodyTextColor + " \n  }\n  .second-bar, .second-bar a {\n    color: " + model.secondBarTextColor + "\n  }\n\n  .promo-wrapper {\n    color: " + model.promoTextColor + "\n  }\n\n  .nav-item {\n    color: " + model.buttonsTextColor + "\n  }\n\n  .item .title {\n    color: " + model.menuTitleTextColor + "\n  }\n\n  .item .price{\n    color: " + model.menuPriceTextColor + "\n  }\n\n  .item .description{\n    color: " + model.menuDescriptionTextColor + "\n  }\n  \n  .menu-gradient {\n    background: -webkit-gradient(linear, left top, left bottom, color-stop(0%," + model.menuColor1 + "), color-stop(1," + model.menuColor2 + "));\n  }\n\n  .header-gradient {\n    background: -webkit-gradient(linear, left top, left bottom, color-stop(0%," + model.headerColor1 + "), color-stop(1," + model.headerColor2 + "));\n    \n  }\n\n  .second-bar-gradient {\n    background: -webkit-gradient(linear, left top, left bottom, color-stop(0%," + model.secondBarColor1 + "), color-stop(1," + model.secondBarColor2 + "));\n    \n  }\n\n  .tile {\n    background: -webkit-gradient(linear, left top, left bottom, color-stop(0%," + model.bodyColor1 + "), color-stop(1," + model.bodyColor2 + "));\n    \n  }\n\n  .promo-gradient {\n    background: -webkit-gradient(linear, left top, left bottom, color-stop(0%," + model.promoColor1 + "), color-stop(1," + model.promoColor2 + "));\n  }\n\n</style>");
+      extraStyles = $("<style>\n  \n  .phone-bar a {\n    color: " + model.phoneColor + "  \n  }\n\n  body {\n    color: " + model.bodyTextColor + ";\n    background-image: url('" + model.promo + "');\n    background-repeat: no-repeat;\n  }\n  \n  .headline {\n    color: " + model.headlineColor + "\n  }\n\n\n  .promo-wrapper {\n    color: " + model.promoTextColor + "\n  }\n\n  .nav-item, .full-site {\n    color: " + model.buttonsTextColor + "\n  }\n\n  .item .title {\n    color: " + model.menuTitleTextColor + "\n  }\n\n  .item .price{\n    color: " + model.menuPriceTextColor + "\n  }\n\n  .item .description{\n    color: " + model.menuDescriptionTextColor + "\n  }\n  \n  .menu-gradient {\n    background: -webkit-gradient(linear, left top, left bottom, color-stop(0%," + model.menuColor1 + "), color-stop(1," + model.menuColor2 + "));\n  }\n\n\n  .tile {\n    background: -webkit-gradient(linear, left top, left bottom, color-stop(0%," + model.bodyColor1 + "), color-stop(1," + model.bodyColor2 + "));\n    \n  }\n\n  .promo-gradient {\n    background: -webkit-gradient(linear, left top, left bottom, color-stop(0%," + model.promoColor1 + "), color-stop(1," + model.promoColor2 + "));\n  }\n\n</style>");
       extraStyles.appendTo($("head"));
       $("h1").bind("click", function() {
         return location.href = "#";
       });
       showPage = function(className) {
+        var phoneText;
         $(".content .tile").hide();
         $(".content .tile." + className).show();
         if (className === "home") {
           className = "";
         }
-        return $(".headline").text(navItems[className]);
+        if (className !== "") {
+          phoneText = model.phone;
+        } else {
+          phoneText = "";
+        }
+        return $(".headline").html("<div class=\"left\">" + navItems[className] + "</div>\n\n<div class=\"right phone-bar\"><a href=\"tel:" + phoneText + "\">" + phoneText + "</a></div>");
       };
       $(".content").append("<div class=\"clear\"></div>");
+      if (model.address) {
+        mapText = "Map";
+      } else {
+        mapText = "Locations";
+      }
       navItems = {
         specials: "Specials",
         menu: model.itemsText,
-        map: "Map",
+        map: mapText,
         hours: "Hours",
-        call: "Call Us",
+        call: "<span style=\"\">" + model.phone + "</span>",
         facebook: "facebook",
         twitter: "Twitter",
         "": model.headline
@@ -120,8 +131,6 @@
         navHtml = "";
         _.each(navItems, function(navItemText, navItem) {
           var href;
-          console.log(navItemText);
-          console.log(navItem);
           routes[navItem] = function() {
             return nav(navItem);
           };
@@ -146,14 +155,14 @@
               return;
             }
           }
-          return navHtml += "<div>\n<a class=\"nav-item\" data-nav=\"" + navItem + "\" href=\"" + href + "\" style=\"background-image: url('http://drewl.us:8010/icons/" + navItem + ".png')\">\n  <span>" + (_.capitalize(navItemText)) + "</span>\n</a>\n</div>";
+          return navHtml += "<a class=\"nav-item\" data-nav=\"" + navItem + "\" href=\"" + href + "\" style=\"background-image: url('http://drewl.us:8010/icons/" + navItem + ".png')\">\n  <span>" + (_.capitalize(navItemText)) + "</span>\n</a>";
         });
         if (model.promo) {
           promoImage = "<img src=\"" + model.promo + "\" />";
         } else {
           promoImage = "";
         }
-        navHtml = $("<div class=\"home tile hidden\">\n  <div class=\"promo\" style=\"position:absolute;\">\n    " + promoImage + "\n    <div class=\"promo-wrapper promo-gradient\" style=\"display:none;\">\n      <div class=\"promo-text paddinglr\">\n        " + model.promoText + "\n      </div>\n      <form class=\"phone-form paddinglr\" action=\"/\" method=\"POST\">\n        <div class=\"clearfix\">\n          <div class=\"input\">\n            <input id=\"phone\" name=\"phone\" type=\"tel\">\n            <input class=\"send\" type=\"submit\" value=\"Send\">\n          </div>\n        </div> <!-- /clearfix -->\n      </form>\n    </div>\n  </div>\n  <div class=\"nav\">\n    " + navHtml + "\n  </div>\n  <div class=\"clear\">\n  <br />\n  <br />\n<a class=\"full-site\" href=\"" + model.fullUrl + "\">Full Site</a><a href=\"javascript:delete localStorage.existingPhone;void(0);\">.</a>\n</div>");
+        navHtml = $("<div class=\"home tile hidden\">\n  <div class=\"promo\" style=\"position:absolute; z-index: -100;\">\n    <div class=\"promo-wrapper promo-gradient\" style=\"display:none;\">\n      <div class=\"promo-text paddinglr\">\n        " + model.promoText + "\n      </div>\n      <form class=\"phone-form paddinglr\" action=\"/\" method=\"POST\">\n        <div class=\"clearfix\">\n          <div class=\"input\">\n            <input id=\"phone\" name=\"phone\" type=\"tel\">\n            <input class=\"send\" type=\"submit\" value=\"Send\">\n          </div>\n        </div> <!-- /clearfix -->\n      </form>\n    </div>\n  </div>\n  <div class=\"nav\">\n    " + navHtml + "\n  </div>\n  <div class=\"clear\">\n  <br />\n  <br />\n<a class=\"full-site\" href=\"" + model.fullUrl + "\">Full Site</a><a class=\"full-site\" href=\"javascript:delete localStorage.existingPhone;void(0);\">.</a>\n</div>");
         $(".content").append(navHtml);
         navHtml.find("form").bind("submit", function(e) {
           e.preventDefault();
@@ -189,7 +198,7 @@
       displayItems();
       addItems = self.addItems = function(items) {
         return _.each(items, function(item) {
-          return $(".content .menu").append($("<div class=\"item menu-gradient\">\n    <img class=\"left paddingr\"  src=\"" + (item.image || model.headerUrl) + "\" />\n    <div class=\"title\">" + (item.title || "") + "</div>\n    <div class=\"price\">" + (item.price || "") + "</div>\n  <div class=\"clear\"></div>\n    <div class=\"description\">" + (item.description || "") + "</div>\n</div>"));
+          return $(".content .menu").append($("<div class=\"item menu-gradient\">\n    <img class=\"\"  src=\"" + (item.image || model.headerUrl) + "\" />\n    <div class=\"title\">" + (item.title || "") + "</div>\n    <div class=\"price\">" + (item.price || "") + "</div>\n  <div class=\"clear\"></div>\n    <div class=\"description\">" + (item.description || "") + "</div>\n</div>"));
         });
       };
       displaySpecials = function() {
@@ -200,7 +209,7 @@
       displaySpecials();
       addSpecials = self.addSpecials = function(items) {
         return _.each(items, function(item) {
-          return $(".content .specials").append($("<div class=\"item menu-gradient\">\n    <img class=\"left paddingr\"  src=\"" + (item.image || model.headerUrl) + "\" />\n    <div class=\"title\">" + (item.title || "") + "</div>\n    <div class=\"price\">" + (item.price || "") + "</div>\n  <div class=\"clear\"></div>\n    <div class=\"description\">" + (item.description || "") + "</div>\n</div>"));
+          return $(".content .specials").append($("<div class=\"item menu-gradient\">\n    <img class=\"\"  src=\"" + (item.image || model.headerUrl) + "\" />\n    <div class=\"title\">" + (item.title || "") + "</div>\n    <div class=\"price\">" + (item.price || "") + "</div>\n  <div class=\"clear\"></div>\n    <div class=\"description\">" + (item.description || "") + "</div>\n</div>"));
         });
       };
       self.doHours = function() {
@@ -217,10 +226,12 @@
         closeTime = timeToMili(closeText);
         time = drews.time();
         if (time >= openTime && time <= closeTime) {
-          return $(".open").html("Open 'til <a href=\"#hours\">" + closeText + "</a>");
+          openText = "Open til " + (drews.s(closeText, 0, -2));
         } else {
-          return $(".open").html("<a href=\"#hours\">Hours</a>");
+          openText = "<a href=\"#hours\">Hours</a>";
         }
+        $(".hours").text(openText);
+        return $("[data-nav=hours] > span").html(openText);
       };
       initHome();
       return self;

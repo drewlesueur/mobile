@@ -7,6 +7,7 @@
 
 }
 
+
 .second-bar {
   padding: 5px;
 }
@@ -53,12 +54,6 @@ body, input[type="text"], input[type="tel"] {
   width: 210px;
 }
 
-.nav a {
-  float: left;
-  display: block;
-  width: 106px;
-  height: 106px;
-}
 
 .title {
   font-size: 1.4em;
@@ -73,6 +68,28 @@ body, input[type="text"], input[type="tel"] {
   font-weight: bold;
   font-size: 1.2em;
 }
+
+.full-site {
+  font-size: .7em;
+}
+
+.phone-bar {
+  font-weight: normal;
+  font-size: .9em !important;
+}
+
+.nav a {
+  float: left;
+  display: block;
+  width: 106px;
+  height: 106px;
+}
+
+
+.nav {
+  font-size: .85em;
+}
+
 .nav-item {
   text-shadow: 2px 2px 3px #000;
   font-weight: bold;
@@ -121,6 +138,9 @@ body, input[type="text"], input[type="tel"] {
 
 .left {
   float: left;
+}
+.right {
+  float: right;
 }
 
 .right {

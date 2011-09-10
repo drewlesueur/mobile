@@ -4,7 +4,7 @@
     _ = require("underscore");
     Router = {};
     Router.init = function(routes) {
-      var addRoute, escapeRegExp, extractParameters, namedParam, routeToRegExp, routesList, self, splatParam, testRoutes;
+      var addRoute, checkUrl, escapeRegExp, extractParameters, namedParam, oldHash, routeToRegExp, routesList, self, splatParam, testRoutes;
       self = {};
       routes || (routes = {
         test: function(frag) {
@@ -50,6 +50,15 @@
           }
         });
       };
+      oldHash = "";
+      checkUrl = function(callback) {
+        var hash;
+        hash = location.hash.slice(1);
+        if (hash !== oldHash) {
+          callback();
+        }
+        return oldHash = hash;
+      };
       self.initHashWatch = function(callback) {
         callback || (callback = function(e) {
           var hash;
@@ -57,7 +66,13 @@
           return testRoutes(hash);
         });
         callback();
-        return $(window).bind("hashchange", callback);
+        if ("onhashchange" in window) {
+          return $(window).bind("hashchange", callback);
+        } else {
+          return setInterval((function() {
+            return checkUrl(callback);
+          }), 50);
+        }
       };
       return self;
     };

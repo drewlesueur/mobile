@@ -66,21 +66,27 @@ define "app-view", () ->
 
     extraStyles = $ """
       <style>
-        .top-bar, .top-bar a {
-          color: #{model.headerTextColor} 
+        
+        .phone-bar a {
+          color: #{model.phoneColor}  
         }
+
         body {
-          color: #{model.bodyTextColor} 
+          color: #{model.bodyTextColor};
+          background-image: url('#{model.promo}');
+          background-repeat: no-repeat;
         }
-        .second-bar, .second-bar a {
-          color: #{model.secondBarTextColor}
+        
+        .headline {
+          color: #{model.headlineColor}
         }
+
 
         .promo-wrapper {
           color: #{model.promoTextColor}
         }
 
-        .nav-item {
+        .nav-item, .full-site {
           color: #{model.buttonsTextColor}
         }
 
@@ -100,15 +106,6 @@ define "app-view", () ->
           background: -webkit-gradient(linear, left top, left bottom, color-stop(0%,#{model.menuColor1}), color-stop(1,#{model.menuColor2}));
         }
 
-        .header-gradient {
-          background: -webkit-gradient(linear, left top, left bottom, color-stop(0%,#{model.headerColor1}), color-stop(1,#{model.headerColor2}));
-          
-        }
-
-        .second-bar-gradient {
-          background: -webkit-gradient(linear, left top, left bottom, color-stop(0%,#{model.secondBarColor1}), color-stop(1,#{model.secondBarColor2}));
-          
-        }
 
         .tile {
           background: -webkit-gradient(linear, left top, left bottom, color-stop(0%,#{model.bodyColor1}), color-stop(1,#{model.bodyColor2}));
@@ -132,24 +129,38 @@ define "app-view", () ->
       $(".content .tile.#{className}").show()
       if className == "home"
         className = ""
-      $(".headline").text navItems[className]
+      if className != ""
+        phoneText = model.phone
+      else
+        phoneText = ""
+      $(".headline").html """
+        <div class="left">#{navItems[className]}</div>
+        
+        <div class="right phone-bar"><a href="tel:#{phoneText}">#{phoneText}</a></div>
+      """
+
 
     $(".content").append """<div class="clear"></div>"""
 
 
+    if model.address
+      mapText = "Map"
+    else
+      mapText = "Locations"
     navItems =
       specials: "Specials"
       menu: model.itemsText
-      map: "Map"
+      map: mapText
       hours: "Hours"
-      call: "Call Us"
+      call: """
+        <span style="">#{model.phone}</span>
+      """
       facebook:"facebook"
       twitter: "Twitter"
       "": model.headline
 
     nav = self.nav = (className) ->
       scrollTo 0, 0, 1
-
       if className == ""
         className = "home"
       if className == "specials"
@@ -180,8 +191,6 @@ define "app-view", () ->
       routes = {}
       navHtml = ""
       _.each navItems, (navItemText, navItem) ->
-        console.log navItemText  
-        console.log navItem
         routes[navItem] = () -> 
           nav navItem 
 
@@ -203,11 +212,9 @@ define "app-view", () ->
             return
         
         navHtml += """
-          <div>
           <a class="nav-item" data-nav="#{navItem}" href="#{href}" style="background-image: url('http://drewl.us:8010/icons/#{navItem}.png')">
             <span>#{_.capitalize navItemText}</span>
           </a>
-          </div>
         """
       
       if model.promo
@@ -217,8 +224,7 @@ define "app-view", () ->
 
       navHtml = $ """
         <div class="home tile hidden">
-          <div class="promo" style="position:absolute;">
-            #{promoImage}
+          <div class="promo" style="position:absolute; z-index: -100;">
             <div class="promo-wrapper promo-gradient" style="display:none;">
               <div class="promo-text paddinglr">
                 #{model.promoText}
@@ -239,7 +245,7 @@ define "app-view", () ->
           <div class="clear">
           <br />
           <br />
-        <a class="full-site" href="#{model.fullUrl}">Full Site</a><a href="javascript:delete localStorage.existingPhone;void(0);">.</a>
+        <a class="full-site" href="#{model.fullUrl}">Full Site</a><a class="full-site" href="javascript:delete localStorage.existingPhone;void(0);">.</a>
         </div>
       """
 
@@ -304,7 +310,7 @@ define "app-view", () ->
       _.each items, (item) ->
         $(".content .menu").append $ """
           <div class="item menu-gradient">
-              <img class="left paddingr"  src="#{item.image or model.headerUrl}" />
+              <img class=""  src="#{item.image or model.headerUrl}" />
               <div class="title">#{item.title or ""}</div>
               <div class="price">#{item.price or ""}</div>
             <div class="clear"></div>
@@ -328,7 +334,7 @@ define "app-view", () ->
       _.each items, (item) ->
         $(".content .specials").append $ """
           <div class="item menu-gradient">
-              <img class="left paddingr"  src="#{item.image or model.headerUrl}" />
+              <img class=""  src="#{item.image or model.headerUrl}" />
               <div class="title">#{item.title or ""}</div>
               <div class="price">#{item.price or ""}</div>
             <div class="clear"></div>
@@ -351,13 +357,18 @@ define "app-view", () ->
 
       time = drews.time()
       if time >= openTime and time <= closeTime
-        $(".open").html """
-          Open 'til <a href="#hours">#{closeText}</a>
+        
+        openText = """
+          Open til #{drews.s(closeText, 0, -2)}
         """
       else
-        $(".open").html """
+        openText = """
           <a href="#hours">Hours</a>
         """
+
+      $(".hours").text openText
+      $("[data-nav=hours] > span").html openText
+
 
     initHome()
     self
