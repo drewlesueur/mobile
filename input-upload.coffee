@@ -7,15 +7,19 @@ InputUpload.init = (els) ->
   fileHandler = fileDroppable $(els)
   fileHandler.on "filedroppableover", (el) ->
     $(el).css "background-color": "yellow"
+  fileHandler.on "filedroppableleave", (el) ->
+    $(el).css "background-color": "white"
 
   fileHandler.on "filedroppableurls", (urls, el) ->
     el = $(el)
+    $(el).css "background-color": "white"
     el.val urls
     
     
 
   fileHandler.on "filedroppablefiles", (files, el) ->
     el = $(el)
+    $(el).css "background-color": "white"
     progressBar = $ """
       <div style="background-color: blue; height: 10px; width: 0px; position: absolute; left: #{el.offset().left}px; top: #{el.offset().top}px; " ></div>
     """
