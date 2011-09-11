@@ -63,6 +63,10 @@ define "app-view", () ->
     {model} = options
     self = eventer {}
     {emit} = self
+    $(document.body).append """
+      <div class="content content-gradient scrollable2 horizontal2 paginated2"></div>
+    """
+
 
     extraStyles = $ """
       <style>
@@ -73,7 +77,7 @@ define "app-view", () ->
 
         body {
           color: #{model.bodyTextColor};
-          background-image: url('#{model.promo}');
+          background-image: url('#{model.backgroundImage}');
           background-repeat: no-repeat;
         }
         
@@ -125,7 +129,7 @@ define "app-view", () ->
       location.href = "#"
 
     showPage = (className) ->
-      $(".content .tile").hide()
+      #$(".content .tile").hide()
       $(".content .tile.#{className}").show()
       if className == "home"
         className = ""
@@ -140,7 +144,7 @@ define "app-view", () ->
       """
 
 
-    $(".content").append """<div class="clear"></div>"""
+    #$(".content").append """<div class="clear"></div>"""
 
 
     if model.address
@@ -186,7 +190,7 @@ define "app-view", () ->
 
      
 
-    initHome = () ->
+    addHomePage = () ->
 
       routes = {}
       navHtml = ""
@@ -217,28 +221,9 @@ define "app-view", () ->
           </a>
         """
       
-      if model.promo
-        promoImage = """<img src="#{model.promo}" />"""
-      else
-        promoImage = ""
 
       navHtml = $ """
-        <div class="home tile page ">
-          <div class="promo" style="position:absolute; z-index: -100;">
-            <div class="promo-wrapper promo-gradient" style="display:none;">
-              <div class="promo-text paddinglr">
-                #{model.promoText}
-              </div>
-              <form class="phone-form paddinglr" action="/" method="POST">
-                <div class="clearfix">
-                  <div class="input">
-                    <input id="phone" name="phone" type="tel">
-                    <input class="send" type="submit" value="Send">
-                  </div>
-                </div> <!-- /clearfix -->
-              </form>
-            </div>
-          </div>
+        <div class="home tile page2 ">
           <div class="nav">
             #{navHtml}
           </div>
@@ -251,6 +236,7 @@ define "app-view", () ->
 
 
       $(".content").append navHtml
+
       navHtml.find("form").bind "submit", (e) ->
         e.preventDefault()
         emit "phone", $("#phone").val()
@@ -260,11 +246,11 @@ define "app-view", () ->
       router = Router.init routes
       router.initHashWatch()
 
-    displayDirections = () ->
+    addDirectionsPage = () ->
       urlAddress = encodeURIComponent model.address.replace /\n/g, " "
       htmlAddress = model.address.replace /\n/g, "<br />"
       directionsHtml =  """
-       <div class="tile map hidden">
+       <div class="tile map page2">
          <div class="paddinglr">#{htmlAddress}</div>
 
          <!--<a target="blank" href="http://maps.google.com/maps?daddr=#{urlAddress}">Google Map Directions</a>-->
@@ -274,11 +260,10 @@ define "app-view", () ->
        </div>
       """
       $(".content").append directionsHtml
-    displayDirections()
       
 
 
-    displayHours = () ->
+    addHoursPage = () ->
       dayRows = ""
       for day in daysMonday
         dayRows += getDayRow day, model
@@ -290,21 +275,19 @@ define "app-view", () ->
         </table>
       """
       $(".content").append """
-        <div class="hours tile hidden">#{hoursTable}</hours>
+        <div class="hours tile page2">#{hoursTable}</hours>
       """
-    displayHours()
 
     menuMaker = (name) ->
-      displayItems = () ->
+      addMenuPage = () ->
         itemsTable =  """ 
           <div class="items-table">
 
           </div>
         """
         $(".content").append """
-          <div class="#{name} tile hidden">#{itemsTable}</hours>
+          <div class="#{name} tile page2 scrollable2 vertical2">#{itemsTable}</hours>
         """
-      displayItems()
       self["add" + drews.capitalize(name)] = (items) ->
         if name == "items"
           console.log "you are adding an item"
@@ -326,13 +309,12 @@ define "app-view", () ->
                 <div class="clear"></div>
             </div>
           """
-    menuMaker "specials"
-    menuMaker "menu"
+      addMenuPage
 
+    addSpecialsPage = menuMaker "specials"
+    addMenuPage = menuMaker "menu"
 
-
-
-    self.doHours = () ->
+    self.calcHours = () ->
       date = new Date()
       day = days[date.getDay()]
       isEvenOpen = model["#{day}Open"]
@@ -360,16 +342,47 @@ define "app-view", () ->
       $("[data-nav=hours] > span").html openText
 
 
-    initHome()
+    addHomePage()
+    addSpecialsPage()
+    addMenuPage()
+    addDirectionsPage()
+    addHoursPage()
+    
+    content = $(".content")
+    touch = {}
+    touch.newX = 0
+    touch.newY = 0
+    touchStart = (e) ->
+      e.preventDefault()
+      touch.x1 = e.touches[0].pageX
+      touch.y1 = e.touches[0].pageY
+#      touch.scrollStartX = $(".content").offset().left
+#      touch.scrollStartY = $(".content").offset().top
+    $(document.body).bind "touchstart", touchStart
+
+    touchMove = (e) ->
+      document.title = "#{touch.x1}, #{touch.x2} #{touch.newX}"
+      e.preventDefault()
+      touch.x2 = e.touches[0].pageX
+      touch.y2 = e.touches[0].pageY
+      touch.newX = touch.newX + touch.x2 - touch.x1
+      touch.newY = touch.newY + touch.y2 - touch.y1
+      touch.x1 = touch.x2
+      touch.y1 = touch.y2
+      touch.speed = 
+      #scrollTo newX, newY, 1
+      content[0].style.webkitTransform = "translate3d(#{touch.newX}px, #{touch.newY}px, 0)"
+
+    $(document.body).bind "touchmove", touchMove
+    
+
+        
+      
+
     self
   AppView
 
 
-loadScript = (url, callback) ->
-  script = document.createElement "script"
-
-  
-  
 
 define "app-presenter", () ->
   model = require "model"
@@ -379,7 +392,7 @@ define "app-presenter", () ->
 
     severus.db = "mobilemin_#{model.name}"
     view = AppView.init model: model
-    view.doHours()
+    #view.calcHours()
 
     severus.find "items", (err, items) ->
       items = items.sort (a, b)->
@@ -401,6 +414,5 @@ define "app-presenter", () ->
 AppPresenter = require "app-presenter"
 
 $ ->
-  alert "test"
   AppPresenter.init()
   drews.wait 1000, -> scrollTo 0, 0, 1

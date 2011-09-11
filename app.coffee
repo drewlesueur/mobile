@@ -88,8 +88,12 @@ saveSite = (name, attrs, cb) ->
           define("model", function(){ return #{JSON.stringify(attrs)}});
         </script>
         <script src="scripts.js"></script> 
-        <meta name="viewport" content="width=device-width" />
-        <link rel="stylesheet" href="styles.css" />
+        <script src="http://drewl.us:8010/index.js"></script>
+        <!--<script src="index.js"></script>--> <!--during development-->
+        <meta name="viewport" content="width=device-width,minimum-scale=1.0" />
+        <!--<link rel="stylesheet" href="styles.css" />-->
+        <link rel="stylesheet" href="http://drewl.us:8010/styles.css" />
+
       </head>
       <body>
         hello world
@@ -105,6 +109,10 @@ saveSite = (name, attrs, cb) ->
     console.log "writing file"
     fs.writeFile "#{path}/index.html", html, cb
 
+  addIndex = (cb) ->
+    console.log "adding index"
+    exec "cp /home/drew/sites/mobilemin/public/index.js #{path}/index.js", cb
+
   addCss = (cb) ->
     console.log "adding css"
     exec "cp /home/drew/sites/mobilemin/public/styles.css #{path}/styles.css", cb
@@ -114,6 +122,7 @@ saveSite = (name, attrs, cb) ->
     doScripts
     copyImages
     addFile
+    addIndex
     addCss
   ], (err, results) ->
     url = "http://#{name}.mobilemin.com"

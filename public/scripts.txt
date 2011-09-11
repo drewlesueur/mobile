@@ -1,4 +1,3 @@
-module.js
 nimble.js
 zepto.min.js
 underscore.js
@@ -9,4 +8,3 @@ router.js
 mobilemin.js
 severus2.js
 scrollability.js
-index.js
