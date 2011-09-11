@@ -419,18 +419,21 @@ define "app-view", () ->
       y = Math.pow(yLen, 2)
       distance = Math.pow x + y, 0.5
       speed = distance / time
-      newDistance = distance + speed * 100
+      newDistance = distance + speed * 200
+
       if distance == 0 then return
       newXLen = xLen * newDistance / distance
       newYLen = yLen * newDistance / distance
       newX = newXLen + touch.newX
       newY = newYLen + touch.newY
+
+      newXNotRounded = newX
+      newX = Math.round(newX / 320) * 320
+      document.title = "#{newXNotRounded}, #{newX}"
       touch.newX = newX
       touch.newY = newY
 
 
-      document.title = "#{distance} #{time} #{distance/time}"
-      document.title = "#{newXLen} #{x2}"
 
       $(content).anim
         translate3d: "#{newX}px, #{0}px, 0"

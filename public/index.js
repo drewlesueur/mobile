@@ -287,7 +287,7 @@
         }
       };
       touchEnd = function(e) {
-        var distance, newDistance, newX, newXLen, newY, newYLen, speed, time, x, x0, x1, x2, xLen, y, y0, y1, y2, yLen;
+        var distance, newDistance, newX, newXLen, newXNotRounded, newY, newYLen, speed, time, x, x0, x1, x2, xLen, y, y0, y1, y2, yLen;
         if (touch.yOnly === true) {
           return;
         }
@@ -299,7 +299,7 @@
         y = Math.pow(yLen, 2);
         distance = Math.pow(x + y, 0.5);
         speed = distance / time;
-        newDistance = distance + speed * 100;
+        newDistance = distance + speed * 200;
         if (distance === 0) {
           return;
         }
@@ -307,10 +307,11 @@
         newYLen = yLen * newDistance / distance;
         newX = newXLen + touch.newX;
         newY = newYLen + touch.newY;
+        newXNotRounded = newX;
+        newX = Math.round(newX / 320) * 320;
+        document.title = "" + newXNotRounded + ", " + newX;
         touch.newX = newX;
         touch.newY = newY;
-        document.title = "" + distance + " " + time + " " + (distance / time);
-        document.title = "" + newXLen + " " + x2;
         return $(content).anim({
           translate3d: "" + newX + "px, " + 0 + "px, 0"
         }, 0.25, 'cubic-bezier(0.000, 0.000, 0.005, 0.9999)');
