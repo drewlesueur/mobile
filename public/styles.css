@@ -56,12 +56,12 @@ body, input[type="text"], input[type="tel"] {
 
 
 .title {
-  font-size: 1.4em;
+  font-size: 1em;
   font-weight: bold;
 }
 
 .description {
-  padding-top: 5px;
+  font-size: 0.9em;
 }
 
 .headline {
@@ -134,6 +134,35 @@ body, input[type="text"], input[type="tel"] {
   border-bottom: 1px solid #D0D0D0;
   padding-left: 5px;
   padding-right: 5px;
+}
+
+
+.relative {
+  position: relative;
+}
+
+.item .right .price {
+  font-size: 0.9em;
+  position: absolute;
+  top: 0;
+  right: 0;
+}
+
+
+
+
+.item .right {
+  width: 240px;
+}
+
+.item .left {
+  width: 60px;
+}
+
+.item .left img {
+  max-width: 60px;
+  border-radius: 5px;
+
 }
 
 .left {

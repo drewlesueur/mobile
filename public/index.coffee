@@ -91,11 +91,11 @@ define "app-view", () ->
         }
 
         .item .title {
-          color: #{model.menuTitleTextColor}
+          color: #{model.menuTitleTextColor or "black"}
         }
 
         .item .price{
-          color: #{model.menuPriceTextColor}
+          color: #{model.menuPriceTextColor or "gray"}
         }
 
         .item .description{
@@ -103,7 +103,7 @@ define "app-view", () ->
         }
         
         .menu-gradient {
-          background: -webkit-gradient(linear, left top, left bottom, color-stop(0%,#{model.menuColor1}), color-stop(1,#{model.menuColor2}));
+          background: -webkit-gradient(linear, left top, left bottom, color-stop(0%,#{model.menuColor1 or "white"}), color-stop(1,#{model.menuColor2 or "#EFEFEF"}));
         }
 
 
@@ -152,7 +152,7 @@ define "app-view", () ->
       menu: model.itemsText
       map: mapText
       hours: "Hours"
-      call: """
+      phone: """
         <span style="">#{model.phone}</span>
       """
       facebook:"facebook"
@@ -210,9 +210,9 @@ define "app-view", () ->
             href = model.facebookUrl
           else
             return
-        
+        navItemUrl = model[navItem + "Icon"] || "http://drewl.us:8010/icons/#{navItem}.png"
         navHtml += """
-          <a class="nav-item" data-nav="#{navItem}" href="#{href}" style="background-image: url('http://drewl.us:8010/icons/#{navItem}.png')">
+          <a class="nav-item" data-nav="#{navItem}" href="#{href}" style="background-image: url('#{navItemUrl}')">
             <span>#{_.capitalize navItemText}</span>
           </a>
         """
@@ -223,7 +223,7 @@ define "app-view", () ->
         promoImage = ""
 
       navHtml = $ """
-        <div class="home tile hidden">
+        <div class="home tile page ">
           <div class="promo" style="position:absolute; z-index: -100;">
             <div class="promo-wrapper promo-gradient" style="display:none;">
               <div class="promo-text paddinglr">
@@ -294,53 +294,43 @@ define "app-view", () ->
       """
     displayHours()
 
-    
-    displayItems = () ->
-      itemsTable =  """ 
-        <div class="items-table">
+    menuMaker = (name) ->
+      displayItems = () ->
+        itemsTable =  """ 
+          <div class="items-table">
 
-        </div>
-      """
-      $(".content").append """
-        <div class="menu tile hidden">#{itemsTable}</hours>
-      """
-    displayItems()
-
-    addItems = self.addItems = (items) ->
-      _.each items, (item) ->
-        $(".content .menu").append $ """
-          <div class="item menu-gradient">
-              <img class=""  src="#{item.image or model.headerUrl}" />
-              <div class="title">#{item.title or ""}</div>
-              <div class="price">#{item.price or ""}</div>
-            <div class="clear"></div>
-              <div class="description">#{item.description or ""}</div>
           </div>
         """
-
-
-    displaySpecials = () ->
-      itemsTable =  """ 
-        <div class="items-table">
-
-        </div>
-      """
-      $(".content").append """
-        <div class="specials tile hidden">#{itemsTable}</hours>
-      """
-    displaySpecials()
-
-    addSpecials = self.addSpecials = (items) ->
-      _.each items, (item) ->
-        $(".content .specials").append $ """
-          <div class="item menu-gradient">
-              <img class=""  src="#{item.image or model.headerUrl}" />
-              <div class="title">#{item.title or ""}</div>
-              <div class="price">#{item.price or ""}</div>
-            <div class="clear"></div>
-              <div class="description">#{item.description or ""}</div>
-          </div>
+        $(".content").append """
+          <div class="#{name} tile hidden">#{itemsTable}</hours>
         """
+      displayItems()
+      self["add" + drews.capitalize(name)] = (items) ->
+        if name == "items"
+          console.log "you are adding an item"
+
+        _.each items, (item) ->
+          console.log item 
+          $(".content .#{name}").append $ """
+            <div class="item menu-gradient">
+                <div class="left">
+                  <img class=""  src="#{item.image or model.headerUrl}" />
+                </div>
+                <div class="right relative">
+                  <div class="item-top-bar relative">
+                    <div class="title">#{item.title or ""}</div>
+                    <div class="price">#{item.price or ""}</div>
+                  </div>
+                  <div class="description">#{item.description or ""}</div>
+                </div>
+                <div class="clear"></div>
+            </div>
+          """
+    menuMaker "specials"
+    menuMaker "menu"
+
+
+
 
     self.doHours = () ->
       date = new Date()
@@ -374,11 +364,19 @@ define "app-view", () ->
     self
   AppView
 
+
+loadScript = (url, callback) ->
+  script = document.createElement "script"
+
+  
+  
+
 define "app-presenter", () ->
   model = require "model"
   AppView = require "app-view"
   AppPresenter = {}
   AppPresenter.init = () ->
+
     severus.db = "mobilemin_#{model.name}"
     view = AppView.init model: model
     view.doHours()
@@ -386,7 +384,7 @@ define "app-presenter", () ->
     severus.find "items", (err, items) ->
       items = items.sort (a, b)->
         a.order - b.order
-      view.addItems items
+      view.addMenu items
 
     severus.find "specials", (err, items) ->
       items = items.sort (a, b)->
@@ -403,5 +401,6 @@ define "app-presenter", () ->
 AppPresenter = require "app-presenter"
 
 $ ->
+  alert "test"
   AppPresenter.init()
   drews.wait 1000, -> scrollTo 0, 0, 1

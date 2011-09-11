@@ -46,7 +46,7 @@ pg = (p, f) ->
 # Routes
 #TODO: make it so it just sends the JSON?, not the html
 #would have to change the min.coffee file in the other branch
-saveSite = (name, html, cb) ->
+saveSite = (name, attrs, cb) ->
   if name.length < 1 then return cb "bad name"
   #command = "rm -r /home/drew/sites/#{name}"
   
@@ -55,43 +55,70 @@ saveSite = (name, html, cb) ->
     console.log "makeing dir"
     fs.mkdir path, 0777, (err) -> cb()
 
+  doScripts = (cb) ->
+    console.log "joining scripts"
+    #exec "cd public; cat `scripts.txt` > #{path}/scripts.js", (err, stdout, stderr) ->
+    exec "cd public; cat `cat scripts.txt` > #{path}/scripts.js", (err, stdout, stderr) ->
+      console.log stdout
+      console.log stderr
+      console.log "did they join?"
+      if err then console.log "There was an error combining files"
+      cb err
+
+  
+  html = """
+    <!doctype html>
+    <html>
+      <head>
+        <script>
+          var defs = {};
+          var modules = {};
+          function define(name, fn) {
+            defs[name] = fn;
+          }
+          function require(name) {
+            if (modules.hasOwnProperty(name)) return modules[name];
+            if (defs.hasOwnProperty(name)) {
+              var fn = defs[name];
+              defs[name] = function () { throw new Error("Circular Dependency"); }
+              return modules[name] = fn();
+            }
+            throw new Error("Module not found: " + name);
+          } 
+          define("model", function(){ return #{JSON.stringify(attrs)}});
+        </script>
+        <script src="scripts.js"></script> 
+        <meta name="viewport" content="width=device-width" />
+        <link rel="stylesheet" href="styles.css" />
+      </head>
+      <body>
+        hello world
+      <body>
+    </html>
+  """
+
+  copyImages = (cb) ->
+    cb()
+    #todo: find all images and copy them over to the files
+
   addFile = (cb) ->
     console.log "writing file"
     fs.writeFile "#{path}/index.html", html, cb
-
-  addModule = (cb) ->
-    console.log "adding module"
-    exec "cp /home/drew/sites/inc.the.tl/module.js #{path}/module.js", cb
-
-
-  addZepto = (cb) ->
-    console.log "adding zepto"
-    exec "cp /home/drew/sites/inc.the.tl/zepto/dist/zepto.min.js #{path}/zepto.min.js", cb
 
   addCss = (cb) ->
     console.log "adding css"
     exec "cp /home/drew/sites/mobilemin/public/styles.css #{path}/styles.css", cb
 
-  doCoffee = (cb) ->
-    console.log "doing coffee"
-    exec "cp /home/drew/sites/mobilemin/public/index.coffee #{path}/index.coffee", (err) ->
-      console.log err
-      cb err
-
-  compileCoffee = (cb) ->
-    console.log "compiling coffee"
-    exec "coffee -c #{path}/index.coffee", cb
-
   series [
     mkdir
+    doScripts
+    copyImages
     addFile
-    addModule
     addCss
-    addZepto
-    doCoffee
-    compileCoffee
   ], (err, results) ->
-    cb err, "http://#{name}.mobilemin.com"
+    url = "http://#{name}.mobilemin.com"
+    console.log "done: visit #{url}"
+    cb err, url
 
   
   
