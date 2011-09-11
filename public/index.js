@@ -56,7 +56,7 @@
     Router = require("router");
     AppView = {};
     AppView.init = function(options) {
-      var addDirectionsPage, addHomePage, addHoursPage, addMenuPage, addSpecialsPage, content, emit, extraStyles, mapText, menuMaker, model, nav, navItems, self, showPage, touch, touchMove, touchStart;
+      var addDirectionsPage, addHomePage, addHoursPage, addMenuPage, addSpecialsPage, content, emit, extraStyles, mapText, menuMaker, model, nav, navItems, self, showPage, touch, touchEnd, touchMove, touchStart;
       model = options.model;
       self = eventer({});
       emit = self.emit;
@@ -229,28 +229,94 @@
       addMenuPage();
       addDirectionsPage();
       addHoursPage();
-      content = $(".content");
+      content = $(".content")[0];
       touch = {};
       touch.newX = 0;
       touch.newY = 0;
+      touch.oldX = 0;
+      touch.oldY = 0;
       touchStart = function(e) {
-        e.preventDefault();
+        delete touch.yOnly;
         touch.x1 = e.touches[0].pageX;
-        return touch.y1 = e.touches[0].pageY;
+        touch.y1 = e.touches[0].pageY;
+        touch.time0 = new Date().getTime();
+        touch.time1 = new Date().getTime();
+        touch.time2 = new Date().getTime();
+        touch.x0 = touch.x1;
+        touch.y0 = touch.y1;
+        touch.x2 = touch.x1;
+        return touch.y2 = touch.y1;
       };
-      $(document.body).bind("touchstart", touchStart);
+      $(document).bind("touchstart", touchStart);
       touchMove = function(e) {
+        var distance, speed, time, x, x1, x2, xLen, y, y1, y2, yLen;
+        if (touch.yOnly === true) {
+          return;
+        }
         document.title = "" + touch.x1 + ", " + touch.x2 + " " + touch.newX;
-        e.preventDefault();
-        touch.x2 = e.touches[0].pageX;
-        touch.y2 = e.touches[0].pageY;
-        touch.newX = touch.newX + touch.x2 - touch.x1;
-        touch.newY = touch.newY + touch.y2 - touch.y1;
         touch.x1 = touch.x2;
         touch.y1 = touch.y2;
-        return touch.speed = content[0].style.webkitTransform = "translate3d(" + touch.newX + "px, " + touch.newY + "px, 0)";
+        touch.time1 = touch.time2;
+        touch.x2 = e.touches[0].pageX;
+        touch.y2 = e.touches[0].pageY;
+        touch.oldX = touch.newX;
+        touch.oldY = touch.newY;
+        touch.newX = touch.newX + touch.x2 - touch.x1;
+        touch.newY = touch.newY + touch.y2 - touch.y1;
+        touch.time2 = new Date().getTime();
+        time = touch.time2 - touch.time1;
+        x1 = touch.x1, x2 = touch.x2, y1 = touch.y1, y2 = touch.y2;
+        xLen = x2 - x1;
+        yLen = y2 - y1;
+        x = Math.pow(xLen, 2);
+        y = Math.pow(yLen, 2);
+        distance = Math.pow(x + y, 0.5);
+        speed = distance / time;
+        document.title = "" + (((xLen / yLen) + "").substring(0, 4));
+        if (!("yOnly" in touch)) {
+          console.log("yonl");
+          if (Math.abs(xLen / yLen) > 0.5) {
+            touch.yOnly = false;
+          } else {
+            touch.yOnly = true;
+          }
+        }
+        if (touch.yOnly === false) {
+          e.preventDefault();
+          return content.style.webkitTransform = "translate3d(" + touch.newX + "px, " + 0 + "px, 0)";
+        }
       };
-      $(document.body).bind("touchmove", touchMove);
+      touchEnd = function(e) {
+        var distance, newDistance, newX, newXLen, newY, newYLen, speed, time, x, x0, x1, x2, xLen, y, y0, y1, y2, yLen;
+        if (touch.yOnly === true) {
+          return;
+        }
+        x0 = touch.x0, x1 = touch.x1, x2 = touch.x2, y0 = touch.y0, y1 = touch.y1, y2 = touch.y2;
+        time = touch.time2 - touch.time1;
+        xLen = x2 - x1;
+        yLen = y2 - y1;
+        x = Math.pow(xLen, 2);
+        y = Math.pow(yLen, 2);
+        distance = Math.pow(x + y, 0.5);
+        speed = distance / time;
+        newDistance = distance + speed * 100;
+        if (distance === 0) {
+          return;
+        }
+        newXLen = xLen * newDistance / distance;
+        newYLen = yLen * newDistance / distance;
+        newX = newXLen + touch.newX;
+        newY = newYLen + touch.newY;
+        touch.newX = newX;
+        touch.newY = newY;
+        document.title = "" + distance + " " + time + " " + (distance / time);
+        document.title = "" + newXLen + " " + x2;
+        return $(content).anim({
+          translate3d: "" + newX + "px, " + 0 + "px, 0"
+        }, 0.25, 'cubic-bezier(0.000, 0.000, 0.005, 0.9999)');
+      };
+      $(document).bind("touchmove", touchMove);
+      $(document).bind("touchend", touchEnd);
       return self;
     };
     return AppView;

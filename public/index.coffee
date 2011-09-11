@@ -348,32 +348,96 @@ define "app-view", () ->
     addDirectionsPage()
     addHoursPage()
     
-    content = $(".content")
+    content = $(".content")[0]
     touch = {}
     touch.newX = 0
     touch.newY = 0
+    touch.oldX = 0
+    touch.oldY = 0
     touchStart = (e) ->
-      e.preventDefault()
+      delete touch.yOnly
+      #e.preventDefault()
       touch.x1 = e.touches[0].pageX
       touch.y1 = e.touches[0].pageY
-#      touch.scrollStartX = $(".content").offset().left
-#      touch.scrollStartY = $(".content").offset().top
-    $(document.body).bind "touchstart", touchStart
+      touch.time0 = new Date().getTime()
+      touch.time1 = new Date().getTime()
+      touch.time2 = new Date().getTime()
+      touch.x0 = touch.x1
+      touch.y0 = touch.y1
+      touch.x2 = touch.x1
+      touch.y2 = touch.y1
+
+    $(document).bind "touchstart", touchStart
 
     touchMove = (e) ->
+      if touch.yOnly == true
+        return
       document.title = "#{touch.x1}, #{touch.x2} #{touch.newX}"
-      e.preventDefault()
-      touch.x2 = e.touches[0].pageX
-      touch.y2 = e.touches[0].pageY
-      touch.newX = touch.newX + touch.x2 - touch.x1
-      touch.newY = touch.newY + touch.y2 - touch.y1
       touch.x1 = touch.x2
       touch.y1 = touch.y2
-      touch.speed = 
-      #scrollTo newX, newY, 1
-      content[0].style.webkitTransform = "translate3d(#{touch.newX}px, #{touch.newY}px, 0)"
+      touch.time1 = touch.time2
+      touch.x2 = e.touches[0].pageX
+      touch.y2 = e.touches[0].pageY
+      touch.oldX = touch.newX
+      touch.oldY = touch.newY
+      touch.newX = touch.newX + touch.x2 - touch.x1
+      touch.newY = touch.newY + touch.y2 - touch.y1
+      touch.time2 = new Date().getTime()
 
-    $(document.body).bind "touchmove", touchMove
+      time = touch.time2 - touch.time1
+      {x1, x2, y1, y2} = touch
+      xLen = x2 - x1
+      yLen = y2 - y1
+      x = Math.pow(xLen, 2)
+      y = Math.pow(yLen, 2)
+      distance = Math.pow x + y, 0.5
+      speed = distance / time
+      
+      document.title = "#{((xLen / yLen) + "").substring(0,4)}"
+
+      if "yOnly" not of touch
+        console.log "yonl"
+        if Math.abs(xLen / yLen) > 0.5
+          touch.yOnly = false
+        else
+          touch.yOnly = true
+
+      if touch.yOnly == false
+        e.preventDefault()
+        content.style.webkitTransform = "translate3d(#{touch.newX}px, #{0}px, 0)"
+
+      
+
+    touchEnd = (e) ->
+      if touch.yOnly == true
+        return
+      {x0, x1, x2, y0, y1, y2} = touch
+      time = touch.time2 - touch.time1
+      xLen = x2 - x1
+      yLen = y2 - y1
+      x = Math.pow(xLen, 2)
+      y = Math.pow(yLen, 2)
+      distance = Math.pow x + y, 0.5
+      speed = distance / time
+      newDistance = distance + speed * 100
+      if distance == 0 then return
+      newXLen = xLen * newDistance / distance
+      newYLen = yLen * newDistance / distance
+      newX = newXLen + touch.newX
+      newY = newYLen + touch.newY
+      touch.newX = newX
+      touch.newY = newY
+
+
+      document.title = "#{distance} #{time} #{distance/time}"
+      document.title = "#{newXLen} #{x2}"
+
+      $(content).anim
+        translate3d: "#{newX}px, #{0}px, 0"
+      , 0.25, 'cubic-bezier(0.000, 0.000, 0.005, 0.9999)'
+      
+    $(document).bind "touchmove", touchMove
+    $(document).bind "touchend", touchEnd
     
 
         
