@@ -34,8 +34,6 @@ define "app-view", () ->
     else
       hours = time
     if pm then hours = hours - 0 + 12
-    console.log pm
-    console.log hours
     newDate = new Date date.getFullYear(), date.getMonth(), date.getDate(), hours, minutes, 0, 0
     ret = newDate.getTime()
     
@@ -289,11 +287,8 @@ define "app-view", () ->
           <div class="#{name} tile page2 scrollable2 vertical2">#{itemsTable}</hours>
         """
       self["add" + drews.capitalize(name)] = (items) ->
-        if name == "items"
-          console.log "you are adding an item"
 
         _.each items, (item) ->
-          console.log item 
           $(".content .#{name}").append $ """
             <div class="item menu-gradient">
                 <div class="left">
@@ -347,6 +342,73 @@ define "app-view", () ->
     addMenuPage()
     addDirectionsPage()
     addHoursPage()
+#view-source:http://www.netzgesta.de/dev/cubic-bezier-timing-function.html
+
+
+
+    cubed = (x) -> Math.pow(x, 3)
+    squared = (x) -> Math.pow(x, 2)
+    easingMaker = (x2, y2, x3, y3) ->
+      [x1, y1, x4, y4] = [0, 0, 1, 1]
+      (t) ->
+        newX = cubed(1 - t) * x1 + 3 * squared(1 - t) * t * x2 + 3 * (1 - t) * squared(t) * x3 + cubed(t) + x4
+        newX - 1
+
+        
+    defaultEasing =  easingMaker(0, 1, 1, 0) 
+    testEasing = () ->
+      for ii in [0...10]
+        console.log "easing test #{defaultEasing ii/10}"
+
+
+    doEasing = (info, callback, complete=->) ->
+      timerFuncs = {}
+      values = info.values
+      duration = info.duration
+      _.each values, ([start, end, easing], key) ->
+        easing or= defaultEasing
+        diff = end - start
+        timerFuncs[key] = (time) ->
+          diff * easing(time) + start
+
+      time1 = new Date().getTime()
+      interval = () ->
+        time2 = new Date().getTime()
+        values = {} 
+        time = (time2 - time1) / duration 
+        _.each timerFuncs, (func, key) ->
+          values[key] = func time
+        callback null, values
+        if time >= 1
+          complete null
+          clearInterval timer
+          return
+          
+
+      timer = setInterval interval, 0
+     
+
+
+    $(document).bind "scroll", () ->
+      console.log pageYOffset
+      
+      x = Math.round(window.pageXOffset / 320) * 320
+      doEasing
+        values: 
+          x: [window.pageXOffset, x]
+          y: [window.pageYOffset, 0]
+        duration: 500
+        (err, values) ->
+          scrollTo values.x, window.pageYOffset
+        
+      $(".tile").each () ->
+        if this == activeTile then return
+        this.style.webkitTransform = "translate3d(0, #{window.pageYOffset}px, 0)"
+
+    pushToTop = () ->
+      $(".tile").each () ->
+        this.style.webkitTransform = "translate3d(0, 0, 0)"
+
     
     content = $(".content")[0]
     touch = {}
@@ -354,6 +416,7 @@ define "app-view", () ->
     touch.newY = 0
     touch.oldX = 0
     touch.oldY = 0
+    activeTile = $(".tile.home")[0]
     touchStart = (e) ->
       delete touch.yOnly
       #e.preventDefault()
@@ -367,12 +430,10 @@ define "app-view", () ->
       touch.x2 = touch.x1
       touch.y2 = touch.y1
 
-    $(document).bind "touchstart", touchStart
 
     touchMove = (e) ->
       if touch.yOnly == true
         return
-      document.title = "#{touch.x1}, #{touch.x2} #{touch.newX}"
       touch.x1 = touch.x2
       touch.y1 = touch.y2
       touch.time1 = touch.time2
@@ -393,11 +454,9 @@ define "app-view", () ->
       distance = Math.pow x + y, 0.5
       speed = distance / time
       
-      document.title = "#{((xLen / yLen) + "").substring(0,4)}"
 
       if "yOnly" not of touch
-        console.log "yonl"
-        if Math.abs(xLen / yLen) > 0.5
+        if Math.abs(xLen / yLen) > 0.75
           touch.yOnly = false
         else
           touch.yOnly = true
@@ -405,6 +464,8 @@ define "app-view", () ->
       if touch.yOnly == false
         e.preventDefault()
         content.style.webkitTransform = "translate3d(#{touch.newX}px, #{0}px, 0)"
+      else if window.pageYOffset == 0 and yLen > 0
+        e.preventDefault()
 
       
 
@@ -419,7 +480,7 @@ define "app-view", () ->
       y = Math.pow(yLen, 2)
       distance = Math.pow x + y, 0.5
       speed = distance / time
-      newDistance = distance + speed * 200
+      newDistance = distance + speed * 100
 
       if distance == 0 then return
       newXLen = xLen * newDistance / distance
@@ -428,8 +489,13 @@ define "app-view", () ->
       newY = newYLen + touch.newY
 
       newXNotRounded = newX
-      newX = Math.round(newX / 320) * 320
-      document.title = "#{newXNotRounded}, #{newX}"
+      index = -Math.round(newX / 320)
+      newX =  -index * 320
+
+      activeTile = $(".content .tile").get(index)
+      document.title = $(activeTile).attr "class"
+
+      if newX >= 320 then newX = 0
       touch.newX = newX
       touch.newY = newY
 
@@ -438,9 +504,13 @@ define "app-view", () ->
       $(content).anim
         translate3d: "#{newX}px, #{0}px, 0"
       , 0.25, 'cubic-bezier(0.000, 0.000, 0.005, 0.9999)'
-      
-    $(document).bind "touchmove", touchMove
-    $(document).bind "touchend", touchEnd
+      #setTimeout pushToTop, 250
+
+    touching = () ->  
+      $(document).bind "touchstart", touchStart
+      $(document).bind "touchmove", touchMove
+      $(document).bind "touchend", touchEnd
+    touching()
     
 
         

@@ -39,8 +39,6 @@
       if (pm) {
         hours = hours - 0 + 12;
       }
-      console.log(pm);
-      console.log(hours);
       newDate = new Date(date.getFullYear(), date.getMonth(), date.getDate(), hours, minutes, 0, 0);
       return ret = newDate.getTime();
     };
@@ -56,7 +54,7 @@
     Router = require("router");
     AppView = {};
     AppView.init = function(options) {
-      var addDirectionsPage, addHomePage, addHoursPage, addMenuPage, addSpecialsPage, content, emit, extraStyles, mapText, menuMaker, model, nav, navItems, self, showPage, touch, touchEnd, touchMove, touchStart;
+      var activeTile, addDirectionsPage, addHomePage, addHoursPage, addMenuPage, addSpecialsPage, content, cubed, defaultEasing, doEasing, easingMaker, emit, extraStyles, mapText, menuMaker, model, nav, navItems, pushToTop, self, showPage, squared, testEasing, touch, touchEnd, touchMove, touchStart, touching;
       model = options.model;
       self = eventer({});
       emit = self.emit;
@@ -191,11 +189,7 @@
           return $(".content").append("<div class=\"" + name + " tile page2 scrollable2 vertical2\">" + itemsTable + "</hours>");
         };
         self["add" + drews.capitalize(name)] = function(items) {
-          if (name === "items") {
-            console.log("you are adding an item");
-          }
           return _.each(items, function(item) {
-            console.log(item);
             return $(".content ." + name).append($("<div class=\"item menu-gradient\">\n    <div class=\"left\">\n      <img class=\"\"  src=\"" + (item.image || model.headerUrl) + "\" />\n    </div>\n    <div class=\"right relative\">\n      <div class=\"item-top-bar relative\">\n        <div class=\"title\">" + (item.title || "") + "</div>\n        <div class=\"price\">" + (item.price || "") + "</div>\n      </div>\n      <div class=\"description\">" + (item.description || "") + "</div>\n    </div>\n    <div class=\"clear\"></div>\n</div>"));
           });
         };
@@ -229,12 +223,96 @@
       addMenuPage();
       addDirectionsPage();
       addHoursPage();
+      cubed = function(x) {
+        return Math.pow(x, 3);
+      };
+      squared = function(x) {
+        return Math.pow(x, 2);
+      };
+      easingMaker = function(x2, y2, x3, y3) {
+        var x1, x4, y1, y4, _ref;
+        _ref = [0, 0, 1, 1], x1 = _ref[0], y1 = _ref[1], x4 = _ref[2], y4 = _ref[3];
+        return function(t) {
+          var newX;
+          newX = cubed(1 - t) * x1 + 3 * squared(1 - t) * t * x2 + 3 * (1 - t) * squared(t) * x3 + cubed(t) + x4;
+          return newX - 1;
+        };
+      };
+      defaultEasing = easingMaker(0, 1, 1, 0);
+      testEasing = function() {
+        var ii, _results;
+        _results = [];
+        for (ii = 0; ii < 10; ii++) {
+          _results.push(console.log("easing test " + (defaultEasing(ii / 10))));
+        }
+        return _results;
+      };
+      doEasing = function(info, callback, complete) {
+        var duration, interval, time1, timer, timerFuncs, values;
+        if (complete == null) {
+          complete = function() {};
+        }
+        timerFuncs = {};
+        values = info.values;
+        duration = info.duration;
+        _.each(values, function(_arg, key) {
+          var diff, easing, end, start;
+          start = _arg[0], end = _arg[1], easing = _arg[2];
+          easing || (easing = defaultEasing);
+          diff = end - start;
+          return timerFuncs[key] = function(time) {
+            return diff * easing(time) + start;
+          };
+        });
+        time1 = new Date().getTime();
+        interval = function() {
+          var time, time2;
+          time2 = new Date().getTime();
+          values = {};
+          time = (time2 - time1) / duration;
+          _.each(timerFuncs, function(func, key) {
+            return values[key] = func(time);
+          });
+          callback(null, values);
+          if (time >= 1) {
+            complete(null);
+            clearInterval(timer);
+          }
+        };
+        return timer = setInterval(interval, 0);
+      };
+      $(document).bind("scroll", function() {
+        var x;
+        console.log(pageYOffset);
+        x = Math.round(window.pageXOffset / 320) * 320;
+        doEasing({
+          values: {
+            x: [window.pageXOffset, x],
+            y: [window.pageYOffset, 0]
+          },
+          duration: 500
+        }, function(err, values) {
+          return scrollTo(values.x, window.pageYOffset);
+        });
+        return $(".tile").each(function() {
+          if (this === activeTile) {
+            return;
+          }
+          return this.style.webkitTransform = "translate3d(0, " + window.pageYOffset + "px, 0)";
+        });
+      });
+      pushToTop = function() {
+        return $(".tile").each(function() {
+          return this.style.webkitTransform = "translate3d(0, 0, 0)";
+        });
+      };
       content = $(".content")[0];
       touch = {};
       touch.newX = 0;
       touch.newY = 0;
       touch.oldX = 0;
       touch.oldY = 0;
+      activeTile = $(".tile.home")[0];
       touchStart = function(e) {
         delete touch.yOnly;
         touch.x1 = e.touches[0].pageX;
@@ -247,13 +325,11 @@
         touch.x2 = touch.x1;
         return touch.y2 = touch.y1;
       };
-      $(document).bind("touchstart", touchStart);
       touchMove = function(e) {
         var distance, speed, time, x, x1, x2, xLen, y, y1, y2, yLen;
         if (touch.yOnly === true) {
           return;
         }
-        document.title = "" + touch.x1 + ", " + touch.x2 + " " + touch.newX;
         touch.x1 = touch.x2;
         touch.y1 = touch.y2;
         touch.time1 = touch.time2;
@@ -272,10 +348,8 @@
         y = Math.pow(yLen, 2);
         distance = Math.pow(x + y, 0.5);
         speed = distance / time;
-        document.title = "" + (((xLen / yLen) + "").substring(0, 4));
         if (!("yOnly" in touch)) {
-          console.log("yonl");
-          if (Math.abs(xLen / yLen) > 0.5) {
+          if (Math.abs(xLen / yLen) > 0.75) {
             touch.yOnly = false;
           } else {
             touch.yOnly = true;
@@ -284,10 +358,12 @@
         if (touch.yOnly === false) {
           e.preventDefault();
           return content.style.webkitTransform = "translate3d(" + touch.newX + "px, " + 0 + "px, 0)";
+        } else if (window.pageYOffset === 0 && yLen > 0) {
+          return e.preventDefault();
         }
       };
       touchEnd = function(e) {
-        var distance, newDistance, newX, newXLen, newXNotRounded, newY, newYLen, speed, time, x, x0, x1, x2, xLen, y, y0, y1, y2, yLen;
+        var distance, index, newDistance, newX, newXLen, newXNotRounded, newY, newYLen, speed, time, x, x0, x1, x2, xLen, y, y0, y1, y2, yLen;
         if (touch.yOnly === true) {
           return;
         }
@@ -299,7 +375,7 @@
         y = Math.pow(yLen, 2);
         distance = Math.pow(x + y, 0.5);
         speed = distance / time;
-        newDistance = distance + speed * 200;
+        newDistance = distance + speed * 100;
         if (distance === 0) {
           return;
         }
@@ -308,16 +384,25 @@
         newX = newXLen + touch.newX;
         newY = newYLen + touch.newY;
         newXNotRounded = newX;
-        newX = Math.round(newX / 320) * 320;
-        document.title = "" + newXNotRounded + ", " + newX;
+        index = -Math.round(newX / 320);
+        newX = -index * 320;
+        activeTile = $(".content .tile").get(index);
+        document.title = $(activeTile).attr("class");
+        if (newX >= 320) {
+          newX = 0;
+        }
         touch.newX = newX;
         touch.newY = newY;
         return $(content).anim({
           translate3d: "" + newX + "px, " + 0 + "px, 0"
         }, 0.25, 'cubic-bezier(0.000, 0.000, 0.005, 0.9999)');
       };
-      $(document).bind("touchmove", touchMove);
-      $(document).bind("touchend", touchEnd);
+      touching = function() {
+        $(document).bind("touchstart", touchStart);
+        $(document).bind("touchmove", touchMove);
+        return $(document).bind("touchend", touchEnd);
+      };
+      touching();
       return self;
     };
     return AppView;
