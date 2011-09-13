@@ -77,7 +77,7 @@ define "min", () ->
               <div class="clear"></div>
             </div>
           </div> <!-- header div -->
-          <div class="content content-gradient">
+          <div class="content content-gradient scrollable horizontal paginated">
           </div>
           <script src="module.js"></script>
           <script src="http://inc.the.tl/underscore.js"></script>
@@ -87,6 +87,7 @@ define "min", () ->
           <script src="http://severus.drewl.us/severus2.js"></script>
           <script src="zepto.min.js"></script>
           <script src="http://inc.the.tl/drews-event.js"></script>
+          <script src="http://joehewitt.github.com/scrollability/scrollability.js"></script>
           <script>
             define("model", function() {
               return #{JSON.stringify self.attrs};
@@ -100,7 +101,7 @@ define "min", () ->
 
 
     self.export = () ->
-      mobilemin.saveSite attrs.name, toHtml()
+      mobilemin.saveSite attrs.name, attrs
 
     self.set = (obj, val) ->
       if _.isString obj
