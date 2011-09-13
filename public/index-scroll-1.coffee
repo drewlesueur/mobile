@@ -390,7 +390,6 @@ define "app-view", () ->
 
 
     $(document).bind "scroll", () ->
-      return true
       console.log pageYOffset
       
       x = Math.round(window.pageXOffset / 320) * 320
@@ -419,13 +418,6 @@ define "app-view", () ->
     touch.oldY = 0
     activeTile = $(".tile.home")[0]
     touchStart = (e) ->
-      #http://cubiq.org/scrolling-div-on-iphone-ipod-touch
-      transform = getComputedStyle(content).webkitTransform #"matrix(a,b,c,d,e,f)"
-      matrix = new WebKitCSSMatrix(transform) #maybe parse the string instead?
-      touch.newX = matrix.m41
-      touch.newY = matrix.m42
-      content.style.webkitTransform = transform
-      content.style.webkitTransition = ""
       delete touch.yOnly
       #e.preventDefault()
       touch.x1 = e.touches[0].pageX
@@ -472,7 +464,6 @@ define "app-view", () ->
       if touch.yOnly == false
         e.preventDefault()
         content.style.webkitTransform = "translate3d(#{touch.newX}px, #{0}px, 0)"
-     
       else if window.pageYOffset == 0 and yLen > 0
         e.preventDefault()
 
@@ -509,10 +500,10 @@ define "app-view", () ->
       touch.newY = newY
 
 
-      swipeAnimationSeconds = 1
+
       $(content).anim
         translate3d: "#{newX}px, #{0}px, 0"
-      , swipeAnimationSeconds, 'cubic-bezier(0.000, 0.000, 0.005, 0.9999)'
+      , 0.25, 'cubic-bezier(0.000, 0.000, 0.005, 0.9999)'
       #setTimeout pushToTop, 250
 
     touching = () ->  

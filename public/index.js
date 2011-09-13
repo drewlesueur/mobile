@@ -283,6 +283,7 @@
       };
       $(document).bind("scroll", function() {
         var x;
+        return true;
         console.log(pageYOffset);
         x = Math.round(window.pageXOffset / 320) * 320;
         doEasing({
@@ -314,6 +315,13 @@
       touch.oldY = 0;
       activeTile = $(".tile.home")[0];
       touchStart = function(e) {
+        var matrix, transform;
+        transform = getComputedStyle(content).webkitTransform;
+        matrix = new WebKitCSSMatrix(transform);
+        touch.newX = matrix.m41;
+        touch.newY = matrix.m42;
+        content.style.webkitTransform = transform;
+        content.style.webkitTransition = "";
         delete touch.yOnly;
         touch.x1 = e.touches[0].pageX;
         touch.y1 = e.touches[0].pageY;
@@ -363,7 +371,7 @@
         }
       };
       touchEnd = function(e) {
-        var distance, index, newDistance, newX, newXLen, newXNotRounded, newY, newYLen, speed, time, x, x0, x1, x2, xLen, y, y0, y1, y2, yLen;
+        var distance, index, newDistance, newX, newXLen, newXNotRounded, newY, newYLen, speed, swipeAnimationSeconds, time, x, x0, x1, x2, xLen, y, y0, y1, y2, yLen;
         if (touch.yOnly === true) {
           return;
         }
@@ -393,9 +401,10 @@
         }
         touch.newX = newX;
         touch.newY = newY;
+        swipeAnimationSeconds = 1;
         return $(content).anim({
           translate3d: "" + newX + "px, " + 0 + "px, 0"
-        }, 0.25, 'cubic-bezier(0.000, 0.000, 0.005, 0.9999)');
+        }, swipeAnimationSeconds, 'cubic-bezier(0.000, 0.000, 0.005, 0.9999)');
       };
       touching = function() {
         $(document).bind("touchstart", touchStart);

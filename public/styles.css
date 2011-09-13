@@ -43,11 +43,14 @@
   position: absolute;
   top: 0;
   left: 0;
+  -webkit-transform:translate3d(0,0,0);
+  -webkit-backface-visibility: hidden;
 }
 
 body, input[type="text"], input[type="tel"] {
   font-family: Helvetica, Arial, sans-serif;
   font-size: 1.2em;
+  -webkit-transform:translate3d(0,0,0);
 }
 
 .tile {
