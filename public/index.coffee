@@ -410,28 +410,33 @@ define "app-view", () ->
       $(".tile").each () ->
         this.style.webkitTransform = "translate3d(0, 0, 0)"
 
-    getXY = (el) ->
+    getXY = (el=null) ->
+      if not el then return [0,0]
       transform = getComputedStyle(el).webkitTransform #"matrix(a,b,c,d,e,f)"
       matrix = new WebKitCSSMatrix(transform) #maybe parse the string instead?
       [matrix.m41, matrix.m42]
     
     content = $(".content")[0]
     touch = {}
-    touch.newX = 0
-    touch.newY = 0
-    touch.oldX = 0
-    touch.oldY = 0
     activeTile = $(".tile.home")[0]
+
+    lastContentTransform = null
+    
     touchStart = (e) ->
-      delete touch.yOnly
       #http://cubiq.org/scrolling-div-on-iphone-ipod-touch
       #console.log getComputedStyle(content).webkitTransform
+
+      activeTileTransform = getComputedStyle(activeTile).webkitTransform #"matrix(a,b,c,d,e,f)"
+      activeTile.style.webkitTransform = activeTileTransform
+      activeTile.style.webkitTransition = ""
       transform = getComputedStyle(content).webkitTransform #"matrix(a,b,c,d,e,f)"
-      matrix = new WebKitCSSMatrix(transform) #maybe parse the string instead?
-      touch.newX = matrix.m41
-      touch.newY = matrix.m42
+      toTransform = content.style.webkitTransform
       content.style.webkitTransform = transform
       content.style.webkitTransition = ""
+
+      delete touch.yOnly
+
+
       #e.preventDefault()
       touch.x1 = e.touches[0].pageX
       touch.y1 = e.touches[0].pageY
@@ -450,10 +455,7 @@ define "app-view", () ->
       touch.time1 = touch.time2
       touch.x2 = e.touches[0].pageX
       touch.y2 = e.touches[0].pageY
-      touch.oldX = touch.newX
-      touch.oldY = touch.newY
-      touch.newX = touch.newX + touch.x2 - touch.x1
-      touch.newY = touch.newY + touch.y2 - touch.y1
+      [contentX, contentY] = getXY content
       touch.time2 = new Date().getTime()
       time = touch.time2 - touch.time1
       {x1, x2, y1, y2} = touch
@@ -477,7 +479,7 @@ define "app-view", () ->
         [tileX, tileY] = getXY activeTile
         activeTile.style.webkitTransform = "translate3d(#{0}, #{tileY + yLen}px, 0)"
       else 
-        content.style.webkitTransform = "translate3d(#{touch.newX}px, #{0}px, 0)"
+        content.style.webkitTransform = "translate3d(#{contentX + xLen}px, #{0}px, 0)"
      
     touchEnd = (e) ->
       {x0, x1, x2, y0, y1, y2} = touch
@@ -493,54 +495,54 @@ define "app-view", () ->
       if distance == 0 then return
       newXLen = xLen * newDistance / distance
       newYLen = yLen * newDistance / distance
-      newX = newXLen + touch.newX
-      newY = newYLen + touch.newY
 
-      newXNotRounded = newX
-      index = -Math.round(newX / 320)
-      newX =  -index * 320
+      [contentX, contentY] = getXY content
+      [tileX, tileY] = getXY activeTile
 
-      activeTile = $(".content .tile").get(index)
-      document.title = $(activeTile).attr "data-page"
 
-      if newX >= 320
-        newX = 0
+      if touch.yOnly  
+        newY = newYLen + tileY
+        newX = contentX
       else
-        #minTranslateX = $(content).width() - 320
-        #if newX <= minTranslateX then newX = minTranslateX 
-     
+        newX = newXLen + contentX
+        newY = tileY
+
+
       console.log "newy before: #{newY}"
-      if newY > 320 - 50
-        newY = 320 - 50
-      else
-        tileHeight = $(activeTile).height()
+      tileHeight = $(activeTile).height()
 
-        if tileHeight <= innerHeight
-          if newY < 0
-            newY = 0
+      if tileHeight <= innerHeight
+        if newY != 0
+          newY = 0
+          
         #maxTranslateY = - $(activeTile).height() + 50 #320
         #if maxTranslateY > 0 then maxTranslateY = 0
         #console.log "maxtranslatey: #{maxTranslateY}"
         #if newY < maxTranslateY
         #  newY = maxTranslateY
-      console.log "newy after: #{newY}"
-
-      touch.newX = newX
-      #TODO: remove
-      touch.newY = newY
-
-
-      swipeAnimationSeconds = .25
-      if touch.yOnly
-        console.log "setting y to #{newY}"
-        $(activeTile).anim
-          translate3d: "0, #{newY}px, 0"
-        , swipeAnimationSeconds, 'cubic-bezier(0.000, 0.000, 0.005, 0.9999)'
+      newXNotRounded = newX
+      index = -Math.round(newX / 320)
+      newX =  -index * 320
+      if newX >= 320
+        newX = 0
+        index = 0
       else
-        $(content).anim
-          translate3d: "#{newX}px, #{0}px, 0"
-        , swipeAnimationSeconds, 'cubic-bezier(0.000, 0.000, 0.005, 0.9999)'
-        return
+        # index = max lenght whatever
+        #minTranslateX = $(content).width() - 320
+        #if newX <= minTranslateX then newX = minTranslateX 
+      activeTile = $(".content .tile").get(index)
+      document.title = $(activeTile).attr "data-page"
+
+
+      swipeAnimationSeconds = 1
+      
+      console.log "setting y to #{newY}"
+      $(activeTile).anim
+        translate3d: "0, #{newY}px, 0"
+      , swipeAnimationSeconds, 'cubic-bezier(0.000, 0.000, 0.005, 0.9999)'
+      $(content).anim
+        translate3d: "#{newX}px, #{0}px, 0"
+      , swipeAnimationSeconds, 'cubic-bezier(0.000, 0.000, 0.005, 0.9999)'
 
       #setTimeout pushToTop, 250
 

@@ -57,6 +57,7 @@ body, input[type="text"], input[type="tel"] {
   width: 320px;
   display: block; 
   float: left;
+  -webkit-backface-visibility: hidden;
 }
 
 /*
