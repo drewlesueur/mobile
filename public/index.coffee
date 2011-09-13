@@ -221,7 +221,7 @@ define "app-view", () ->
       
 
       navHtml = $ """
-        <div class="home tile page2 ">
+        <div class="home tile page2" data-page="home">
           <div class="nav">
             #{navHtml}
           </div>
@@ -248,7 +248,7 @@ define "app-view", () ->
       urlAddress = encodeURIComponent model.address.replace /\n/g, " "
       htmlAddress = model.address.replace /\n/g, "<br />"
       directionsHtml =  """
-       <div class="tile map page2">
+       <div class="tile map page2" data-page="map">
          <div class="paddinglr">#{htmlAddress}</div>
 
          <!--<a target="blank" href="http://maps.google.com/maps?daddr=#{urlAddress}">Google Map Directions</a>-->
@@ -273,7 +273,7 @@ define "app-view", () ->
         </table>
       """
       $(".content").append """
-        <div class="hours tile page2">#{hoursTable}</hours>
+        <div class="hours tile page2" data-page="hours">#{hoursTable}</hours>
       """
 
     menuMaker = (name) ->
@@ -284,7 +284,7 @@ define "app-view", () ->
           </div>
         """
         $(".content").append """
-          <div class="#{name} tile page2 scrollable2 vertical2">#{itemsTable}</hours>
+          <div class="#{name} tile page2 scrollable2 vertical2" data-page="#{name}">#{itemsTable}</hours>
         """
       self["add" + drews.capitalize(name)] = (items) ->
 
@@ -410,6 +410,10 @@ define "app-view", () ->
       $(".tile").each () ->
         this.style.webkitTransform = "translate3d(0, 0, 0)"
 
+    getXY = (el) ->
+      transform = getComputedStyle(el).webkitTransform #"matrix(a,b,c,d,e,f)"
+      matrix = new WebKitCSSMatrix(transform) #maybe parse the string instead?
+      [matrix.m41, matrix.m42]
     
     content = $(".content")[0]
     touch = {}
@@ -419,14 +423,15 @@ define "app-view", () ->
     touch.oldY = 0
     activeTile = $(".tile.home")[0]
     touchStart = (e) ->
+      delete touch.yOnly
       #http://cubiq.org/scrolling-div-on-iphone-ipod-touch
+      #console.log getComputedStyle(content).webkitTransform
       transform = getComputedStyle(content).webkitTransform #"matrix(a,b,c,d,e,f)"
       matrix = new WebKitCSSMatrix(transform) #maybe parse the string instead?
       touch.newX = matrix.m41
       touch.newY = matrix.m42
       content.style.webkitTransform = transform
       content.style.webkitTransition = ""
-      delete touch.yOnly
       #e.preventDefault()
       touch.x1 = e.touches[0].pageX
       touch.y1 = e.touches[0].pageY
@@ -440,8 +445,6 @@ define "app-view", () ->
 
 
     touchMove = (e) ->
-      if touch.yOnly == true
-        return
       touch.x1 = touch.x2
       touch.y1 = touch.y2
       touch.time1 = touch.time2
@@ -452,7 +455,6 @@ define "app-view", () ->
       touch.newX = touch.newX + touch.x2 - touch.x1
       touch.newY = touch.newY + touch.y2 - touch.y1
       touch.time2 = new Date().getTime()
-
       time = touch.time2 - touch.time1
       {x1, x2, y1, y2} = touch
       xLen = x2 - x1
@@ -461,26 +463,23 @@ define "app-view", () ->
       y = Math.pow(yLen, 2)
       distance = Math.pow x + y, 0.5
       speed = distance / time
+      #TODO: are you usin gthe above calculations
       
+      e.preventDefault()
 
       if "yOnly" not of touch
-        if Math.abs(xLen / yLen) > 0.75
+        if Math.abs(xLen) > Math.abs(yLen) 
           touch.yOnly = false
         else
           touch.yOnly = true
 
-      if touch.yOnly == false
-        e.preventDefault()
+      if touch.yOnly
+        [tileX, tileY] = getXY activeTile
+        activeTile.style.webkitTransform = "translate3d(#{0}, #{tileY + yLen}px, 0)"
+      else 
         content.style.webkitTransform = "translate3d(#{touch.newX}px, #{0}px, 0)"
      
-      else if window.pageYOffset == 0 and yLen > 0
-        e.preventDefault()
-
-      
-
     touchEnd = (e) ->
-      if touch.yOnly == true
-        return
       {x0, x1, x2, y0, y1, y2} = touch
       time = touch.time2 - touch.time1
       xLen = x2 - x1
@@ -502,17 +501,47 @@ define "app-view", () ->
       newX =  -index * 320
 
       activeTile = $(".content .tile").get(index)
-      document.title = $(activeTile).attr "class"
+      document.title = $(activeTile).attr "data-page"
 
-      if newX >= 320 then newX = 0
+      if newX >= 320
+        newX = 0
+      else
+        #minTranslateX = $(content).width() - 320
+        #if newX <= minTranslateX then newX = minTranslateX 
+     
+      console.log "newy before: #{newY}"
+      if newY > 320 - 50
+        newY = 320 - 50
+      else
+        tileHeight = $(activeTile).height()
+
+        if tileHeight <= innerHeight
+          if newY < 0
+            newY = 0
+        #maxTranslateY = - $(activeTile).height() + 50 #320
+        #if maxTranslateY > 0 then maxTranslateY = 0
+        #console.log "maxtranslatey: #{maxTranslateY}"
+        #if newY < maxTranslateY
+        #  newY = maxTranslateY
+      console.log "newy after: #{newY}"
+
       touch.newX = newX
+      #TODO: remove
       touch.newY = newY
 
 
-      swipeAnimationSeconds = 1
-      $(content).anim
-        translate3d: "#{newX}px, #{0}px, 0"
-      , swipeAnimationSeconds, 'cubic-bezier(0.000, 0.000, 0.005, 0.9999)'
+      swipeAnimationSeconds = .25
+      if touch.yOnly
+        console.log "setting y to #{newY}"
+        $(activeTile).anim
+          translate3d: "0, #{newY}px, 0"
+        , swipeAnimationSeconds, 'cubic-bezier(0.000, 0.000, 0.005, 0.9999)'
+      else
+        $(content).anim
+          translate3d: "#{newX}px, #{0}px, 0"
+        , swipeAnimationSeconds, 'cubic-bezier(0.000, 0.000, 0.005, 0.9999)'
+        return
+
       #setTimeout pushToTop, 250
 
     touching = () ->  

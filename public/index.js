@@ -54,7 +54,7 @@
     Router = require("router");
     AppView = {};
     AppView.init = function(options) {
-      var activeTile, addDirectionsPage, addHomePage, addHoursPage, addMenuPage, addSpecialsPage, content, cubed, defaultEasing, doEasing, easingMaker, emit, extraStyles, mapText, menuMaker, model, nav, navItems, pushToTop, self, showPage, squared, testEasing, touch, touchEnd, touchMove, touchStart, touching;
+      var activeTile, addDirectionsPage, addHomePage, addHoursPage, addMenuPage, addSpecialsPage, content, cubed, defaultEasing, doEasing, easingMaker, emit, extraStyles, getXY, mapText, menuMaker, model, nav, navItems, pushToTop, self, showPage, squared, testEasing, touch, touchEnd, touchMove, touchStart, touching;
       model = options.model;
       self = eventer({});
       emit = self.emit;
@@ -155,7 +155,7 @@
           navItemUrl = model[navItem + "Icon"] || ("http://drewl.us:8010/icons/" + navItem + ".png");
           return navHtml += "<a class=\"nav-item\" data-nav=\"" + navItem + "\" href=\"" + href + "\" style=\"background-image: url('" + navItemUrl + "')\">\n  <span>" + (_.capitalize(navItemText)) + "</span>\n</a>";
         });
-        navHtml = $("<div class=\"home tile page2 \">\n  <div class=\"nav\">\n    " + navHtml + "\n  </div>\n  <div class=\"clear\">\n  <br />\n  <br />\n<a class=\"full-site\" href=\"" + model.fullUrl + "\">Full Site</a><a class=\"full-site\" href=\"javascript:delete localStorage.existingPhone;void(0);\">.</a>\n</div>");
+        navHtml = $("<div class=\"home tile page2\" data-page=\"home\">\n  <div class=\"nav\">\n    " + navHtml + "\n  </div>\n  <div class=\"clear\">\n  <br />\n  <br />\n<a class=\"full-site\" href=\"" + model.fullUrl + "\">Full Site</a><a class=\"full-site\" href=\"javascript:delete localStorage.existingPhone;void(0);\">.</a>\n</div>");
         $(".content").append(navHtml);
         navHtml.find("form").bind("submit", function(e) {
           e.preventDefault();
@@ -168,7 +168,7 @@
         var directionsHtml, htmlAddress, urlAddress;
         urlAddress = encodeURIComponent(model.address.replace(/\n/g, " "));
         htmlAddress = model.address.replace(/\n/g, "<br />");
-        directionsHtml = "<div class=\"tile map page2\">\n  <div class=\"paddinglr\">" + htmlAddress + "</div>\n\n  <!--<a target=\"blank\" href=\"http://maps.google.com/maps?daddr=" + urlAddress + "\">Google Map Directions</a>-->\n  <a target=\"blank\" href=\"http://maps.google.com/maps?q=" + urlAddress + "\">\n  <img src=\"http://maps.googleapis.com/maps/api/staticmap?center=" + urlAddress + "&zoom=14&size=320x320&markers=color:red|" + urlAddress + "&maptype=roadmap&sensor=false\" />\n  </a>\n</div>";
+        directionsHtml = "<div class=\"tile map page2\" data-page=\"map\">\n  <div class=\"paddinglr\">" + htmlAddress + "</div>\n\n  <!--<a target=\"blank\" href=\"http://maps.google.com/maps?daddr=" + urlAddress + "\">Google Map Directions</a>-->\n  <a target=\"blank\" href=\"http://maps.google.com/maps?q=" + urlAddress + "\">\n  <img src=\"http://maps.googleapis.com/maps/api/staticmap?center=" + urlAddress + "&zoom=14&size=320x320&markers=color:red|" + urlAddress + "&maptype=roadmap&sensor=false\" />\n  </a>\n</div>";
         return $(".content").append(directionsHtml);
       };
       addHoursPage = function() {
@@ -179,14 +179,14 @@
           dayRows += getDayRow(day, model);
         }
         hoursTable = " \n<table class=\"paddinglr\">\n  <tbody>\n    " + dayRows + "\n  </tbody>\n</table>";
-        return $(".content").append("<div class=\"hours tile page2\">" + hoursTable + "</hours>");
+        return $(".content").append("<div class=\"hours tile page2\" data-page=\"hours\">" + hoursTable + "</hours>");
       };
       menuMaker = function(name) {
         var addMenuPage;
         addMenuPage = function() {
           var itemsTable;
           itemsTable = " \n<div class=\"items-table\">\n\n</div>";
-          return $(".content").append("<div class=\"" + name + " tile page2 scrollable2 vertical2\">" + itemsTable + "</hours>");
+          return $(".content").append("<div class=\"" + name + " tile page2 scrollable2 vertical2\" data-page=\"" + name + "\">" + itemsTable + "</hours>");
         };
         self["add" + drews.capitalize(name)] = function(items) {
           return _.each(items, function(item) {
@@ -307,6 +307,12 @@
           return this.style.webkitTransform = "translate3d(0, 0, 0)";
         });
       };
+      getXY = function(el) {
+        var matrix, transform;
+        transform = getComputedStyle(el).webkitTransform;
+        matrix = new WebKitCSSMatrix(transform);
+        return [matrix.m41, matrix.m42];
+      };
       content = $(".content")[0];
       touch = {};
       touch.newX = 0;
@@ -316,13 +322,13 @@
       activeTile = $(".tile.home")[0];
       touchStart = function(e) {
         var matrix, transform;
+        delete touch.yOnly;
         transform = getComputedStyle(content).webkitTransform;
         matrix = new WebKitCSSMatrix(transform);
         touch.newX = matrix.m41;
         touch.newY = matrix.m42;
         content.style.webkitTransform = transform;
         content.style.webkitTransition = "";
-        delete touch.yOnly;
         touch.x1 = e.touches[0].pageX;
         touch.y1 = e.touches[0].pageY;
         touch.time0 = new Date().getTime();
@@ -334,10 +340,7 @@
         return touch.y2 = touch.y1;
       };
       touchMove = function(e) {
-        var distance, speed, time, x, x1, x2, xLen, y, y1, y2, yLen;
-        if (touch.yOnly === true) {
-          return;
-        }
+        var distance, speed, tileX, tileY, time, x, x1, x2, xLen, y, y1, y2, yLen, _ref;
         touch.x1 = touch.x2;
         touch.y1 = touch.y2;
         touch.time1 = touch.time2;
@@ -356,25 +359,23 @@
         y = Math.pow(yLen, 2);
         distance = Math.pow(x + y, 0.5);
         speed = distance / time;
+        e.preventDefault();
         if (!("yOnly" in touch)) {
-          if (Math.abs(xLen / yLen) > 0.75) {
+          if (Math.abs(xLen) > Math.abs(yLen)) {
             touch.yOnly = false;
           } else {
             touch.yOnly = true;
           }
         }
-        if (touch.yOnly === false) {
-          e.preventDefault();
+        if (touch.yOnly) {
+          _ref = getXY(activeTile), tileX = _ref[0], tileY = _ref[1];
+          return activeTile.style.webkitTransform = "translate3d(" + 0 + ", " + (tileY + yLen) + "px, 0)";
+        } else {
           return content.style.webkitTransform = "translate3d(" + touch.newX + "px, " + 0 + "px, 0)";
-        } else if (window.pageYOffset === 0 && yLen > 0) {
-          return e.preventDefault();
         }
       };
       touchEnd = function(e) {
-        var distance, index, newDistance, newX, newXLen, newXNotRounded, newY, newYLen, speed, swipeAnimationSeconds, time, x, x0, x1, x2, xLen, y, y0, y1, y2, yLen;
-        if (touch.yOnly === true) {
-          return;
-        }
+        var distance, index, newDistance, newX, newXLen, newXNotRounded, newY, newYLen, speed, swipeAnimationSeconds, tileHeight, time, x, x0, x1, x2, xLen, y, y0, y1, y2, yLen;
         x0 = touch.x0, x1 = touch.x1, x2 = touch.x2, y0 = touch.y0, y1 = touch.y1, y2 = touch.y2;
         time = touch.time2 - touch.time1;
         xLen = x2 - x1;
@@ -395,16 +396,37 @@
         index = -Math.round(newX / 320);
         newX = -index * 320;
         activeTile = $(".content .tile").get(index);
-        document.title = $(activeTile).attr("class");
+        document.title = $(activeTile).attr("data-page");
         if (newX >= 320) {
           newX = 0;
+        } else {
+
         }
+        console.log("newy before: " + newY);
+        if (newY > 320 - 50) {
+          newY = 320 - 50;
+        } else {
+          tileHeight = $(activeTile).height();
+          if (tileHeight <= innerHeight) {
+            if (newY < 0) {
+              newY = 0;
+            }
+          }
+        }
+        console.log("newy after: " + newY);
         touch.newX = newX;
         touch.newY = newY;
-        swipeAnimationSeconds = 1;
-        return $(content).anim({
-          translate3d: "" + newX + "px, " + 0 + "px, 0"
-        }, swipeAnimationSeconds, 'cubic-bezier(0.000, 0.000, 0.005, 0.9999)');
+        swipeAnimationSeconds = .25;
+        if (touch.yOnly) {
+          console.log("setting y to " + newY);
+          return $(activeTile).anim({
+            translate3d: "0, " + newY + "px, 0"
+          }, swipeAnimationSeconds, 'cubic-bezier(0.000, 0.000, 0.005, 0.9999)');
+        } else {
+          $(content).anim({
+            translate3d: "" + newX + "px, " + 0 + "px, 0"
+          }, swipeAnimationSeconds, 'cubic-bezier(0.000, 0.000, 0.005, 0.9999)');
+        }
       };
       touching = function() {
         $(document).bind("touchstart", touchStart);
