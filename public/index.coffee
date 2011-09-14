@@ -478,9 +478,34 @@ define "app-view", () ->
 
       if touch.yOnly
         [tileX, tileY] = getXY activeTile
-        activeTile.style.webkitTransform = "translate3d(#{0}, #{tileY + yLen}px, 0)"
-      else 
-        content.style.webkitTransform = "translate3d(#{contentX + xLen}px, #{0}px, 0)"
+        
+        tileY = tileY + yLen
+       
+        #resistance is futile
+        if tileY > 0
+          tileY = tileY - yLen
+          tileY = tileY + ((innerHeight - tileY) / innerHeight) * 0.38 * yLen
+        else if $(activeTile).height() <=  innerHeight
+          if tileY < 0
+            tileY = tileY - yLen
+            tileY = tileY + ((innerHeight - tileY) / innerHeight) * 0.38 * yLen
+        else
+          if tileY < maxHeight = - $(activeTile).height() + innerHeight
+            tileY = tileY - yLen
+            tileY = tileY + ((innerHeight - (tileY - maxHeight)) / innerHeight) * 0.38 * yLen
+
+        activeTile.style.webkitTransform = "translate3d(#{0}, #{tileY}px, 0)"
+      else
+        contentX = contentX + xLen
+        if contentX > 0
+          1
+          contentX = contentX - xLen
+          contentX = contentX + ((innerWidth - contentX) / innerWidth) * 0.38 * xLen
+        if contentX <= maxWidth =  - $(".tile").length * 320 + innerWidth
+          contentX = contentX - xLen
+          contentX = contentX + ((innerWidth - (contentX - maxWidth)) / innerWidth) * 0.38 * xLen
+          
+        content.style.webkitTransform = "translate3d(#{contentX}px, #{0}px, 0)"
      
     touchEnd = (e) ->
       {x0, x1, x2, y0, y1, y2} = touch

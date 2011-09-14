@@ -344,7 +344,7 @@
         return touch.y2 = touch.y1;
       };
       touchMove = function(e) {
-        var contentX, contentY, distance, speed, tileX, tileY, time, x, x1, x2, xLen, y, y1, y2, yLen, _ref, _ref2;
+        var contentX, contentY, distance, maxHeight, maxWidth, speed, tileX, tileY, time, x, x1, x2, xLen, y, y1, y2, yLen, _ref, _ref2;
         touch.x1 = touch.x2;
         touch.y1 = touch.y2;
         touch.time1 = touch.time2;
@@ -370,9 +370,34 @@
         }
         if (touch.yOnly) {
           _ref2 = getXY(activeTile), tileX = _ref2[0], tileY = _ref2[1];
-          return activeTile.style.webkitTransform = "translate3d(" + 0 + ", " + (tileY + yLen) + "px, 0)";
+          tileY = tileY + yLen;
+          if (tileY > 0) {
+            tileY = tileY - yLen;
+            tileY = tileY + ((innerHeight - tileY) / innerHeight) * 0.38 * yLen;
+          } else if ($(activeTile).height() <= innerHeight) {
+            if (tileY < 0) {
+              tileY = tileY - yLen;
+              tileY = tileY + ((innerHeight - tileY) / innerHeight) * 0.38 * yLen;
+            }
+          } else {
+            if (tileY < (maxHeight = -$(activeTile).height() + innerHeight)) {
+              tileY = tileY - yLen;
+              tileY = tileY + ((innerHeight - (tileY - maxHeight)) / innerHeight) * 0.38 * yLen;
+            }
+          }
+          return activeTile.style.webkitTransform = "translate3d(" + 0 + ", " + tileY + "px, 0)";
         } else {
-          return content.style.webkitTransform = "translate3d(" + (contentX + xLen) + "px, " + 0 + "px, 0)";
+          contentX = contentX + xLen;
+          if (contentX > 0) {
+            1;
+            contentX = contentX - xLen;
+            contentX = contentX + ((innerWidth - contentX) / innerWidth) * 0.38 * xLen;
+          }
+          if (contentX <= (maxWidth = -$(".tile").length * 320 + innerWidth)) {
+            contentX = contentX - xLen;
+            contentX = contentX + ((innerWidth - (contentX - maxWidth)) / innerWidth) * 0.38 * xLen;
+          }
+          return content.style.webkitTransform = "translate3d(" + contentX + "px, " + 0 + "px, 0)";
         }
       };
       touchEnd = function(e) {
