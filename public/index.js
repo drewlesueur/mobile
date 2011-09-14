@@ -284,7 +284,6 @@
       $(document).bind("scroll", function() {
         var x;
         return true;
-        console.log(pageYOffset);
         x = Math.round(window.pageXOffset / 320) * 320;
         doEasing({
           values: {
@@ -333,6 +332,7 @@
         content.style.webkitTransform = transform;
         content.style.webkitTransition = "";
         delete touch.yOnly;
+        touch.transitionDone = true;
         touch.x1 = e.touches[0].pageX;
         touch.y1 = e.touches[0].pageY;
         touch.time0 = new Date().getTime();
@@ -376,7 +376,7 @@
         }
       };
       touchEnd = function(e) {
-        var contentX, contentY, distance, index, newDistance, newX, newXLen, newXNotRounded, newY, newYLen, speed, swipeAnimationSeconds, tileHeight, tileX, tileY, time, x, x0, x1, x2, xLen, y, y0, y1, y2, yLen, _ref, _ref2;
+        var $tile, contentX, contentY, distance, index, minTranslateX, newDistance, newX, newXLen, newXNotRounded, newY, newYLen, speed, swipeAnimationSeconds, tile, tileHeight, tileIndex, tileX, tileY, time, x, x0, x1, x2, xLen, y, y0, y1, y2, yLen, _ref, _ref2, _ref3, _ref4;
         x0 = touch.x0, x1 = touch.x1, x2 = touch.x2, y0 = touch.y0, y1 = touch.y1, y2 = touch.y2;
         time = touch.time2 - touch.time1;
         xLen = x2 - x1;
@@ -386,11 +386,13 @@
         distance = Math.pow(x + y, 0.5);
         speed = distance / time;
         newDistance = distance + speed * 100;
-        if (distance === 0) {
-          return;
+        if (distance !== 0) {
+          newXLen = xLen * newDistance / distance;
+          newYLen = yLen * newDistance / distance;
+        } else {
+          newXLen = 0;
+          newYLen = 0;
         }
-        newXLen = xLen * newDistance / distance;
-        newYLen = yLen * newDistance / distance;
         _ref = getXY(content), contentX = _ref[0], contentY = _ref[1];
         _ref2 = getXY(activeTile), tileX = _ref2[0], tileY = _ref2[1];
         if (touch.yOnly) {
@@ -400,12 +402,32 @@
           newX = newXLen + contentX;
           newY = tileY;
         }
-        console.log("newy before: " + newY);
-        tileHeight = $(activeTile).height();
-        if (tileHeight <= innerHeight) {
-          if (newY !== 0) {
-            newY = 0;
+        swipeAnimationSeconds = 0.25;
+        $tile = $(".tile");
+        for (tileIndex = 0, _ref3 = $tile.length; 0 <= _ref3 ? tileIndex < _ref3 : tileIndex > _ref3; 0 <= _ref3 ? tileIndex++ : tileIndex--) {
+          tile = $tile.get(tileIndex);
+          tileHeight = $(tile).height();
+          if (tile === activeTile) {
+            tileY = newY;
+          } else {
+            _ref4 = getXY(tile), tileX = _ref4[0], tileY = _ref4[1];
           }
+          if (tileHeight <= innerHeight) {
+            if (tileY !== 0) {
+              tileY = 0;
+            }
+          } else {
+            if (tileY > 0) {
+              tileY = 0;
+            } else if (tileY <= -$(tile).height() + innerHeight) {
+              tileY = -$(tile).height() + innerHeight;
+            }
+          }
+          $(tile).anim({
+            translate3d: "0, " + tileY + "px, 0"
+          }, swipeAnimationSeconds, 'cubic-bezier(0.000, 0.000, 0.005, 0.9999)', function() {
+            return touch.transitionDone = true;
+          });
         }
         newXNotRounded = newX;
         index = -Math.round(newX / 320);
@@ -414,18 +436,20 @@
           newX = 0;
           index = 0;
         } else {
-
+          minTranslateX = -$(".tile").length * 320 + 320;
+          if (newX <= minTranslateX) {
+            newX = minTranslateX;
+          }
+          index = -Math.round(newX / 320);
         }
         activeTile = $(".content .tile").get(index);
         document.title = $(activeTile).attr("data-page");
-        swipeAnimationSeconds = 1;
-        console.log("setting y to " + newY);
-        $(activeTile).anim({
-          translate3d: "0, " + newY + "px, 0"
-        }, swipeAnimationSeconds, 'cubic-bezier(0.000, 0.000, 0.005, 0.9999)');
+        touch.transitionDone = false;
         return $(content).anim({
           translate3d: "" + newX + "px, " + 0 + "px, 0"
-        }, swipeAnimationSeconds, 'cubic-bezier(0.000, 0.000, 0.005, 0.9999)');
+        }, swipeAnimationSeconds, 'cubic-bezier(0.000, 0.000, 0.005, 0.9999)', function() {
+          return touch.transitionDone = true;
+        });
       };
       touching = function() {
         $(document).bind("touchstart", touchStart);

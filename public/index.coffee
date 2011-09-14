@@ -391,7 +391,6 @@ define "app-view", () ->
 
     $(document).bind "scroll", () ->
       return true
-      console.log pageYOffset
       
       x = Math.round(window.pageXOffset / 320) * 320
       doEasing
@@ -435,6 +434,7 @@ define "app-view", () ->
       content.style.webkitTransition = ""
 
       delete touch.yOnly
+      touch.transitionDone = true
 
 
       #e.preventDefault()
@@ -470,6 +470,7 @@ define "app-view", () ->
       e.preventDefault()
 
       if "yOnly" not of touch
+        #if touch.transitionDone
         if Math.abs(xLen) > Math.abs(yLen) 
           touch.yOnly = false
         else
@@ -492,9 +493,12 @@ define "app-view", () ->
       speed = distance / time
       newDistance = distance + speed * 100
 
-      if distance == 0 then return
-      newXLen = xLen * newDistance / distance
-      newYLen = yLen * newDistance / distance
+      if distance != 0
+        newXLen = xLen * newDistance / distance
+        newYLen = yLen * newDistance / distance
+      else
+        newXLen = 0
+        newYLen = 0
 
       [contentX, contentY] = getXY content
       [tileX, tileY] = getXY activeTile
@@ -508,18 +512,34 @@ define "app-view", () ->
         newY = tileY
 
 
-      console.log "newy before: #{newY}"
-      tileHeight = $(activeTile).height()
 
-      if tileHeight <= innerHeight
-        if newY != 0
-          newY = 0
+      swipeAnimationSeconds = 0.25
+      #SUPER TODO: fix the wierd snapping at one second transition
+
+      $tile = $(".tile")
+      #loop thru tiles
+      for tileIndex in [0...$tile.length]
+        tile = $tile.get(tileIndex) 
+        tileHeight = $(tile).height()
+        if tile == activeTile
+          tileY = newY #the perscribed new y
+        else
+          [tileX, tileY] = getXY tile
+        if tileHeight <= innerHeight
+          if tileY != 0
+            tileY = 0
+        else
+          if tileY > 0
+            tileY = 0
+          else if tileY <= - $(tile).height() + innerHeight
+            tileY = - $(tile).height() + innerHeight
+            
+
+        $(tile).anim
+          translate3d: "0, #{tileY}px, 0"
+        , swipeAnimationSeconds, 'cubic-bezier(0.000, 0.000, 0.005, 0.9999)'
+        , () -> touch.transitionDone = true
           
-        #maxTranslateY = - $(activeTile).height() + 50 #320
-        #if maxTranslateY > 0 then maxTranslateY = 0
-        #console.log "maxtranslatey: #{maxTranslateY}"
-        #if newY < maxTranslateY
-        #  newY = maxTranslateY
       newXNotRounded = newX
       index = -Math.round(newX / 320)
       newX =  -index * 320
@@ -527,22 +547,27 @@ define "app-view", () ->
         newX = 0
         index = 0
       else
-        # index = max lenght whatever
-        #minTranslateX = $(content).width() - 320
-        #if newX <= minTranslateX then newX = minTranslateX 
+        minTranslateX = - $(".tile").length * 320 + 320
+        if newX <= minTranslateX then newX = minTranslateX 
+        index = -Math.round(newX / 320)
       activeTile = $(".content .tile").get(index)
       document.title = $(activeTile).attr "data-page"
 
 
-      swipeAnimationSeconds = 1
+
+      touch.transitionDone = false
       
-      console.log "setting y to #{newY}"
-      $(activeTile).anim
-        translate3d: "0, #{newY}px, 0"
-      , swipeAnimationSeconds, 'cubic-bezier(0.000, 0.000, 0.005, 0.9999)'
+     
+      #TODO: when active tile changes
+      # because the activeTile could change and you might be changing
+      # onother tile
+
+      #todo: maybe take out the transition done code
+
       $(content).anim
         translate3d: "#{newX}px, #{0}px, 0"
       , swipeAnimationSeconds, 'cubic-bezier(0.000, 0.000, 0.005, 0.9999)'
+      , () -> touch.transitionDone = true
 
       #setTimeout pushToTop, 250
 
