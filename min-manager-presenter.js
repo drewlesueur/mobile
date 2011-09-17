@@ -9,7 +9,7 @@
     SubMinManagerView = require("sub-min-manager-view");
     MinManagerPresenter = {};
     MinManagerPresenter.init = function(self) {
-      var currentMin, emit, loadPhones, mins, setCurrentMin, view;
+      var currentMin, emit, loadPhones, menuTablePresenter, mins, saveTables, setCurrentMin, specialsTablePresenter, view;
       if (self == null) {
         self = {};
       }
@@ -43,8 +43,10 @@
         });
         return view.addMin(min);
       });
+      menuTablePresenter = null;
+      specialsTablePresenter = null;
       setCurrentMin = function(min) {
-        var TablePresenter, menuTablePresenter, specialsTablePresenter;
+        var TablePresenter;
         currentMin = min;
         severus.db = "mobilemin_" + currentMin.get("name");
         severus.db = "mobilemin_" + currentMin.get("name");
@@ -86,8 +88,18 @@
         });
         return model.save();
       });
+      saveTables = function() {
+        console.log(menuTablePresenter.getObjs());
+        currentMin.set({
+          specials: specialsTablePresenter.getObjs()
+        });
+        return currentMin.set({
+          menu: menuTablePresenter.getObjs()
+        });
+      };
       return view.on("save", function(hash) {
         currentMin.set(hash);
+        saveTables();
         return currentMin.save(function() {
           return currentMin["export"]();
         });

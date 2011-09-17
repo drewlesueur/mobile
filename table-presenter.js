@@ -12,6 +12,7 @@
       if (self == null) {
         self = {};
       }
+      objs = [];
       self = eventer(self);
       emit = self.emit, type = self.type, fields = self.fields, db = self.db;
       Obj = rowMaker({
@@ -21,6 +22,7 @@
       view = TableView.init(fields);
       objs = [];
       Obj.on("init", function(obj) {
+        objs.push(obj);
         obj.view = RowView.init({
           model: obj,
           fields: fields,
@@ -32,19 +34,20 @@
         obj = Obj.init(obj);
         return obj.save();
       });
-      Obj.find(null, function(err, stuff) {
-        return console.log(stuff);
-      });
+      Obj.find(null, function(err, stuff) {});
       view.on("update", function(obj, values) {
         obj.set(values);
-        console.log(obj);
         return obj.save();
       });
       view.on("delete", function(obj) {
+        delete objs[objs.indexOf(i)];
         return obj.remove();
       });
       self.getEl = function() {
         return view.getEl();
+      };
+      self.getObjs = function() {
+        return objs;
       };
       return self;
     };

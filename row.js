@@ -40,6 +40,9 @@
           });
         };
         self.save = save;
+        self.toJSON = function() {
+          return self.attrs;
+        };
         remove = function(cb) {
           if (cb == null) {
             cb = function() {};

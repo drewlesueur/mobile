@@ -8,6 +8,8 @@ define "table-presenter", () ->
 
   # tablePresenter = TablePresenter.init type: "menu", fields: 
   TablePresenter.init = (self={}) ->
+    objs = []
+
     self = eventer self
     {emit, type, fields, db} = self
     Obj = rowMaker
@@ -17,6 +19,7 @@ define "table-presenter", () ->
     objs = []
 
     Obj.on "init", (obj) ->
+      objs.push obj
       obj.view = RowView.init model: obj, fields: fields, emittee: view
       view.addObj obj
       
@@ -25,17 +28,18 @@ define "table-presenter", () ->
       obj.save()
 
     Obj.find null, (err, stuff) ->
-      console.log stuff
 
     view.on "update", (obj, values) ->
       obj.set values
-      console.log obj
       obj.save()
 
     view.on "delete", (obj) ->
+      delete objs[objs.indexOf(i)]
       obj.remove()
 
     self.getEl = -> view.getEl()
+
+    self.getObjs = -> objs
     
     self
   TablePresenter

@@ -25,6 +25,9 @@ define "row-maker", () -> ({type, db}) ->
         cb err, self
     self.save = save
 
+    self.toJSON = () ->
+      self.attrs
+
     remove = (cb=->) ->
       emit "removing"
       severus.remove type, attrs._id, (args...) ->

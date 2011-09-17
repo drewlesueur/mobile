@@ -50,7 +50,9 @@ define "min-manager-presenter", () ->
     Min.on "init", (min) ->
       min.subView = SubMinManagerView.init model: min
       view.addMin min
-   
+    
+    menuTablePresenter = null
+    specialsTablePresenter = null
     setCurrentMin = (min) ->
       currentMin = min
       severus.db = "mobilemin_" + currentMin.get "name"
@@ -92,8 +94,15 @@ define "min-manager-presenter", () ->
       model = Min.init name: name
       model.save()
 
+
+    saveTables = ->
+      console.log menuTablePresenter.getObjs()
+      currentMin.set specials: specialsTablePresenter.getObjs()
+      currentMin.set menu: menuTablePresenter.getObjs()
+
     view.on "save", (hash) ->
       currentMin.set hash
+      saveTables()
       currentMin.save () ->
         currentMin.export()
 
