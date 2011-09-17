@@ -2,7 +2,7 @@ define "zepto", () -> Zepto
 define "underscore", () -> _
 define "nimble", () -> _
 
-
+_320 = null
 $ = require "zepto"
 drews = require "drews-mixins"
 severus = require("severus2")()
@@ -64,6 +64,7 @@ define "app-view", () ->
     $(document.body).append """
       <div class="content content-gradient scrollable2 horizontal2 paginated2"></div>
     """
+    swipeAnimationSeconds = 0.25
 
 
     extraStyles = $ """
@@ -77,6 +78,7 @@ define "app-view", () ->
           color: #{model.bodyTextColor};
           background-image: url('#{model.backgroundImage}');
           background-repeat: no-repeat;
+         
         }
         
         .headline {
@@ -111,7 +113,7 @@ define "app-view", () ->
 
         .tile {
           background: -webkit-gradient(linear, left top, left bottom, color-stop(0%,#{model.bodyColor1}), color-stop(1,#{model.bodyColor2}));
-          
+          width: #{_320}px;
         }
 
         .promo-gradient {
@@ -127,8 +129,8 @@ define "app-view", () ->
       location.href = "#"
 
     showPage = (className) ->
-      #$(".content .tile").hide()
       $(".content .tile.#{className}").show()
+      index = $(".content .tile.#{className}").index()
       if className == "home"
         className = ""
       if className != ""
@@ -140,6 +142,15 @@ define "app-view", () ->
         
         <div class="right phone-bar"><a href="tel:#{phoneText}">#{phoneText}</a></div>
       """
+      newX = - innerWidth * index
+      console.log "- #{innerWidth} * #{index} = #{newX}"
+      console.log newX
+      $(".content").anim
+        translate3d: "#{newX}px, #{0}px, 0"
+      , swipeAnimationSeconds, 'cubic-bezier(0.000, 0.000, 0.005, 0.9999)'
+      , () -> touch.transitionDone = true
+        
+        
 
 
     #$(".content").append """<div class="clear"></div>"""
@@ -188,9 +199,8 @@ define "app-view", () ->
 
      
 
+    routes = {}
     addHomePage = () ->
-
-      routes = {}
       navHtml = ""
       _.each navItems, (navItemText, navItem) ->
         routes[navItem] = () -> 
@@ -222,6 +232,7 @@ define "app-view", () ->
 
       navHtml = $ """
         <div class="home tile page2" data-page="home">
+          <div>#{model.headline}</div>
           <div class="nav">
             #{navHtml}
           </div>
@@ -241,8 +252,6 @@ define "app-view", () ->
 
 
        
-      router = Router.init routes
-      router.initHashWatch()
 
     addDirectionsPage = () ->
       urlAddress = encodeURIComponent model.address.replace /\n/g, " "
@@ -253,7 +262,7 @@ define "app-view", () ->
 
          <!--<a target="blank" href="http://maps.google.com/maps?daddr=#{urlAddress}">Google Map Directions</a>-->
          <a target="blank" href="http://maps.google.com/maps?q=#{urlAddress}">
-         <img src="http://maps.googleapis.com/maps/api/staticmap?center=#{urlAddress}&zoom=14&size=320x320&markers=color:red|#{urlAddress}&maptype=roadmap&sensor=false" />
+         <img src="http://maps.googleapis.com/maps/api/staticmap?center=#{urlAddress}&zoom=14&size=#{_320}x#{_320}&markers=color:red|#{urlAddress}&maptype=roadmap&sensor=false" />
          </a>
        </div>
       """
@@ -342,6 +351,8 @@ define "app-view", () ->
     addMenuPage()
     addDirectionsPage()
     addHoursPage()
+    router = Router.init routes
+    router.initHashWatch()
 #view-source:http://www.netzgesta.de/dev/cubic-bezier-timing-function.html
 
 
@@ -392,7 +403,7 @@ define "app-view", () ->
     $(document).bind "scroll", () ->
       return true
       
-      x = Math.round(window.pageXOffset / 320) * 320
+      x = Math.round(window.pageXOffset / _320) * _320
       doEasing
         values: 
           x: [window.pageXOffset, x]
@@ -501,7 +512,7 @@ define "app-view", () ->
           1
           contentX = contentX - xLen
           contentX = contentX + ((innerWidth - contentX) / innerWidth) * 0.38 * xLen
-        if contentX <= maxWidth =  - $(".tile").length * 320 + innerWidth
+        if contentX <= maxWidth =  - $(".tile").length * _320 + innerWidth
           contentX = contentX - xLen
           contentX = contentX + ((innerWidth - (contentX - maxWidth)) / innerWidth) * 0.38 * xLen
           
@@ -538,7 +549,6 @@ define "app-view", () ->
 
 
 
-      swipeAnimationSeconds = 0.25
       #SUPER TODO: fix the wierd snapping at one second transition
 
       $tile = $(".tile")
@@ -566,33 +576,34 @@ define "app-view", () ->
         , () -> touch.transitionDone = true
           
       newXNotRounded = newX
-      index = -Math.round(newX / 320)
-      newX =  -index * 320
-      if newX >= 320
+      index = -Math.round(newX / _320)
+      newX =  -index * _320
+      
+      if newX >= _320
         newX = 0
         index = 0
       else
-        minTranslateX = - $(".tile").length * 320 + 320
+        minTranslateX = - $(".tile").length * _320 + _320
         if newX <= minTranslateX then newX = minTranslateX 
-        index = -Math.round(newX / 320)
+        index = -Math.round(newX / _320)
+
+
       activeTile = $(".content .tile").get(index)
       document.title = $(activeTile).attr "data-page"
 
-
-
       touch.transitionDone = false
-      
      
       #TODO: when active tile changes
       # because the activeTile could change and you might be changing
       # onother tile
 
       #todo: maybe take out the transition done code
-
-      $(content).anim
-        translate3d: "#{newX}px, #{0}px, 0"
-      , swipeAnimationSeconds, 'cubic-bezier(0.000, 0.000, 0.005, 0.9999)'
-      , () -> touch.transitionDone = true
+      
+      if not touch.yOnly #required for android. I wonder why this worked. SUPER TODO: what am I giving up by iffing this
+        $(content).anim
+          translate3d: "#{newX}px, #{0}px, 0"
+        , swipeAnimationSeconds, 'cubic-bezier(0.000, 0.000, 0.005, 0.9999)'
+        , () -> touch.transitionDone = true
 
       #setTimeout pushToTop, 250
 
@@ -602,9 +613,6 @@ define "app-view", () ->
       $(document).bind "touchend", touchEnd
     touching()
     
-
-        
-      
 
     self
   AppView
@@ -621,15 +629,21 @@ define "app-presenter", () ->
     view = AppView.init model: model
     #view.calcHours()
 
-    severus.find "items", (err, items) ->
+    false and severus.find "items", (err, items) ->
       items = items.sort (a, b)->
         a.order - b.order
-      view.addMenu items
+      #view.addMenu items
 
-    severus.find "specials", (err, items) ->
+    false and severus.find "specials", (err, items) ->
       items = items.sort (a, b)->
         a.order - b.order
-      view.addSpecials items
+      #view.addSpecials items
+
+
+    view.addMenu model.menu
+    view.addSpecials model.specials
+      
+      
 
     view.on "phone", (phone) ->
       severus.save "phones", {phone}, (err) ->
@@ -641,5 +655,6 @@ define "app-presenter", () ->
 AppPresenter = require "app-presenter"
 
 $ ->
+  _320 = innerWidth
   AppPresenter.init()
   drews.wait 1000, -> scrollTo 0, 0, 1

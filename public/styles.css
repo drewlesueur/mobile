@@ -12,9 +12,6 @@
   padding: 5px;
 }
 
-.header {
-  width: 320px;
-}
 
 .header-right {
   width: 160px;
@@ -24,9 +21,6 @@
 }
 .header-img {
   height: 50px;
-}
-.promo img {
-  width: 320px;
 }
 
 .hidden {
@@ -54,7 +48,6 @@ body, input[type="text"], input[type="tel"] {
 }
 
 .tile {
-  width: 320px;
   display: block; 
   float: left;
   -webkit-backface-visibility: hidden;

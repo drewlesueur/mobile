@@ -96,8 +96,7 @@ saveSite = (name, attrs, cb) ->
 
       </head>
       <body>
-        hello world
-      <body>
+      </body>
     </html>
   """
 

@@ -1,5 +1,5 @@
 (function() {
-  var $, AppPresenter, drews, eventer, severus;
+  var $, AppPresenter, drews, eventer, severus, _320;
   define("zepto", function() {
     return Zepto;
   });
@@ -9,6 +9,7 @@
   define("nimble", function() {
     return _;
   });
+  _320 = null;
   $ = require("zepto");
   drews = require("drews-mixins");
   severus = require("severus2")();
@@ -54,19 +55,21 @@
     Router = require("router");
     AppView = {};
     AppView.init = function(options) {
-      var activeTile, addDirectionsPage, addHomePage, addHoursPage, addMenuPage, addSpecialsPage, content, cubed, defaultEasing, doEasing, easingMaker, emit, extraStyles, getXY, lastContentTransform, mapText, menuMaker, model, nav, navItems, pushToTop, self, showPage, squared, testEasing, touch, touchEnd, touchMove, touchStart, touching;
+      var activeTile, addDirectionsPage, addHomePage, addHoursPage, addMenuPage, addSpecialsPage, content, cubed, defaultEasing, doEasing, easingMaker, emit, extraStyles, getXY, lastContentTransform, mapText, menuMaker, model, nav, navItems, pushToTop, router, routes, self, showPage, squared, swipeAnimationSeconds, testEasing, touch, touchEnd, touchMove, touchStart, touching;
       model = options.model;
       self = eventer({});
       emit = self.emit;
       $(document.body).append("<div class=\"content content-gradient scrollable2 horizontal2 paginated2\"></div>");
-      extraStyles = $("<style>\n  \n  .phone-bar a {\n    color: " + model.phoneColor + "  \n  }\n\n  body {\n    color: " + model.bodyTextColor + ";\n    background-image: url('" + model.backgroundImage + "');\n    background-repeat: no-repeat;\n  }\n  \n  .headline {\n    color: " + model.headlineColor + "\n  }\n\n\n  .promo-wrapper {\n    color: " + model.promoTextColor + "\n  }\n\n  .nav-item, .full-site {\n    color: " + model.buttonsTextColor + "\n  }\n\n  .item .title {\n    color: " + (model.menuTitleTextColor || "black") + "\n  }\n\n  .item .price{\n    color: " + (model.menuPriceTextColor || "gray") + "\n  }\n\n  .item .description{\n    color: " + model.menuDescriptionTextColor + "\n  }\n  \n  .menu-gradient {\n    background: -webkit-gradient(linear, left top, left bottom, color-stop(0%," + (model.menuColor1 || "white") + "), color-stop(1," + (model.menuColor2 || "#EFEFEF") + "));\n  }\n\n\n  .tile {\n    background: -webkit-gradient(linear, left top, left bottom, color-stop(0%," + model.bodyColor1 + "), color-stop(1," + model.bodyColor2 + "));\n    \n  }\n\n  .promo-gradient {\n    background: -webkit-gradient(linear, left top, left bottom, color-stop(0%," + model.promoColor1 + "), color-stop(1," + model.promoColor2 + "));\n  }\n\n</style>");
+      swipeAnimationSeconds = 0.25;
+      extraStyles = $("<style>\n  \n  .phone-bar a {\n    color: " + model.phoneColor + "  \n  }\n\n  body {\n    color: " + model.bodyTextColor + ";\n    background-image: url('" + model.backgroundImage + "');\n    background-repeat: no-repeat;\n   \n  }\n  \n  .headline {\n    color: " + model.headlineColor + "\n  }\n\n\n  .promo-wrapper {\n    color: " + model.promoTextColor + "\n  }\n\n  .nav-item, .full-site {\n    color: " + model.buttonsTextColor + "\n  }\n\n  .item .title {\n    color: " + (model.menuTitleTextColor || "black") + "\n  }\n\n  .item .price{\n    color: " + (model.menuPriceTextColor || "gray") + "\n  }\n\n  .item .description{\n    color: " + model.menuDescriptionTextColor + "\n  }\n  \n  .menu-gradient {\n    background: -webkit-gradient(linear, left top, left bottom, color-stop(0%," + (model.menuColor1 || "white") + "), color-stop(1," + (model.menuColor2 || "#EFEFEF") + "));\n  }\n\n\n  .tile {\n    background: -webkit-gradient(linear, left top, left bottom, color-stop(0%," + model.bodyColor1 + "), color-stop(1," + model.bodyColor2 + "));\n    width: " + _320 + "px;\n  }\n\n  .promo-gradient {\n    background: -webkit-gradient(linear, left top, left bottom, color-stop(0%," + model.promoColor1 + "), color-stop(1," + model.promoColor2 + "));\n  }\n\n</style>");
       extraStyles.appendTo($("head"));
       $("h1").bind("click", function() {
         return location.href = "#";
       });
       showPage = function(className) {
-        var phoneText;
+        var index, newX, phoneText;
         $(".content .tile." + className).show();
+        index = $(".content .tile." + className).index();
         if (className === "home") {
           className = "";
         }
@@ -75,7 +78,15 @@
         } else {
           phoneText = "";
         }
-        return $(".headline").html("<div class=\"left\">" + navItems[className] + "</div>\n\n<div class=\"right phone-bar\"><a href=\"tel:" + phoneText + "\">" + phoneText + "</a></div>");
+        $(".headline").html("<div class=\"left\">" + navItems[className] + "</div>\n\n<div class=\"right phone-bar\"><a href=\"tel:" + phoneText + "\">" + phoneText + "</a></div>");
+        newX = -innerWidth * index;
+        console.log("- " + innerWidth + " * " + index + " = " + newX);
+        console.log(newX);
+        return $(".content").anim({
+          translate3d: "" + newX + "px, " + 0 + "px, 0"
+        }, swipeAnimationSeconds, 'cubic-bezier(0.000, 0.000, 0.005, 0.9999)', function() {
+          return touch.transitionDone = true;
+        });
       };
       if (model.address) {
         mapText = "Map";
@@ -122,9 +133,9 @@
           return showPage(className);
         }
       };
+      routes = {};
       addHomePage = function() {
-        var navHtml, router, routes;
-        routes = {};
+        var navHtml;
         navHtml = "";
         _.each(navItems, function(navItemText, navItem) {
           var href, navItemUrl;
@@ -155,20 +166,18 @@
           navItemUrl = model[navItem + "Icon"] || ("http://drewl.us:8010/icons/" + navItem + ".png");
           return navHtml += "<a class=\"nav-item\" data-nav=\"" + navItem + "\" href=\"" + href + "\" style=\"background-image: url('" + navItemUrl + "')\">\n  <span>" + (_.capitalize(navItemText)) + "</span>\n</a>";
         });
-        navHtml = $("<div class=\"home tile page2\" data-page=\"home\">\n  <div class=\"nav\">\n    " + navHtml + "\n  </div>\n  <div class=\"clear\">\n  <br />\n  <br />\n<a class=\"full-site\" href=\"" + model.fullUrl + "\">Full Site</a><a class=\"full-site\" href=\"javascript:delete localStorage.existingPhone;void(0);\">.</a>\n</div>");
+        navHtml = $("<div class=\"home tile page2\" data-page=\"home\">\n  <div>" + model.headline + "</div>\n  <div class=\"nav\">\n    " + navHtml + "\n  </div>\n  <div class=\"clear\">\n  <br />\n  <br />\n<a class=\"full-site\" href=\"" + model.fullUrl + "\">Full Site</a><a class=\"full-site\" href=\"javascript:delete localStorage.existingPhone;void(0);\">.</a>\n</div>");
         $(".content").append(navHtml);
-        navHtml.find("form").bind("submit", function(e) {
+        return navHtml.find("form").bind("submit", function(e) {
           e.preventDefault();
           return emit("phone", $("#phone").val());
         });
-        router = Router.init(routes);
-        return router.initHashWatch();
       };
       addDirectionsPage = function() {
         var directionsHtml, htmlAddress, urlAddress;
         urlAddress = encodeURIComponent(model.address.replace(/\n/g, " "));
         htmlAddress = model.address.replace(/\n/g, "<br />");
-        directionsHtml = "<div class=\"tile map page2\" data-page=\"map\">\n  <div class=\"paddinglr\">" + htmlAddress + "</div>\n\n  <!--<a target=\"blank\" href=\"http://maps.google.com/maps?daddr=" + urlAddress + "\">Google Map Directions</a>-->\n  <a target=\"blank\" href=\"http://maps.google.com/maps?q=" + urlAddress + "\">\n  <img src=\"http://maps.googleapis.com/maps/api/staticmap?center=" + urlAddress + "&zoom=14&size=320x320&markers=color:red|" + urlAddress + "&maptype=roadmap&sensor=false\" />\n  </a>\n</div>";
+        directionsHtml = "<div class=\"tile map page2\" data-page=\"map\">\n  <div class=\"paddinglr\">" + htmlAddress + "</div>\n\n  <!--<a target=\"blank\" href=\"http://maps.google.com/maps?daddr=" + urlAddress + "\">Google Map Directions</a>-->\n  <a target=\"blank\" href=\"http://maps.google.com/maps?q=" + urlAddress + "\">\n  <img src=\"http://maps.googleapis.com/maps/api/staticmap?center=" + urlAddress + "&zoom=14&size=" + _320 + "x" + _320 + "&markers=color:red|" + urlAddress + "&maptype=roadmap&sensor=false\" />\n  </a>\n</div>";
         return $(".content").append(directionsHtml);
       };
       addHoursPage = function() {
@@ -223,6 +232,8 @@
       addMenuPage();
       addDirectionsPage();
       addHoursPage();
+      router = Router.init(routes);
+      router.initHashWatch();
       cubed = function(x) {
         return Math.pow(x, 3);
       };
@@ -284,7 +295,7 @@
       $(document).bind("scroll", function() {
         var x;
         return true;
-        x = Math.round(window.pageXOffset / 320) * 320;
+        x = Math.round(window.pageXOffset / _320) * _320;
         doEasing({
           values: {
             x: [window.pageXOffset, x],
@@ -393,7 +404,7 @@
             contentX = contentX - xLen;
             contentX = contentX + ((innerWidth - contentX) / innerWidth) * 0.38 * xLen;
           }
-          if (contentX <= (maxWidth = -$(".tile").length * 320 + innerWidth)) {
+          if (contentX <= (maxWidth = -$(".tile").length * _320 + innerWidth)) {
             contentX = contentX - xLen;
             contentX = contentX + ((innerWidth - (contentX - maxWidth)) / innerWidth) * 0.38 * xLen;
           }
@@ -401,7 +412,7 @@
         }
       };
       touchEnd = function(e) {
-        var $tile, contentX, contentY, distance, index, minTranslateX, newDistance, newX, newXLen, newXNotRounded, newY, newYLen, speed, swipeAnimationSeconds, tile, tileHeight, tileIndex, tileX, tileY, time, x, x0, x1, x2, xLen, y, y0, y1, y2, yLen, _ref, _ref2, _ref3, _ref4;
+        var $tile, contentX, contentY, distance, index, minTranslateX, newDistance, newX, newXLen, newXNotRounded, newY, newYLen, speed, tile, tileHeight, tileIndex, tileX, tileY, time, x, x0, x1, x2, xLen, y, y0, y1, y2, yLen, _ref, _ref2, _ref3, _ref4;
         x0 = touch.x0, x1 = touch.x1, x2 = touch.x2, y0 = touch.y0, y1 = touch.y1, y2 = touch.y2;
         time = touch.time2 - touch.time1;
         xLen = x2 - x1;
@@ -427,7 +438,6 @@
           newX = newXLen + contentX;
           newY = tileY;
         }
-        swipeAnimationSeconds = 0.25;
         $tile = $(".tile");
         for (tileIndex = 0, _ref3 = $tile.length; 0 <= _ref3 ? tileIndex < _ref3 : tileIndex > _ref3; 0 <= _ref3 ? tileIndex++ : tileIndex--) {
           tile = $tile.get(tileIndex);
@@ -455,26 +465,28 @@
           });
         }
         newXNotRounded = newX;
-        index = -Math.round(newX / 320);
-        newX = -index * 320;
-        if (newX >= 320) {
+        index = -Math.round(newX / _320);
+        newX = -index * _320;
+        if (newX >= _320) {
           newX = 0;
           index = 0;
         } else {
-          minTranslateX = -$(".tile").length * 320 + 320;
+          minTranslateX = -$(".tile").length * _320 + _320;
           if (newX <= minTranslateX) {
             newX = minTranslateX;
           }
-          index = -Math.round(newX / 320);
+          index = -Math.round(newX / _320);
         }
         activeTile = $(".content .tile").get(index);
         document.title = $(activeTile).attr("data-page");
         touch.transitionDone = false;
-        return $(content).anim({
-          translate3d: "" + newX + "px, " + 0 + "px, 0"
-        }, swipeAnimationSeconds, 'cubic-bezier(0.000, 0.000, 0.005, 0.9999)', function() {
-          return touch.transitionDone = true;
-        });
+        if (!touch.yOnly) {
+          return $(content).anim({
+            translate3d: "" + newX + "px, " + 0 + "px, 0"
+          }, swipeAnimationSeconds, 'cubic-bezier(0.000, 0.000, 0.005, 0.9999)', function() {
+            return touch.transitionDone = true;
+          });
+        }
       };
       touching = function() {
         $(document).bind("touchstart", touchStart);
@@ -497,18 +509,18 @@
       view = AppView.init({
         model: model
       });
-      severus.find("items", function(err, items) {
-        items = items.sort(function(a, b) {
+      false && severus.find("items", function(err, items) {
+        return items = items.sort(function(a, b) {
           return a.order - b.order;
         });
-        return view.addMenu(items);
       });
-      severus.find("specials", function(err, items) {
-        items = items.sort(function(a, b) {
+      false && severus.find("specials", function(err, items) {
+        return items = items.sort(function(a, b) {
           return a.order - b.order;
         });
-        return view.addSpecials(items);
       });
+      view.addMenu(model.menu);
+      view.addSpecials(model.specials);
       return view.on("phone", function(phone) {
         return severus.save("phones", {
           phone: phone
@@ -519,6 +531,7 @@
   });
   AppPresenter = require("app-presenter");
   $(function() {
+    _320 = innerWidth;
     AppPresenter.init();
     return drews.wait(1000, function() {
       return scrollTo(0, 0, 1);
