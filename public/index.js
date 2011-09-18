@@ -55,12 +55,13 @@
     Router = require("router");
     AppView = {};
     AppView.init = function(options) {
-      var activeTile, addDirectionsPage, addHomePage, addHoursPage, addMenuPage, addSpecialsPage, content, cubed, defaultEasing, doEasing, easingMaker, emit, extraStyles, getXY, lastContentTransform, mapText, menuMaker, model, nav, navItems, pushToTop, router, routes, self, showPage, squared, swipeAnimationSeconds, testEasing, touch, touchEnd, touchMove, touchStart, touching;
+      var activeTile, addDirectionsPage, addHomePage, addHoursPage, addMenuPage, addSpecialsPage, content, cubed, defaultEasing, doEasing, easingMaker, emit, extraStyles, getXY, lastContentTransform, mapText, menuMaker, model, nav, navItems, pushToTop, router, routes, self, setActiveTile, showPage, squared, swipeAnimationSeconds, testEasing, touch, touchEnd, touchMove, touchStart, touching;
       model = options.model;
       self = eventer({});
       emit = self.emit;
-      $(document.body).append("<div class=\"content content-gradient scrollable2 horizontal2 paginated2\"></div>");
+      $(document.body).append("<div class=\"content content-gradient\"></div>");
       swipeAnimationSeconds = 0.25;
+      activeTile = null;
       extraStyles = $("<style>\n  \n  .phone-bar a {\n    color: " + model.phoneColor + "  \n  }\n\n  body {\n    color: " + model.bodyTextColor + ";\n    background-image: url('" + model.backgroundImage + "');\n    background-repeat: no-repeat;\n   \n  }\n  \n  .headline {\n    color: " + model.headlineColor + "\n  }\n\n\n  .promo-wrapper {\n    color: " + model.promoTextColor + "\n  }\n\n  .nav-item, .full-site {\n    color: " + model.buttonsTextColor + "\n  }\n\n  .item .title {\n    color: " + (model.menuTitleTextColor || "black") + "\n  }\n\n  .item .price{\n    color: " + (model.menuPriceTextColor || "gray") + "\n  }\n\n  .item .description{\n    color: " + model.menuDescriptionTextColor + "\n  }\n  \n  .menu-gradient {\n    background: -webkit-gradient(linear, left top, left bottom, color-stop(0%," + (model.menuColor1 || "white") + "), color-stop(1," + (model.menuColor2 || "#EFEFEF") + "));\n  }\n\n\n  .tile {\n    background: -webkit-gradient(linear, left top, left bottom, color-stop(0%," + model.bodyColor1 + "), color-stop(1," + model.bodyColor2 + "));\n    width: " + _320 + "px;\n  }\n\n  .promo-gradient {\n    background: -webkit-gradient(linear, left top, left bottom, color-stop(0%," + model.promoColor1 + "), color-stop(1," + model.promoColor2 + "));\n  }\n\n</style>");
       extraStyles.appendTo($("head"));
       $("h1").bind("click", function() {
@@ -78,10 +79,7 @@
         } else {
           phoneText = "";
         }
-        $(".headline").html("<div class=\"left\">" + navItems[className] + "</div>\n\n<div class=\"right phone-bar\"><a href=\"tel:" + phoneText + "\">" + phoneText + "</a></div>");
         newX = -innerWidth * index;
-        console.log("- " + innerWidth + " * " + index + " = " + newX);
-        console.log(newX);
         return $(".content").anim({
           translate3d: "" + newX + "px, " + 0 + "px, 0"
         }, swipeAnimationSeconds, 'cubic-bezier(0.000, 0.000, 0.005, 0.9999)', function() {
@@ -96,9 +94,9 @@
       navItems = {
         specials: "Specials",
         menu: model.itemsText,
-        map: mapText,
-        hours: "Hours",
         phone: "<span style=\"\">" + model.phone + "</span>",
+        hours: "Hours",
+        map: mapText,
         facebook: "facebook",
         twitter: "Twitter",
         "": model.headline
@@ -109,7 +107,7 @@
         if (className === "") {
           className = "home";
         }
-        if (className === "specials") {
+        if (false && className === "specials") {
           existingPhone = localStorage.existingPhone;
           if (existingPhone != null ? existingPhone.match(/[\d]{10}/) : void 0) {
             showPage("specials");
@@ -146,7 +144,7 @@
             return;
           }
           href = "#" + navItem;
-          if (navItem === "call") {
+          if (navItem === "phone") {
             href = "tel:" + model.phone;
           }
           if (navItem === "twitter") {
@@ -166,7 +164,7 @@
           navItemUrl = model[navItem + "Icon"] || ("http://drewl.us:8010/icons/" + navItem + ".png");
           return navHtml += "<a class=\"nav-item\" data-nav=\"" + navItem + "\" href=\"" + href + "\" style=\"background-image: url('" + navItemUrl + "')\">\n  <span>" + (_.capitalize(navItemText)) + "</span>\n</a>";
         });
-        navHtml = $("<div class=\"home tile page2\" data-page=\"home\">\n  <div>" + model.headline + "</div>\n  <div class=\"nav\">\n    " + navHtml + "\n  </div>\n  <div class=\"clear\">\n  <br />\n  <br />\n<a class=\"full-site\" href=\"" + model.fullUrl + "\">Full Site</a><a class=\"full-site\" href=\"javascript:delete localStorage.existingPhone;void(0);\">.</a>\n</div>");
+        navHtml = $("<div class=\"home tile page2\" data-page=\"home\">\n  <div class=\"headline\">" + model.headline + "</div>\n  <div class=\"nav\">\n    " + navHtml + "\n  </div>\n  <div class=\"clear\">\n  <br />\n  <br />\n<a class=\"full-site\" href=\"" + model.fullUrl + "\">Full Site</a><a class=\"full-site\" href=\"javascript:delete localStorage.existingPhone;void(0);\">.</a>\n</div>");
         $(".content").append(navHtml);
         return navHtml.find("form").bind("submit", function(e) {
           e.preventDefault();
@@ -199,7 +197,7 @@
         };
         self["add" + drews.capitalize(name)] = function(items) {
           return _.each(items, function(item) {
-            return $(".content ." + name).append($("<div class=\"item menu-gradient\">\n    <div class=\"left\">\n      <img class=\"\"  src=\"" + (item.image || model.headerUrl) + "\" />\n    </div>\n    <div class=\"right relative\">\n      <div class=\"item-top-bar relative\">\n        <div class=\"title\">" + (item.title || "") + "</div>\n        <div class=\"price\">" + (item.price || "") + "</div>\n      </div>\n      <div class=\"description\">" + (item.description || "") + "</div>\n    </div>\n    <div class=\"clear\"></div>\n</div>"));
+            return $(".content ." + name).append($("<div class=\"item menu-gradient hbox\">\n    <div>\n      <img class=\"\"  src=\"" + (item.image || model.headerUrl) + "\" />\n    </div>\n    <div class=\"relative boxFlex\">\n      <div class=\"item-top-bar relative\">\n        <div class=\"title\">" + (item.title || "") + "</div>\n        <div class=\"price\">" + (item.price || "") + "</div>\n      </div>\n      <div class=\"description\">" + (item.description || "") + "</div>\n    </div>\n    <div class=\"clear\"></div>\n</div>"));
           });
         };
         return addMenuPage;
@@ -292,6 +290,15 @@
         };
         return timer = setInterval(interval, 0);
       };
+      setActiveTile = function(_activeTile) {
+        var page;
+        activeTile = _activeTile;
+        page = $(activeTile).attr("data-page");
+        if (page === "home") {
+          page = "";
+        }
+        return location.href = "#" + page;
+      };
       $(document).bind("scroll", function() {
         var x;
         return true;
@@ -331,7 +338,7 @@
       };
       content = $(".content")[0];
       touch = {};
-      activeTile = $(".tile.home")[0];
+      setActiveTile($(".tile.home")[0]);
       lastContentTransform = null;
       touchStart = function(e) {
         var activeTileTransform, toTransform, transform;
@@ -477,7 +484,7 @@
           }
           index = -Math.round(newX / _320);
         }
-        activeTile = $(".content .tile").get(index);
+        setActiveTile($(".content .tile").get(index));
         document.title = $(activeTile).attr("data-page");
         touch.transitionDone = false;
         if (!touch.yOnly) {

@@ -4,7 +4,7 @@
     _ = require("underscore");
     Router = {};
     Router.init = function(routes) {
-      var addRoute, checkUrl, escapeRegExp, extractParameters, namedParam, oldHash, routeToRegExp, routesList, self, splatParam, testRoutes;
+      var addRoute, checkUrl, escapeRegExp, extractParameters, namedParam, oldHash, routeToRegExp, routesList, self, splatParam, testRoutes, watching;
       self = {};
       routes || (routes = {
         test: function(frag) {
@@ -14,6 +14,7 @@
           return alert(what);
         }
       });
+      watching = true;
       namedParam = /:([\w\d]+)/g;
       splatParam = /\*([\w\d]+)/g;
       escapeRegExp = /[-[\]{}()+?.,\\^$|#\s]/g;
@@ -59,11 +60,19 @@
         }
         return oldHash = hash;
       };
+      self.disable = function() {
+        return watching = false;
+      };
+      self.enable = function() {
+        return watching = true;
+      };
       self.initHashWatch = function(callback) {
         callback || (callback = function(e) {
           var hash;
           hash = location.hash.slice(1);
-          return testRoutes(hash);
+          if (watching) {
+            return testRoutes(hash);
+          }
         });
         callback();
         if ("onhashchange" in window) {

@@ -8,6 +8,8 @@ define "router", () ->
         alert "that was a test #{frag}"
       "app/:what": (what2, what) -> alert what
 
+    watching = true
+
     namedParam    = /:([\w\d]+)/g;
     splatParam    = /\*([\w\d]+)/g;
     escapeRegExp  = /[-[\]{}()+?.,\\^$|#\s]/g; 
@@ -45,11 +47,18 @@ define "router", () ->
       if hash != oldHash
         callback()
       oldHash = hash
-      
+    
+    self.disable = ->
+      watching = false
+
+    self.enable = ->
+      watching = true
+
     self.initHashWatch = (callback) ->
       callback ||= (e) ->
         hash = location.hash.slice 1
-        testRoutes hash
+        if watching
+          testRoutes hash
       callback()
       if "onhashchange" of window
         $(window).bind "hashchange", callback

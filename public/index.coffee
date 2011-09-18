@@ -62,9 +62,10 @@ define "app-view", () ->
     self = eventer {}
     {emit} = self
     $(document.body).append """
-      <div class="content content-gradient scrollable2 horizontal2 paginated2"></div>
+      <div class="content content-gradient"></div>
     """
     swipeAnimationSeconds = 0.25
+    activeTile = null
 
 
     extraStyles = $ """
@@ -137,14 +138,7 @@ define "app-view", () ->
         phoneText = model.phone
       else
         phoneText = ""
-      $(".headline").html """
-        <div class="left">#{navItems[className]}</div>
-        
-        <div class="right phone-bar"><a href="tel:#{phoneText}">#{phoneText}</a></div>
-      """
       newX = - innerWidth * index
-      console.log "- #{innerWidth} * #{index} = #{newX}"
-      console.log newX
       $(".content").anim
         translate3d: "#{newX}px, #{0}px, 0"
       , swipeAnimationSeconds, 'cubic-bezier(0.000, 0.000, 0.005, 0.9999)'
@@ -163,11 +157,11 @@ define "app-view", () ->
     navItems =
       specials: "Specials"
       menu: model.itemsText
-      map: mapText
-      hours: "Hours"
       phone: """
         <span style="">#{model.phone}</span>
       """
+      hours: "Hours"
+      map: mapText
       facebook:"facebook"
       twitter: "Twitter"
       "": model.headline
@@ -176,7 +170,8 @@ define "app-view", () ->
       scrollTo 0, 0, 1
       if className == ""
         className = "home"
-      if className == "specials"
+      #TODO specials
+      if false and className == "specials"
         existingPhone = localStorage.existingPhone
         if existingPhone?.match /[\d]{10}/
           showPage "specials"
@@ -209,7 +204,7 @@ define "app-view", () ->
         if navItem == ""
           return
         href = "#" + navItem
-        if navItem == "call"
+        if navItem == "phone"
           href="tel:#{model.phone}"
         if navItem == "twitter"
           if model.twitterUrl
@@ -232,7 +227,7 @@ define "app-view", () ->
 
       navHtml = $ """
         <div class="home tile page2" data-page="home">
-          <div>#{model.headline}</div>
+          <div class="headline">#{model.headline}</div>
           <div class="nav">
             #{navHtml}
           </div>
@@ -299,11 +294,11 @@ define "app-view", () ->
 
         _.each items, (item) ->
           $(".content .#{name}").append $ """
-            <div class="item menu-gradient">
-                <div class="left">
+            <div class="item menu-gradient hbox">
+                <div>
                   <img class=""  src="#{item.image or model.headerUrl}" />
                 </div>
-                <div class="right relative">
+                <div class="relative boxFlex">
                   <div class="item-top-bar relative">
                     <div class="title">#{item.title or ""}</div>
                     <div class="price">#{item.price or ""}</div>
@@ -353,6 +348,7 @@ define "app-view", () ->
     addHoursPage()
     router = Router.init routes
     router.initHashWatch()
+
 #view-source:http://www.netzgesta.de/dev/cubic-bezier-timing-function.html
 
 
@@ -398,6 +394,13 @@ define "app-view", () ->
 
       timer = setInterval interval, 0
      
+    setActiveTile = (_activeTile) ->
+      activeTile = _activeTile
+      #router.disable()
+      page = $(activeTile).attr "data-page"
+      if page is "home" then page = ""
+      location.href = "#" + page
+      #router.enable()
 
 
     $(document).bind "scroll", () ->
@@ -428,7 +431,7 @@ define "app-view", () ->
     
     content = $(".content")[0]
     touch = {}
-    activeTile = $(".tile.home")[0]
+    setActiveTile $(".tile.home")[0]
 
     lastContentTransform = null
     
@@ -588,7 +591,7 @@ define "app-view", () ->
         index = -Math.round(newX / _320)
 
 
-      activeTile = $(".content .tile").get(index)
+      setActiveTile $(".content .tile").get(index)
       document.title = $(activeTile).attr "data-page"
 
       touch.transitionDone = false

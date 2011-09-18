@@ -70,6 +70,8 @@ saveSite = (name, attrs, cb) ->
     <!doctype html>
     <html>
       <head>
+        <meta content='width=device-width; initial-scale=1.0; maximum-scale=1.0; user-scalable=no;' name='viewport' />
+
         <script>
           var defs = {};
           var modules = {};
