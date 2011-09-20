@@ -62,7 +62,8 @@
       $(document.body).append("<div class=\"content content-gradient\"></div>");
       swipeAnimationSeconds = 0.25;
       activeTile = null;
-      extraStyles = $("<style>\n  \n  .phone-bar a {\n    color: " + model.phoneColor + "  \n  }\n\n  body {\n    color: " + model.bodyTextColor + ";\n    background-image: url('" + model.backgroundImage + "');\n    background-repeat: no-repeat;\n   \n  }\n  \n  .headline {\n    color: " + model.headlineColor + "\n  }\n\n\n  .promo-wrapper {\n    color: " + model.promoTextColor + "\n  }\n\n  .nav-item, .full-site {\n    color: " + model.buttonsTextColor + "\n  }\n\n  .item .title {\n    color: " + (model.menuTitleTextColor || "black") + "\n  }\n\n  .item .price{\n    color: " + (model.menuPriceTextColor || "gray") + "\n  }\n\n  .item .description{\n    color: " + model.menuDescriptionTextColor + "\n  }\n  \n  .menu-gradient {\n    background: -webkit-gradient(linear, left top, left bottom, color-stop(0%," + (model.menuColor1 || "white") + "), color-stop(1," + (model.menuColor2 || "#EFEFEF") + "));\n  }\n\n\n  .tile {\n    background: -webkit-gradient(linear, left top, left bottom, color-stop(0%," + model.bodyColor1 + "), color-stop(1," + model.bodyColor2 + "));\n    width: " + _320 + "px;\n  }\n\n  .promo-gradient {\n    background: -webkit-gradient(linear, left top, left bottom, color-stop(0%," + model.promoColor1 + "), color-stop(1," + model.promoColor2 + "));\n  }\n\n</style>");
+      scrollTo(0, 0, 1);
+      extraStyles = $("<style>\n  \n  .nav a {\n    height: " + (innerWidth / 3) + "px;\n    width: " + (innerWidth / 3) + "px;\n  }\n  \n  .phone-bar a {\n    color: " + model.phoneColor + "  \n  }\n\n  body {\n    color: " + model.bodyTextColor + ";\n    background-image: url('" + model.backgroundImage + "');\n    background-repeat: no-repeat;\n    background-size: 100%;\n   \n  }\n\n  .second-bar {\n    background: -webkit-gradient(linear, left top, left bottom, color-stop(0%," + (model.secondBarColor1 || "white") + "), color-stop(1," + (model.secondBarColor2 || "#EFEFEF") + "));\n  }\n  \n  .headline {\n    color: " + model.headlineColor + "\n  }\n\n  .tile:not(.home) {\n    background-color: white; \n    min-height: " + (innerHeight + 90) + "px;\n\n  }\n\n\n  .promo-wrapper {\n    color: " + model.promoTextColor + "\n  }\n\n  .nav-item, .full-site {\n    color: " + model.buttonsTextColor + "\n  }\n\n  .item .title {\n    color: " + (model.menuTitleTextColor || "black") + "\n  }\n\n  .item .price{\n    color: " + (model.menuPriceTextColor || "gray") + "\n  }\n\n  .item .description{\n    color: " + model.menuDescriptionTextColor + "\n  }\n  \n  .menu-gradient {\n    background: -webkit-gradient(linear, left top, left bottom, color-stop(0%," + (model.menuColor1 || "white") + "), color-stop(1," + (model.menuColor2 || "#EFEFEF") + "));\n  }\n\n\n  .tile {\n    background: -webkit-gradient(linear, left top, left bottom, color-stop(0%," + model.bodyColor1 + "), color-stop(1," + model.bodyColor2 + "));\n    width: " + _320 + "px;\n  }\n\n  .promo-gradient {\n    background: -webkit-gradient(linear, left top, left bottom, color-stop(0%," + model.promoColor1 + "), color-stop(1," + model.promoColor2 + "));\n  }\n\n</style>");
       extraStyles.appendTo($("head"));
       $("h1").bind("click", function() {
         return location.href = "#";
@@ -164,7 +165,7 @@
           navItemUrl = model[navItem + "Icon"] || ("http://drewl.us:8010/icons/" + navItem + ".png");
           return navHtml += "<a class=\"nav-item\" data-nav=\"" + navItem + "\" href=\"" + href + "\" style=\"background-image: url('" + navItemUrl + "')\">\n  <span>" + (_.capitalize(navItemText)) + "</span>\n</a>";
         });
-        navHtml = $("<div class=\"home tile page2\" data-page=\"home\">\n  <div class=\"headline\">" + model.headline + "</div>\n  <div class=\"nav\">\n    " + navHtml + "\n  </div>\n  <div class=\"clear\">\n  <br />\n  <br />\n<a class=\"full-site\" href=\"" + model.fullUrl + "\">Full Site</a><a class=\"full-site\" href=\"javascript:delete localStorage.existingPhone;void(0);\">.</a>\n</div>");
+        navHtml = $("<div class=\"home tile page2\" data-page=\"home\">\n  <div class=\"hbox center\">\n     <div>\n     <img src=\"" + model.headerUrl + "\">\n     </div>\n  </div>\n  <div class=\"headline text-center\">" + model.headline + "</div>\n  <div class=\"nav\">\n    " + navHtml + "\n  </div>\n  <div class=\"clear\">\n  <br />\n  <br />\n<a class=\"full-site\" href=\"" + model.fullUrl + "\">Full Site</a><a class=\"full-site\" href=\"javascript:delete localStorage.existingPhone;void(0);\">.</a>\n</div>");
         $(".content").append(navHtml);
         return navHtml.find("form").bind("submit", function(e) {
           e.preventDefault();
@@ -175,7 +176,7 @@
         var directionsHtml, htmlAddress, urlAddress;
         urlAddress = encodeURIComponent(model.address.replace(/\n/g, " "));
         htmlAddress = model.address.replace(/\n/g, "<br />");
-        directionsHtml = "<div class=\"tile map page2\" data-page=\"map\">\n  <div class=\"paddinglr\">" + htmlAddress + "</div>\n\n  <!--<a target=\"blank\" href=\"http://maps.google.com/maps?daddr=" + urlAddress + "\">Google Map Directions</a>-->\n  <a target=\"blank\" href=\"http://maps.google.com/maps?q=" + urlAddress + "\">\n  <img src=\"http://maps.googleapis.com/maps/api/staticmap?center=" + urlAddress + "&zoom=14&size=" + _320 + "x" + _320 + "&markers=color:red|" + urlAddress + "&maptype=roadmap&sensor=false\" />\n  </a>\n</div>";
+        directionsHtml = "<div class=\"tile map page2\" data-page=\"map\">\n  <div class=\"text-center headline second-bar\">\n    <a href=\"#\" class=\"left home-icon\"></a>\n    " + "Map" + "\n    <a href=\"tel:" + model.phone + "\" class=\"right phone-icon\"></a>\n  </div>\n  <div class=\"paddinglr15\">\n    <br />\n    <div><b>" + model.title + "</b></div>\n    <div>" + model.crossStreets + "</div>\n    " + htmlAddress + "\n  </div>\n\n  <!--<a target=\"blank\" href=\"http://maps.google.com/maps?daddr=" + urlAddress + "\">Google Map Directions</a>-->\n  <a target=\"blank\" href=\"http://maps.google.com/maps?q=" + urlAddress + "\">\n  <br />\n  <img src=\"http://maps.googleapis.com/maps/api/staticmap?center=" + urlAddress + "&zoom=14&size=" + _320 + "x" + _320 + "&markers=color:red|" + urlAddress + "&maptype=roadmap&sensor=false\" />\n  </a>\n</div>";
         return $(".content").append(directionsHtml);
       };
       addHoursPage = function() {
@@ -185,19 +186,24 @@
           day = daysMonday[_i];
           dayRows += getDayRow(day, model);
         }
-        hoursTable = " \n<table class=\"paddinglr\">\n  <tbody>\n    " + dayRows + "\n  </tbody>\n</table>";
-        return $(".content").append("<div class=\"hours tile page2\" data-page=\"hours\">" + hoursTable + "</hours>");
+        hoursTable = " \n<table class=\"paddinglrt15\">\n  <tbody>\n    " + dayRows + "\n  </tbody>\n</table>";
+        return $(".content").append("<div class=\"hours tile page2\" data-page=\"hours\">\n <div class=\"text-center headline second-bar\">\n   <a href=\"#\" class=\"left home-icon\"></a>\n   " + "Hours" + "\n   <a href=\"tel:" + model.phone + "\" class=\"right phone-icon\"></a>\n </div>\n  " + hoursTable + "\n</hours>");
       };
       menuMaker = function(name) {
-        var addMenuPage;
+        var addMenuPage, redeemCode;
         addMenuPage = function() {
           var itemsTable;
           itemsTable = " \n<div class=\"items-table\">\n\n</div>";
-          return $(".content").append("<div class=\"" + name + " tile page2 scrollable2 vertical2\" data-page=\"" + name + "\">" + itemsTable + "</hours>");
+          return $(".content").append("<div class=\"" + name + " tile page2 scrollable2 vertical2\" data-page=\"" + name + "\">\n  <div class=\"text-center headline second-bar\">\n   <a href=\"#\" class=\"left home-icon\"></a>\n    " + (drews.capitalize(navItems[name])) + "\n   <a href=\"tel:" + model.phone + "\" class=\"right phone-icon\"></a>\n  </div>\n  " + itemsTable + "\n</div>");
         };
+        if (name === "specials") {
+          redeemCode = "<input type=\"button\" class=\"redeem-button\" onclick=\"alert('hello world');\" value=\"Redeem\">";
+        } else {
+          redeemCode = "";
+        }
         self["add" + drews.capitalize(name)] = function(items) {
           return _.each(items, function(item) {
-            return $(".content ." + name).append($("<div class=\"item menu-gradient hbox\">\n    <div>\n      <img class=\"\"  src=\"" + (item.image || model.headerUrl) + "\" />\n    </div>\n    <div class=\"relative boxFlex\">\n      <div class=\"item-top-bar relative\">\n        <div class=\"title\">" + (item.title || "") + "</div>\n        <div class=\"price\">" + (item.price || "") + "</div>\n      </div>\n      <div class=\"description\">" + (item.description || "") + "</div>\n    </div>\n    <div class=\"clear\"></div>\n</div>"));
+            return $(".content ." + name).append($("<div class=\"item menu-gradient hbox\">\n    <div>\n      <img class=\"\"  src=\"" + (item.image || model.headerUrl) + "\" />\n    </div>\n    <div class=\"relative boxFlex\">\n      <div class=\"item-top-bar relative\">\n        <div class=\"title\">" + (item.title || "") + "</div>\n        <div class=\"price\">" + (item.price || "") + "</div>\n      </div>\n      <div class=\"description\">" + (item.description || "") + "</div>\n      <div>\n      " + redeemCode + "\n      </div>\n    </div>\n    <div class=\"clear\"></div>\n</div>"));
           });
         };
         return addMenuPage;

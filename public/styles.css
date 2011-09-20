@@ -1,13 +1,16 @@
 * {
   margin: 0;
   padding: 0;
+  -webkit-tap-highlight-color: rgba(0,0,0,0);
 }
 
 .phone {
 
 }
 
-
+.text-center {
+  text-align: center;
+}
 .second-bar {
   padding: 5px;
 }
@@ -52,6 +55,7 @@ body, input[type="text"], input[type="tel"] {
   float: left;
   -webkit-backface-visibility: hidden;
 }
+
 
 /*
 html, body {
@@ -124,11 +128,31 @@ html, body {
 .nav a {
   float: left;
   display: block;
-  width: 106px;
-  height: 106px;
 }
 
+.redeem-button {
+  font-size: 0.9em;
+  background: -webkit-gradient(linear, left top, left bottom, color-stop(0%,#1199d6), color-stop(1,#2f67b1));
+  border-radius: 6px;
+  border-width: 0px;
+  padding: 5px;
+  margin-top: 10px;
+  margin-bottom: 10px;
+  color: white;
+  -webkit-box-shadow: 2px 2px 5px #000;
+   
+}
 
+.home-icon {
+  background: url('http://drewl.us:8010/icons/homer.png');
+  width: 22px;
+  height: 22px;
+}
+.phone-icon {
+  background: url('http://drewl.us:8010/icons/phoner.png');
+  width: 24px;
+  height: 24px;
+}
 .nav {
   font-size: .85em;
 }
@@ -154,6 +178,17 @@ html, body {
 .paddinglr {
   padding-left: 5px;
   padding-right: 5px;
+}
+
+.paddinglr15 {
+  padding-left: 15px;
+  padding-right: 15px;
+}
+
+.paddinglrt15 {
+  padding-left: 15px;
+  padding-right: 15px;
+  padding-top: 15px;
 }
 
 .paddingr {
@@ -317,3 +352,4 @@ html, body {
   -moz-box-pack: center;
   box-pack: center;
 }
+

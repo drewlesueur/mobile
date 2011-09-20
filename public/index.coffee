@@ -67,9 +67,14 @@ define "app-view", () ->
     swipeAnimationSeconds = 0.25
     activeTile = null
 
-
+    scrollTo 0,0,1
     extraStyles = $ """
       <style>
+        
+        .nav a {
+          height: #{innerWidth / 3}px;
+          width: #{innerWidth / 3}px;
+        }
         
         .phone-bar a {
           color: #{model.phoneColor}  
@@ -79,11 +84,22 @@ define "app-view", () ->
           color: #{model.bodyTextColor};
           background-image: url('#{model.backgroundImage}');
           background-repeat: no-repeat;
+          background-size: 100%;
          
+        }
+
+        .second-bar {
+          background: -webkit-gradient(linear, left top, left bottom, color-stop(0%,#{model.secondBarColor1 or "white"}), color-stop(1,#{model.secondBarColor2 or "#EFEFEF"}));
         }
         
         .headline {
           color: #{model.headlineColor}
+        }
+
+        .tile:not(.home) {
+          background-color: white; 
+          min-height: #{innerHeight + 90}px;
+
         }
 
 
@@ -227,7 +243,12 @@ define "app-view", () ->
 
       navHtml = $ """
         <div class="home tile page2" data-page="home">
-          <div class="headline">#{model.headline}</div>
+          <div class="hbox center">
+             <div>
+             <img src="#{model.headerUrl}">
+             </div>
+          </div>
+          <div class="headline text-center">#{model.headline}</div>
           <div class="nav">
             #{navHtml}
           </div>
@@ -253,10 +274,21 @@ define "app-view", () ->
       htmlAddress = model.address.replace /\n/g, "<br />"
       directionsHtml =  """
        <div class="tile map page2" data-page="map">
-         <div class="paddinglr">#{htmlAddress}</div>
+         <div class="text-center headline second-bar">
+           <a href="#" class="left home-icon"></a>
+           #{"Map"}
+           <a href="tel:#{model.phone}" class="right phone-icon"></a>
+         </div>
+         <div class="paddinglr15">
+           <br />
+           <div><b>#{model.title}</b></div>
+           <div>#{model.crossStreets}</div>
+           #{htmlAddress}
+         </div>
 
          <!--<a target="blank" href="http://maps.google.com/maps?daddr=#{urlAddress}">Google Map Directions</a>-->
          <a target="blank" href="http://maps.google.com/maps?q=#{urlAddress}">
+         <br />
          <img src="http://maps.googleapis.com/maps/api/staticmap?center=#{urlAddress}&zoom=14&size=#{_320}x#{_320}&markers=color:red|#{urlAddress}&maptype=roadmap&sensor=false" />
          </a>
        </div>
@@ -270,14 +302,21 @@ define "app-view", () ->
       for day in daysMonday
         dayRows += getDayRow day, model
       hoursTable =  """ 
-        <table class="paddinglr">
+        <table class="paddinglrt15">
           <tbody>
             #{dayRows}
           </tbody>
         </table>
       """
       $(".content").append """
-        <div class="hours tile page2" data-page="hours">#{hoursTable}</hours>
+        <div class="hours tile page2" data-page="hours">
+         <div class="text-center headline second-bar">
+           <a href="#" class="left home-icon"></a>
+           #{"Hours"}
+           <a href="tel:#{model.phone}" class="right phone-icon"></a>
+         </div>
+          #{hoursTable}
+        </hours>
       """
 
     menuMaker = (name) ->
@@ -288,8 +327,22 @@ define "app-view", () ->
           </div>
         """
         $(".content").append """
-          <div class="#{name} tile page2 scrollable2 vertical2" data-page="#{name}">#{itemsTable}</hours>
+          <div class="#{name} tile page2 scrollable2 vertical2" data-page="#{name}">
+            <div class="text-center headline second-bar">
+             <a href="#" class="left home-icon"></a>
+              #{drews.capitalize navItems[name]}
+             <a href="tel:#{model.phone}" class="right phone-icon"></a>
+            </div>
+            #{itemsTable}
+          </div>
         """
+      if name is "specials"
+        redeemCode = """
+          <input type="button" class="redeem-button" onclick="alert('hello world');" value="Redeem">
+        """
+      else
+        redeemCode = ""
+
       self["add" + drews.capitalize(name)] = (items) ->
 
         _.each items, (item) ->
@@ -304,6 +357,9 @@ define "app-view", () ->
                     <div class="price">#{item.price or ""}</div>
                   </div>
                   <div class="description">#{item.description or ""}</div>
+                  <div>
+                  #{redeemCode}
+                  </div>
                 </div>
                 <div class="clear"></div>
             </div>
