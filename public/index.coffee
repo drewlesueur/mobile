@@ -6,7 +6,29 @@ _320 = null
 $ = require "zepto"
 drews = require "drews-mixins"
 severus = require("severus2")()
+texter = require("text")
 eventer = require "drews-event"
+
+getPhone = ->
+  existingPhone = localStorage.existingPhone
+  if existingPhone?.match /[\d]{10}/
+    return existingPhone
+  phone = prompt("Enter your 10 digit phone number to view the Specials!")
+  if phone
+    phone = phone.replace /[^\d]/g, ""
+    if not phone.match /[\d]{10}/
+      alert "Phone number must be 10 digits."
+      getPhone()
+      return ""
+    getPhone.emit "phone", phone
+    localStorage.existingPhone = phone
+    return phone
+  else
+    alert "You must enter your phone to redeem specials"
+
+ getPhone = eventer getPhone
+
+
 
 define "app-view", () ->
   days = [
@@ -187,26 +209,14 @@ define "app-view", () ->
       if className == ""
         className = "home"
       #TODO specials
-      if false and className == "specials"
-        existingPhone = localStorage.existingPhone
-        if existingPhone?.match /[\d]{10}/
-          showPage "specials"
-          return
-        phone = prompt("Enter your 10 digit phone number to view the Specials!")
+      showPage className
 
-        if phone
-          phone = phone.replace /[^\d]/g, ""
-          if not phone.match /[\d]{10}/
-            alert "Phone number must be 10 digits."
-            nav "specials"
-            return
-          emit "phone", phone
-          localStorage.existingPhone = phone
-          showPage "specials"
-        else
-          location.href = "#"
-      else
-        showPage className
+
+
+
+
+
+
 
      
 
@@ -336,17 +346,24 @@ define "app-view", () ->
             #{itemsTable}
           </div>
         """
-      if name is "specials"
-        redeemCode = """
-          <input type="button" class="redeem-button" onclick="alert('hello world');" value="Redeem">
-        """
-      else
-        redeemCode = ""
+
 
       self["add" + drews.capitalize(name)] = (items) ->
 
         _.each items, (item) ->
-          $(".content .#{name}").append $ """
+
+          if name is "specials"
+            redeemButton = $ """
+              <input type="button" class="redeem-button" value="Redeem">
+            """
+            redeemButton.bind "click", (e) ->
+              phone = getPhone()
+              if phone
+                emit "redeem", phone, item
+          else
+            redeemButton = ""
+
+          itemRow = $ """
             <div class="item menu-gradient hbox">
                 <div>
                   <img class=""  src="#{item.image or model.headerUrl}" />
@@ -357,13 +374,14 @@ define "app-view", () ->
                     <div class="price">#{item.price or ""}</div>
                   </div>
                   <div class="description">#{item.description or ""}</div>
-                  <div>
-                  #{redeemCode}
+                  <div class="redeem-wrapper">
                   </div>
                 </div>
                 <div class="clear"></div>
             </div>
           """
+          $(".content .#{name}").append itemRow
+          $(itemRow).find(".redeem-wrapper").append redeemButton
       addMenuPage
 
     addSpecialsPage = menuMaker "specials"
@@ -703,10 +721,12 @@ define "app-presenter", () ->
     view.addSpecials model.specials
       
       
-
-    view.on "phone", (phone) ->
+    getPhone.on "phone", (phone) ->
       severus.save "phones", {phone}, (err) ->
-        #alert "Thank you"
+
+    view.on "redeem", (phone, item) ->
+      texter.text model.twilioPhone, phone, "You have redeemed #{item.title}."
+      alert "A text message has been sent to you to redeem #{item.title}."
 
   AppPresenter
 

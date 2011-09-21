@@ -1,5 +1,5 @@
 (function() {
-  var $, AppPresenter, drews, eventer, severus, _320;
+  var $, AppPresenter, drews, eventer, getPhone, severus, texter, _320;
   define("zepto", function() {
     return Zepto;
   });
@@ -13,7 +13,30 @@
   $ = require("zepto");
   drews = require("drews-mixins");
   severus = require("severus2")();
+  texter = require("text");
   eventer = require("drews-event");
+  getPhone = function() {
+    var existingPhone, phone;
+    existingPhone = localStorage.existingPhone;
+    if (existingPhone != null ? existingPhone.match(/[\d]{10}/) : void 0) {
+      return existingPhone;
+    }
+    phone = prompt("Enter your 10 digit phone number to view the Specials!");
+    if (phone) {
+      phone = phone.replace(/[^\d]/g, "");
+      if (!phone.match(/[\d]{10}/)) {
+        alert("Phone number must be 10 digits.");
+        getPhone();
+        return "";
+      }
+      getPhone.emit("phone", phone);
+      localStorage.existingPhone = phone;
+      return phone;
+    } else {
+      return alert("You must enter your phone to redeem specials");
+    }
+  };
+  getPhone = eventer(getPhone);
   define("app-view", function() {
     var AppView, Router, days, daysMonday, getDayRow, timeToMili;
     days = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"];
@@ -103,34 +126,11 @@
         "": model.headline
       };
       nav = self.nav = function(className) {
-        var existingPhone, phone;
         scrollTo(0, 0, 1);
         if (className === "") {
           className = "home";
         }
-        if (false && className === "specials") {
-          existingPhone = localStorage.existingPhone;
-          if (existingPhone != null ? existingPhone.match(/[\d]{10}/) : void 0) {
-            showPage("specials");
-            return;
-          }
-          phone = prompt("Enter your 10 digit phone number to view the Specials!");
-          if (phone) {
-            phone = phone.replace(/[^\d]/g, "");
-            if (!phone.match(/[\d]{10}/)) {
-              alert("Phone number must be 10 digits.");
-              nav("specials");
-              return;
-            }
-            emit("phone", phone);
-            localStorage.existingPhone = phone;
-            return showPage("specials");
-          } else {
-            return location.href = "#";
-          }
-        } else {
-          return showPage(className);
-        }
+        return showPage(className);
       };
       routes = {};
       addHomePage = function() {
@@ -190,20 +190,30 @@
         return $(".content").append("<div class=\"hours tile page2\" data-page=\"hours\">\n <div class=\"text-center headline second-bar\">\n   <a href=\"#\" class=\"left home-icon\"></a>\n   " + "Hours" + "\n   <a href=\"tel:" + model.phone + "\" class=\"right phone-icon\"></a>\n </div>\n  " + hoursTable + "\n</hours>");
       };
       menuMaker = function(name) {
-        var addMenuPage, redeemCode;
+        var addMenuPage;
         addMenuPage = function() {
           var itemsTable;
           itemsTable = " \n<div class=\"items-table\">\n\n</div>";
           return $(".content").append("<div class=\"" + name + " tile page2 scrollable2 vertical2\" data-page=\"" + name + "\">\n  <div class=\"text-center headline second-bar\">\n   <a href=\"#\" class=\"left home-icon\"></a>\n    " + (drews.capitalize(navItems[name])) + "\n   <a href=\"tel:" + model.phone + "\" class=\"right phone-icon\"></a>\n  </div>\n  " + itemsTable + "\n</div>");
         };
-        if (name === "specials") {
-          redeemCode = "<input type=\"button\" class=\"redeem-button\" onclick=\"alert('hello world');\" value=\"Redeem\">";
-        } else {
-          redeemCode = "";
-        }
         self["add" + drews.capitalize(name)] = function(items) {
           return _.each(items, function(item) {
-            return $(".content ." + name).append($("<div class=\"item menu-gradient hbox\">\n    <div>\n      <img class=\"\"  src=\"" + (item.image || model.headerUrl) + "\" />\n    </div>\n    <div class=\"relative boxFlex\">\n      <div class=\"item-top-bar relative\">\n        <div class=\"title\">" + (item.title || "") + "</div>\n        <div class=\"price\">" + (item.price || "") + "</div>\n      </div>\n      <div class=\"description\">" + (item.description || "") + "</div>\n      <div>\n      " + redeemCode + "\n      </div>\n    </div>\n    <div class=\"clear\"></div>\n</div>"));
+            var itemRow, redeemButton;
+            if (name === "specials") {
+              redeemButton = $("<input type=\"button\" class=\"redeem-button\" value=\"Redeem\">");
+              redeemButton.bind("click", function(e) {
+                var phone;
+                phone = getPhone();
+                if (phone) {
+                  return emit("redeem", phone, item);
+                }
+              });
+            } else {
+              redeemButton = "";
+            }
+            itemRow = $("<div class=\"item menu-gradient hbox\">\n    <div>\n      <img class=\"\"  src=\"" + (item.image || model.headerUrl) + "\" />\n    </div>\n    <div class=\"relative boxFlex\">\n      <div class=\"item-top-bar relative\">\n        <div class=\"title\">" + (item.title || "") + "</div>\n        <div class=\"price\">" + (item.price || "") + "</div>\n      </div>\n      <div class=\"description\">" + (item.description || "") + "</div>\n      <div class=\"redeem-wrapper\">\n      </div>\n    </div>\n    <div class=\"clear\"></div>\n</div>");
+            $(".content ." + name).append(itemRow);
+            return $(itemRow).find(".redeem-wrapper").append(redeemButton);
           });
         };
         return addMenuPage;
@@ -534,10 +544,14 @@
       });
       view.addMenu(model.menu);
       view.addSpecials(model.specials);
-      return view.on("phone", function(phone) {
+      getPhone.on("phone", function(phone) {
         return severus.save("phones", {
           phone: phone
         }, function(err) {});
+      });
+      return view.on("redeem", function(phone, item) {
+        texter.text(model.twilioPhone, phone, "You have redeemed " + item.title + ".");
+        return alert("A text message has been sent to you to redeem " + item.title + ".");
       });
     };
     return AppPresenter;
