@@ -40,7 +40,7 @@
         return obj.save();
       });
       view.on("delete", function(obj) {
-        delete objs[objs.indexOf(i)];
+        delete objs[objs.indexOf(obj)];
         return obj.remove();
       });
       self.getEl = function() {

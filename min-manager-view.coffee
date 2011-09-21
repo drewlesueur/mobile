@@ -56,7 +56,9 @@ define 'min-manager-view', () ->
         else
           input.val min.get prop
 
-       
+    $(".text-form").bind "submit", (e) ->
+     e.preventDefault()
+
     $('.new').bind "click", (e) ->
       e.preventDefault( )
       name = prompt "Name?"

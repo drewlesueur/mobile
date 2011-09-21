@@ -9,7 +9,7 @@
     SubMinManagerView = require("sub-min-manager-view");
     MinManagerPresenter = {};
     MinManagerPresenter.init = function(self) {
-      var currentMin, emit, loadPhones, menuTablePresenter, mins, saveTables, setCurrentMin, specialsTablePresenter, view;
+      var currentMin, emit, loadPhones, menuTablePresenter, mins, phonesTablePresenter, saveTables, setCurrentMin, specialsTablePresenter, view;
       if (self == null) {
         self = {};
       }
@@ -45,6 +45,7 @@
       });
       menuTablePresenter = null;
       specialsTablePresenter = null;
+      phonesTablePresenter = null;
       setCurrentMin = function(min) {
         var TablePresenter;
         currentMin = min;
@@ -67,7 +68,14 @@
           fields: ["order", "image", "title", "price", "description"]
         });
         view.addItemsText("Specials");
-        return view.addAdditionalItemsTable(specialsTablePresenter);
+        view.addAdditionalItemsTable(specialsTablePresenter);
+        phonesTablePresenter = TablePresenter.init({
+          type: "phones",
+          db: "mobilemin_" + (min.get("name")),
+          fields: ["phone"]
+        });
+        view.addItemsText("Phones");
+        return view.addAdditionalItemsTable(phonesTablePresenter);
       };
       Min.on("find", function(mins) {
         var min;

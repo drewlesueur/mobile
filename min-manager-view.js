@@ -51,6 +51,9 @@
           }
         });
       };
+      $(".text-form").bind("submit", function(e) {
+        return e.preventDefault();
+      });
       $('.new').bind("click", function(e) {
         var name;
         e.preventDefault();

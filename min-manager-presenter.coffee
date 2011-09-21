@@ -53,6 +53,8 @@ define "min-manager-presenter", () ->
     
     menuTablePresenter = null
     specialsTablePresenter = null
+    phonesTablePresenter = null
+
     setCurrentMin = (min) ->
       currentMin = min
       severus.db = "mobilemin_" + currentMin.get "name"
@@ -74,6 +76,13 @@ define "min-manager-presenter", () ->
         fields: ["order", "image", "title", "price", "description"]
       view.addItemsText "Specials"
       view.addAdditionalItemsTable specialsTablePresenter
+
+      phonesTablePresenter = TablePresenter.init
+        type: "phones"
+        db: "mobilemin_#{min.get "name"}"
+        fields: ["phone"]
+      view.addItemsText "Phones"
+      view.addAdditionalItemsTable phonesTablePresenter
 
     Min.on "find", (mins) ->
       min = drews.s(mins, -1)[0]

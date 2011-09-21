@@ -34,7 +34,7 @@ define "table-presenter", () ->
       obj.save()
 
     view.on "delete", (obj) ->
-      delete objs[objs.indexOf(i)]
+      delete objs[objs.indexOf(obj)]
       obj.remove()
 
     self.getEl = -> view.getEl()
