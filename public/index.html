@@ -1,0 +1,34 @@
+<!doctype html>
+<html>
+<head>
+  <title></title>
+  <link rel="stylesheet/less" type="text/css" href="styles.css"> 
+  <script src="http://inc.the.tl/module.js"></script>
+  <script src="http://inc.the.tl/jquery-1.6.min.js"></script>
+  <script src="http://inc.the.tl/json2.js"></script>
+  <script src="http://inc.the.tl/underscore.js"></script>
+  <script src="http://inc.the.tl/nimble.js"></script>
+  <script src="http://inc.the.tl/drews-mixins.js"></script>
+  <script>
+    // for javascripts that done use the define, require pattern
+    define("jquery", function(){return jQuery;});
+    define("underscore", function(){return _;});
+    define("json", function(){return JSON;});
+    define("nimble", function(){return _;});
+  </script>
+  <script src="text.js"></script>
+  <script src="index.js"></script>
+  <script>
+  </script>
+</head>
+<body>
+  texter
+<form class="text-form">
+  <input type="text" placeholder="to" class="to"/>
+  <input type="text" placeholder="message" class="message"/>
+  <input type="submit" value="Send text" />
+</form>
+</form>
+</body>
+</html>
+
