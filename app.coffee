@@ -143,6 +143,9 @@ errorMaker = (error) ->
   (args..., cb) ->
     cb error, null
 
+pg "/", (req, res) ->
+  res.send("server is running")
+
 pg "/rpc", (req, res) ->
   body = req.body
   {method, params, id} = body
@@ -155,7 +158,8 @@ pg "/rpc", (req, res) ->
 
 exports.app = app
 
-if (!module.parent) 
-  app.listen config.server.port || 8001
-  console.log("Express server listening on port %d", app.address().port)
-
+start = () ->
+  if (!module.parent) 
+    app.listen config.server.port || 8001
+    console.log("Express server listening on port %d", app.address().port)
+start()

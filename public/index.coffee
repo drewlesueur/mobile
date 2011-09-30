@@ -2,8 +2,13 @@ define "zepto", () -> Zepto
 define "underscore", () -> _
 define "nimble", () -> _
 
+
+_.templateSettings =
+  interpolate : /\{\{(.+?)\}\}/g
+
 _320 = null
 $ = require "zepto"
+
 drews = require "drews-mixins"
 severus = require("severus2")()
 texter = require("text")
@@ -12,7 +17,10 @@ eventer = require "drews-event"
 getPhone = ->
   existingPhone = localStorage.existingPhone
   if existingPhone?.match /[\d]{10}/
-    return existingPhone
+    if confirm "Is your phone number #{existingPhone}?"
+      return existingPhone
+    else
+      delete localStorage.existingPhone
   phone = prompt("Enter your 10 digit phone number to view the Specials!")
   if phone
     phone = phone.replace /[^\d]/g, ""
@@ -80,6 +88,10 @@ define "app-view", () ->
   Router = require "router"
   AppView = {}
   AppView.init = (options) ->
+
+    if $.os.ios and parseFloat($.os.version) >= 3.1
+      canSwipe = true
+
     {model} = options
     self = eventer {}
     {emit} = self
@@ -90,9 +102,29 @@ define "app-view", () ->
     activeTile = null
 
     scrollTo 0,0,1
+    if (model.textShadowPresent + "").toLowerCase() == "no"
+      textShadowCss = """
+        .nav-item, .headline {
+          text-shadow: none;
+        }
+      """
+    else
+      textShadowCss = """
+        .nav-item, .headline {
+          text-shadow: 2px 2px 3px #000;
+        }
+      """
     extraStyles = $ """
       <style>
-        
+        #{textShadowCss} 
+
+        body, html {
+          width: #{innerWidth}px;
+          height: #{1000}px;
+          overflow-x: hidden;
+          overflow-y: visible;
+        }
+
         .nav a {
           height: #{innerWidth / 3}px;
           width: #{innerWidth / 3}px;
@@ -168,8 +200,13 @@ define "app-view", () ->
       location.href = "#"
 
     showPage = (className) ->
-      $(".content .tile.#{className}").show()
-      index = $(".content .tile.#{className}").index()
+      myTile = $(".content .tile.#{className}")
+      myTile.show()
+      if not canSwipe
+        if myTile.length > 0
+          $("body, html").css height: (getComputedStyle myTile[0]).getPropertyValue("height")
+
+      index = myTile.index()
       if className == "home"
         className = ""
       if className != ""
@@ -366,14 +403,14 @@ define "app-view", () ->
           itemRow = $ """
             <div class="item menu-gradient hbox">
                 <div>
-                  <img class=""  src="#{item.image or model.headerUrl}" />
+                  <img class=""  src="#{item?.image or model.headerUrl}" />
                 </div>
                 <div class="relative boxFlex">
                   <div class="item-top-bar relative">
-                    <div class="title">#{item.title or ""}</div>
-                    <div class="price">#{item.price or ""}</div>
+                    <div class="title">#{item?.title or ""}</div>
+                    <div class="price">#{item?.price or ""}</div>
                   </div>
-                  <div class="description">#{item.description or ""}</div>
+                  <div class="description">#{item?.description or ""}</div>
                   <div class="redeem-wrapper">
                   </div>
                 </div>
@@ -688,7 +725,10 @@ define "app-view", () ->
       $(document).bind "touchstart", touchStart
       $(document).bind "touchmove", touchMove
       $(document).bind "touchend", touchEnd
-    touching()
+
+    if canSwipe
+      touching()
+
     
 
     self
@@ -715,18 +755,24 @@ define "app-presenter", () ->
       items = items.sort (a, b)->
         a.order - b.order
       #view.addSpecials items
+    
+    itemSort = (items) ->
+      items = items.sort (a, b)->
+        a.order - b.order
+      return items
 
-
-    view.addMenu model.menu
-    view.addSpecials model.specials
+    view.addMenu itemSort model.menu
+    view.addSpecials itemSort model.specials
       
       
     getPhone.on "phone", (phone) ->
       severus.save "phones", {phone}, (err) ->
-
+    
     view.on "redeem", (phone, item) ->
-      texter.text model.twilioPhone, phone, "You have redeemed #{item.title}."
-      alert "A text message has been sent to you to redeem #{item.title}."
+      textTemplate = _.template(model.redeemText or "You have redeemed #{item.title}.")
+      texter.text model.twilioPhone, phone, textTemplate item
+      alertTemplate = _.template(model.redeemAlert or "A text message has been sent to you to redeem #{item.title}.")
+      alert alertTemplate item
 
   AppPresenter
 

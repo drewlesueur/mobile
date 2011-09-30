@@ -9,6 +9,9 @@
   define("nimble", function() {
     return _;
   });
+  _.templateSettings = {
+    interpolate: /\{\{(.+?)\}\}/g
+  };
   _320 = null;
   $ = require("zepto");
   drews = require("drews-mixins");
@@ -19,7 +22,11 @@
     var existingPhone, phone;
     existingPhone = localStorage.existingPhone;
     if (existingPhone != null ? existingPhone.match(/[\d]{10}/) : void 0) {
-      return existingPhone;
+      if (confirm("Is your phone number " + existingPhone + "?")) {
+        return existingPhone;
+      } else {
+        delete localStorage.existingPhone;
+      }
     }
     phone = prompt("Enter your 10 digit phone number to view the Specials!");
     if (phone) {
@@ -78,7 +85,10 @@
     Router = require("router");
     AppView = {};
     AppView.init = function(options) {
-      var activeTile, addDirectionsPage, addHomePage, addHoursPage, addMenuPage, addSpecialsPage, content, cubed, defaultEasing, doEasing, easingMaker, emit, extraStyles, getXY, lastContentTransform, mapText, menuMaker, model, nav, navItems, pushToTop, router, routes, self, setActiveTile, showPage, squared, swipeAnimationSeconds, testEasing, touch, touchEnd, touchMove, touchStart, touching;
+      var activeTile, addDirectionsPage, addHomePage, addHoursPage, addMenuPage, addSpecialsPage, canSwipe, content, cubed, defaultEasing, doEasing, easingMaker, emit, extraStyles, getXY, lastContentTransform, mapText, menuMaker, model, nav, navItems, pushToTop, router, routes, self, setActiveTile, showPage, squared, swipeAnimationSeconds, testEasing, textShadowCss, touch, touchEnd, touchMove, touchStart, touching;
+      if ($.os.ios && parseFloat($.os.version) >= 3.1) {
+        canSwipe = true;
+      }
       model = options.model;
       self = eventer({});
       emit = self.emit;
@@ -86,15 +96,28 @@
       swipeAnimationSeconds = 0.25;
       activeTile = null;
       scrollTo(0, 0, 1);
-      extraStyles = $("<style>\n  \n  .nav a {\n    height: " + (innerWidth / 3) + "px;\n    width: " + (innerWidth / 3) + "px;\n  }\n  \n  .phone-bar a {\n    color: " + model.phoneColor + "  \n  }\n\n  body {\n    color: " + model.bodyTextColor + ";\n    background-image: url('" + model.backgroundImage + "');\n    background-repeat: no-repeat;\n    background-size: 100%;\n   \n  }\n\n  .second-bar {\n    background: -webkit-gradient(linear, left top, left bottom, color-stop(0%," + (model.secondBarColor1 || "white") + "), color-stop(1," + (model.secondBarColor2 || "#EFEFEF") + "));\n  }\n  \n  .headline {\n    color: " + model.headlineColor + "\n  }\n\n  .tile:not(.home) {\n    background-color: white; \n    min-height: " + (innerHeight + 90) + "px;\n\n  }\n\n\n  .promo-wrapper {\n    color: " + model.promoTextColor + "\n  }\n\n  .nav-item, .full-site {\n    color: " + model.buttonsTextColor + "\n  }\n\n  .item .title {\n    color: " + (model.menuTitleTextColor || "black") + "\n  }\n\n  .item .price{\n    color: " + (model.menuPriceTextColor || "gray") + "\n  }\n\n  .item .description{\n    color: " + model.menuDescriptionTextColor + "\n  }\n  \n  .menu-gradient {\n    background: -webkit-gradient(linear, left top, left bottom, color-stop(0%," + (model.menuColor1 || "white") + "), color-stop(1," + (model.menuColor2 || "#EFEFEF") + "));\n  }\n\n\n  .tile {\n    background: -webkit-gradient(linear, left top, left bottom, color-stop(0%," + model.bodyColor1 + "), color-stop(1," + model.bodyColor2 + "));\n    width: " + _320 + "px;\n  }\n\n  .promo-gradient {\n    background: -webkit-gradient(linear, left top, left bottom, color-stop(0%," + model.promoColor1 + "), color-stop(1," + model.promoColor2 + "));\n  }\n\n</style>");
+      if ((model.textShadowPresent + "").toLowerCase() === "no") {
+        textShadowCss = ".nav-item, .headline {\n  text-shadow: none;\n}";
+      } else {
+        textShadowCss = ".nav-item, .headline {\n  text-shadow: 2px 2px 3px #000;\n}";
+      }
+      extraStyles = $("<style>\n  " + textShadowCss + " \n\n  body, html {\n    width: " + innerWidth + "px;\n    height: " + 1000 + "px;\n    overflow-x: hidden;\n    overflow-y: visible;\n  }\n\n  .nav a {\n    height: " + (innerWidth / 3) + "px;\n    width: " + (innerWidth / 3) + "px;\n  }\n  \n  .phone-bar a {\n    color: " + model.phoneColor + "  \n  }\n\n  body {\n    color: " + model.bodyTextColor + ";\n    background-image: url('" + model.backgroundImage + "');\n    background-repeat: no-repeat;\n    background-size: 100%;\n   \n  }\n\n  .second-bar {\n    background: -webkit-gradient(linear, left top, left bottom, color-stop(0%," + (model.secondBarColor1 || "white") + "), color-stop(1," + (model.secondBarColor2 || "#EFEFEF") + "));\n  }\n  \n  .headline {\n    color: " + model.headlineColor + "\n  }\n\n  .tile:not(.home) {\n    background-color: white; \n    min-height: " + (innerHeight + 90) + "px;\n\n  }\n\n\n  .promo-wrapper {\n    color: " + model.promoTextColor + "\n  }\n\n  .nav-item, .full-site {\n    color: " + model.buttonsTextColor + "\n  }\n\n  .item .title {\n    color: " + (model.menuTitleTextColor || "black") + "\n  }\n\n  .item .price{\n    color: " + (model.menuPriceTextColor || "gray") + "\n  }\n\n  .item .description{\n    color: " + model.menuDescriptionTextColor + "\n  }\n  \n  .menu-gradient {\n    background: -webkit-gradient(linear, left top, left bottom, color-stop(0%," + (model.menuColor1 || "white") + "), color-stop(1," + (model.menuColor2 || "#EFEFEF") + "));\n  }\n\n\n  .tile {\n    background: -webkit-gradient(linear, left top, left bottom, color-stop(0%," + model.bodyColor1 + "), color-stop(1," + model.bodyColor2 + "));\n    width: " + _320 + "px;\n  }\n\n  .promo-gradient {\n    background: -webkit-gradient(linear, left top, left bottom, color-stop(0%," + model.promoColor1 + "), color-stop(1," + model.promoColor2 + "));\n  }\n\n</style>");
       extraStyles.appendTo($("head"));
       $("h1").bind("click", function() {
         return location.href = "#";
       });
       showPage = function(className) {
-        var index, newX, phoneText;
-        $(".content .tile." + className).show();
-        index = $(".content .tile." + className).index();
+        var index, myTile, newX, phoneText;
+        myTile = $(".content .tile." + className);
+        myTile.show();
+        if (!canSwipe) {
+          if (myTile.length > 0) {
+            $("body, html").css({
+              height: (getComputedStyle(myTile[0])).getPropertyValue("height")
+            });
+          }
+        }
+        index = myTile.index();
         if (className === "home") {
           className = "";
         }
@@ -211,7 +234,7 @@
             } else {
               redeemButton = "";
             }
-            itemRow = $("<div class=\"item menu-gradient hbox\">\n    <div>\n      <img class=\"\"  src=\"" + (item.image || model.headerUrl) + "\" />\n    </div>\n    <div class=\"relative boxFlex\">\n      <div class=\"item-top-bar relative\">\n        <div class=\"title\">" + (item.title || "") + "</div>\n        <div class=\"price\">" + (item.price || "") + "</div>\n      </div>\n      <div class=\"description\">" + (item.description || "") + "</div>\n      <div class=\"redeem-wrapper\">\n      </div>\n    </div>\n    <div class=\"clear\"></div>\n</div>");
+            itemRow = $("<div class=\"item menu-gradient hbox\">\n    <div>\n      <img class=\"\"  src=\"" + ((item != null ? item.image : void 0) || model.headerUrl) + "\" />\n    </div>\n    <div class=\"relative boxFlex\">\n      <div class=\"item-top-bar relative\">\n        <div class=\"title\">" + ((item != null ? item.title : void 0) || "") + "</div>\n        <div class=\"price\">" + ((item != null ? item.price : void 0) || "") + "</div>\n      </div>\n      <div class=\"description\">" + ((item != null ? item.description : void 0) || "") + "</div>\n      <div class=\"redeem-wrapper\">\n      </div>\n    </div>\n    <div class=\"clear\"></div>\n</div>");
             $(".content ." + name).append(itemRow);
             return $(itemRow).find(".redeem-wrapper").append(redeemButton);
           });
@@ -516,7 +539,9 @@
         $(document).bind("touchmove", touchMove);
         return $(document).bind("touchend", touchEnd);
       };
-      touching();
+      if (canSwipe) {
+        touching();
+      }
       return self;
     };
     return AppView;
@@ -527,7 +552,7 @@
     AppView = require("app-view");
     AppPresenter = {};
     AppPresenter.init = function() {
-      var view;
+      var itemSort, view;
       severus.db = "mobilemin_" + model.name;
       view = AppView.init({
         model: model
@@ -542,16 +567,25 @@
           return a.order - b.order;
         });
       });
-      view.addMenu(model.menu);
-      view.addSpecials(model.specials);
+      itemSort = function(items) {
+        items = items.sort(function(a, b) {
+          return a.order - b.order;
+        });
+        return items;
+      };
+      view.addMenu(itemSort(model.menu));
+      view.addSpecials(itemSort(model.specials));
       getPhone.on("phone", function(phone) {
         return severus.save("phones", {
           phone: phone
         }, function(err) {});
       });
       return view.on("redeem", function(phone, item) {
-        texter.text(model.twilioPhone, phone, "You have redeemed " + item.title + ".");
-        return alert("A text message has been sent to you to redeem " + item.title + ".");
+        var alertTemplate, textTemplate;
+        textTemplate = _.template(model.redeemText || ("You have redeemed " + item.title + "."));
+        texter.text(model.twilioPhone, phone, textTemplate(item));
+        alertTemplate = _.template(model.redeemAlert || ("A text message has been sent to you to redeem " + item.title + "."));
+        return alert(alertTemplate(item));
       });
     };
     return AppPresenter;
