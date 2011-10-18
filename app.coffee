@@ -130,11 +130,61 @@ saveSite = (name, attrs, cb) ->
     console.log "done: visit #{url}"
     cb err, url
 
+
   
   
 rpcMethods = {
   saveSite  
 }
+
+
+
+severus = require("severus2")()
+severus.db = "mobilemin_dev"
+mobilemin = severus
+mobileminApp = require("severus2")()
+
+texter = require "text"
+
+{ACCOUNT_SID, AUTH_TOKEN, MY_HOSTNAME} = config
+sys = require('sys')
+twizzle = require('twilio')
+TwilioClient = twizzle.Client
+Twiml = twizzle.Twiml
+client = new TwilioClient(ACCOUNT_SID, AUTH_TOKEN, MY_HOSTNAME, {port: 31338})
+
+
+findApp = (authorizedSender, callback) ->
+  console.log "findind app with twitterdealsname #{authorizedSender}"
+  mobilemin.find "mins", {adminPhone: authorizedSender}, (err, apps) ->
+    console.log "----"
+    console.log err
+    console.log "found #{apps?.length} apps"
+    callback err, apps?[0]
+
+
+findPhones = (app, callback) ->
+  console.log "finding phones with #{app.name}"
+  mobileminApp.db = "mobilemin_#{app.name}"
+  mobileminApp.find "phones", (err, phones) ->
+    callback err, _.map phones, (phone) -> phone.phone
+
+
+phone = client.getPhoneNumber("+14804208755")
+phone.setup ->
+  phone.on 'incomingSms', (reqParams, res) ->
+    console.log("received text from #{reqParams.From}")
+    from = drews.s reqParams.From, 2
+    body = reqParams.Body
+    findApp from, (err, app) ->
+      findPhones app, (err, phones) ->
+       _.each phones, (phone) ->
+         texter.text app.twilioPhone, phone, body
+ 
+    
+    
+  #phone.sendSms('4808405406', 'test to drew', null, ->)
+
 
 # soon add web socket rpc that goes the other way
 # or events from the server or something like that
