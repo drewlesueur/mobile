@@ -205,8 +205,10 @@ setupPhoneListenerServer = (phone, cb = ->) ->
       body = reqParams.Body
       findApp from, (err, app) ->
         (not err) and findPhones app, (err, phones) ->
-         _.each phones, (phone) ->
-           texter.text app.twilioPhone, phone, body
+          _.each phones, (toPhone) ->
+            phoneClient.sendSms toPhone, body, {}, (err) -> #is this really an error?
+              console.log "sent #{body} from #{phone}, to #{toPhone}"
+
     cb null
 
 findAllPhones (err, phoneAppMap) ->
