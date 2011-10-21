@@ -85,10 +85,29 @@ define "app-view", () ->
           #{hoursHtml}
       </tr>
     """
+
+  getHoursTable = (model) ->
+    dayRows = ""
+    for day in daysMonday
+      dayRows += getDayRow day, model
+    hoursTable =  """ 
+      <table class="paddinglrt15">
+        <tbody>
+          #{dayRows}
+        </tbody>
+      </table>
+    """
+    hoursTable
+
+
   Router = require "router"
   AppView = {}
   AppView.init = (options) ->
-
+    
+    if $.os.android
+      view = SimpleAppView.init options
+      return view
+    
     if $.os.ios and parseFloat($.os.version) >= 3.1
       canSwipe = true
 
@@ -249,14 +268,6 @@ define "app-view", () ->
       showPage className
 
 
-
-
-
-
-
-
-     
-
     routes = {}
     addHomePage = () ->
       navHtml = ""
@@ -344,17 +355,11 @@ define "app-view", () ->
       
 
 
+
+
     addHoursPage = () ->
-      dayRows = ""
-      for day in daysMonday
-        dayRows += getDayRow day, model
-      hoursTable =  """ 
-        <table class="paddinglrt15">
-          <tbody>
-            #{dayRows}
-          </tbody>
-        </table>
-      """
+      hoursTable = getHoursTable(model)
+
       $(".content").append """
         <div class="hours tile page2" data-page="hours">
          <div class="text-center headline second-bar">
@@ -383,7 +388,6 @@ define "app-view", () ->
             #{itemsTable}
           </div>
         """
-
 
       self["add" + drews.capitalize(name)] = (items) ->
 
@@ -732,6 +736,32 @@ define "app-view", () ->
     
 
     self
+  SimpleAppView = {}
+  SimpleAppView.init = (options) ->
+    {model} = options
+    self = eventer {}
+    {emit} = self
+
+    urlAddress = encodeURIComponent model.address.replace /\n/g, " "
+    htmlAddress = model.address.replace /\n/g, "<br />"
+
+    hoursTable = getHoursTable(model)
+
+    simpleHtml = """
+      <div class="content content-gradient"></div>
+        <img src="#{model.headerUrl}" />
+        <h1>#{model.title}</h1>
+        <a href="tel:#{model.phone}">#{model.phone}</a>
+        <div>#{model.crossStreets}</div>
+        <a target="blank" href="http://maps.google.com/maps?daddr=#{urlAddress}">Google Map Directions</a>
+        <a name="hours"></a>
+        <h2>Hours</h2>
+        #{hoursTable}
+      </div>
+
+    """
+    $(document.body).append simpleHtml
+    self
   AppView
 
 
@@ -760,9 +790,9 @@ define "app-presenter", () ->
       items = items.sort (a, b)->
         a.order - b.order
       return items
-
-    view.addMenu itemSort model.menu
-    view.addSpecials itemSort model.specials
+    
+    view.addMenu? itemSort model.menu
+    view.addSpecials? itemSort model.specials
       
       
     getPhone.on "phone", (phone) ->

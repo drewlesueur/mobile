@@ -118,6 +118,10 @@ saveSite = (name, attrs, cb) ->
     console.log "adding css"
     exec "cp /home/drew/sites/mobilemin/public/styles.css #{path}/styles.css", cb
 
+  setupTwilio = (cb) ->
+    if attrs.twilioPhone
+      setupPhoneListenerServer attrs.twilioPhone, cb
+
   series [
     mkdir
     doScripts
@@ -125,6 +129,7 @@ saveSite = (name, attrs, cb) ->
     addFile
     addIndex
     addCss
+    setupTwilio
   ], (err, results) ->
     url = "http://#{name}.mobilemin.com"
     console.log "done: visit #{url}"
@@ -151,8 +156,15 @@ sys = require('sys')
 twizzle = require('twilio')
 TwilioClient = twizzle.Client
 Twiml = twizzle.Twiml
-client = new TwilioClient(ACCOUNT_SID, AUTH_TOKEN, MY_HOSTNAME, {port: 31338})
 
+findAllPhones = (callback) ->
+  phoneAppMap = {}
+  mobilemin.find "mins", {}, (err, apps) ->
+    _.each apps, (app) ->
+      if app.twilioPhone
+        phoneAppMap[app.twilioPhone] = app
+    callback err, phoneAppMap
+    
 
 findApp = (authorizedSender, callback) ->
   console.log "findind app with twitterdealsname #{authorizedSender}"
@@ -160,7 +172,10 @@ findApp = (authorizedSender, callback) ->
     console.log "----"
     console.log err
     console.log "found #{apps?.length} apps"
-    callback err, apps?[0]
+    if apps.length is 0
+      callback "no apps"
+    else
+      callback err, apps?[0]
 
 
 findPhones = (app, callback) ->
@@ -169,17 +184,38 @@ findPhones = (app, callback) ->
   mobileminApp.find "phones", (err, phones) ->
     callback err, _.map phones, (phone) -> phone.phone
 
+currentPhoneNumbersListening = []
+twilioPort = 31337
+setupPhoneListenerServer = (phone, cb = ->) -> 
+  if phone in currentPhoneNumbersListening
+    console.log "already listening for #{phone}'s account"
+    return cb null
 
-phone = client.getPhoneNumber("+14804208755")
-phone.setup ->
-  phone.on 'incomingSms', (reqParams, res) ->
-    console.log("received text from #{reqParams.From}")
-    from = drews.s reqParams.From, 2
-    body = reqParams.Body
-    findApp from, (err, app) ->
-      findPhones app, (err, phones) ->
-       _.each phones, (phone) ->
-         texter.text app.twilioPhone, phone, body
+  twilioPort += 1
+  client = new TwilioClient(ACCOUNT_SID, AUTH_TOKEN, MY_HOSTNAME, {port: twilioPort})
+
+  currentPhoneNumbersListening.push phone
+
+  phoneClient = client.getPhoneNumber(phone)  #("+14804208755")
+  phoneClient.setup ->
+    console.log "Listining for #{phone}"
+    phoneClient.on 'incomingSms', (reqParams, res) ->
+      console.log("received text from #{reqParams.From} for account #{phone}")
+      from = drews.s reqParams.From, 2
+      body = reqParams.Body
+      findApp from, (err, app) ->
+        (not err) and findPhones app, (err, phones) ->
+         _.each phones, (phone) ->
+           texter.text app.twilioPhone, phone, body
+    cb null
+
+findAllPhones (err, phoneAppMap) ->
+  _.each phoneAppMap, (app, phone) ->
+    console.log phone
+    setupPhoneListenerServer phone
+    
+  
+
  
     
     

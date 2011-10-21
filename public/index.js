@@ -45,7 +45,7 @@
   };
   getPhone = eventer(getPhone);
   define("app-view", function() {
-    var AppView, Router, days, daysMonday, getDayRow, timeToMili;
+    var AppView, Router, SimpleAppView, days, daysMonday, getDayRow, getHoursTable, timeToMili;
     days = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"];
     daysMonday = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"];
     timeToMili = function(time, date) {
@@ -82,10 +82,24 @@
       }
       return dayHtml = "<tr>\n  <td>" + (_.capitalize(day)) + "</td>\n    " + hoursHtml + "\n</tr>";
     };
+    getHoursTable = function(model) {
+      var day, dayRows, hoursTable, _i, _len;
+      dayRows = "";
+      for (_i = 0, _len = daysMonday.length; _i < _len; _i++) {
+        day = daysMonday[_i];
+        dayRows += getDayRow(day, model);
+      }
+      hoursTable = " \n<table class=\"paddinglrt15\">\n  <tbody>\n    " + dayRows + "\n  </tbody>\n</table>";
+      return hoursTable;
+    };
     Router = require("router");
     AppView = {};
     AppView.init = function(options) {
-      var activeTile, addDirectionsPage, addHomePage, addHoursPage, addMenuPage, addSpecialsPage, canSwipe, content, cubed, defaultEasing, doEasing, easingMaker, emit, extraStyles, getXY, lastContentTransform, mapText, menuMaker, model, nav, navItems, pushToTop, router, routes, self, setActiveTile, showPage, squared, swipeAnimationSeconds, testEasing, textShadowCss, touch, touchEnd, touchMove, touchStart, touching;
+      var activeTile, addDirectionsPage, addHomePage, addHoursPage, addMenuPage, addSpecialsPage, canSwipe, content, cubed, defaultEasing, doEasing, easingMaker, emit, extraStyles, getXY, lastContentTransform, mapText, menuMaker, model, nav, navItems, pushToTop, router, routes, self, setActiveTile, showPage, squared, swipeAnimationSeconds, testEasing, textShadowCss, touch, touchEnd, touchMove, touchStart, touching, view;
+      if ($.os.android) {
+        view = SimpleAppView.init(options);
+        return view;
+      }
       if ($.os.ios && parseFloat($.os.version) >= 3.1) {
         canSwipe = true;
       }
@@ -203,13 +217,8 @@
         return $(".content").append(directionsHtml);
       };
       addHoursPage = function() {
-        var day, dayRows, hoursTable, _i, _len;
-        dayRows = "";
-        for (_i = 0, _len = daysMonday.length; _i < _len; _i++) {
-          day = daysMonday[_i];
-          dayRows += getDayRow(day, model);
-        }
-        hoursTable = " \n<table class=\"paddinglrt15\">\n  <tbody>\n    " + dayRows + "\n  </tbody>\n</table>";
+        var hoursTable;
+        hoursTable = getHoursTable(model);
         return $(".content").append("<div class=\"hours tile page2\" data-page=\"hours\">\n <div class=\"text-center headline second-bar\">\n   <a href=\"#\" class=\"left home-icon\"></a>\n   " + "Hours" + "\n   <a href=\"tel:" + model.phone + "\" class=\"right phone-icon\"></a>\n </div>\n  " + hoursTable + "\n</hours>");
       };
       menuMaker = function(name) {
@@ -544,6 +553,19 @@
       }
       return self;
     };
+    SimpleAppView = {};
+    SimpleAppView.init = function(options) {
+      var emit, hoursTable, htmlAddress, model, self, simpleHtml, urlAddress;
+      model = options.model;
+      self = eventer({});
+      emit = self.emit;
+      urlAddress = encodeURIComponent(model.address.replace(/\n/g, " "));
+      htmlAddress = model.address.replace(/\n/g, "<br />");
+      hoursTable = getHoursTable(model);
+      simpleHtml = "<div class=\"content content-gradient\"></div>\n  <img src=\"" + model.headerUrl + "\" />\n  <h1>" + model.title + "</h1>\n  <a href=\"tel:" + model.phone + "\">" + model.phone + "</a>\n  <div>" + model.crossStreets + "</div>\n  <a target=\"blank\" href=\"http://maps.google.com/maps?daddr=" + urlAddress + "\">Google Map Directions</a>\n  <a name=\"hours\"></a>\n  <h2>Hours</h2>\n  " + hoursTable + "\n</div>\n";
+      $(document.body).append(simpleHtml);
+      return self;
+    };
     return AppView;
   });
   define("app-presenter", function() {
@@ -573,8 +595,12 @@
         });
         return items;
       };
-      view.addMenu(itemSort(model.menu));
-      view.addSpecials(itemSort(model.specials));
+      if (typeof view.addMenu === "function") {
+        view.addMenu(itemSort(model.menu));
+      }
+      if (typeof view.addSpecials === "function") {
+        view.addSpecials(itemSort(model.specials));
+      }
       getPhone.on("phone", function(phone) {
         return severus.save("phones", {
           phone: phone
