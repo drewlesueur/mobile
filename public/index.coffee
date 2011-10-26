@@ -104,7 +104,7 @@ define "app-view", () ->
   AppView = {}
   AppView.init = (options) ->
     
-    if $.os.android
+    if false and $.os.android
       view = SimpleAppView.init options
       return view
     
@@ -395,7 +395,7 @@ define "app-view", () ->
 
           if name is "specials"
             redeemButton = $ """
-              <input type="button" class="redeem-button" value="Redeem">
+              <input type="button" class="redeem-button" value="Redeem"> #{model.redeemDisclaimer}
             """
             redeemButton.bind "click", (e) ->
               phone = getPhone()
@@ -645,7 +645,10 @@ define "app-view", () ->
       y = Math.pow(yLen, 2)
       distance = Math.pow x + y, 0.5
       speed = distance / time
-      newDistance = distance + speed * 100
+      slideFactor = 100
+      if touch.yOnly
+        slideFactor = 1000
+      newDistance = distance + speed * slideFactor
 
       if distance != 0
         newXLen = xLen * newDistance / distance
@@ -687,10 +690,14 @@ define "app-view", () ->
           else if tileY <= - $(tile).height() + innerHeight
             tileY = - $(tile).height() + innerHeight
             
+        if touch.yOnly
+          _swipeAnimationSeconds = swipeAnimationSeconds * 4
+        else
+          _swipeAnimationSeconds = swipeAnimationSeconds
 
         $(tile).anim
           translate3d: "0, #{tileY}px, 0"
-        , swipeAnimationSeconds, 'cubic-bezier(0.000, 0.000, 0.005, 0.9999)'
+        , _swipeAnimationSeconds, 'cubic-bezier(0.000, 0.000, 0.005, 0.9999)'
         , () -> touch.transitionDone = true
           
       newXNotRounded = newX

@@ -96,7 +96,7 @@
     AppView = {};
     AppView.init = function(options) {
       var activeTile, addDirectionsPage, addHomePage, addHoursPage, addMenuPage, addSpecialsPage, canSwipe, content, cubed, defaultEasing, doEasing, easingMaker, emit, extraStyles, getXY, lastContentTransform, mapText, menuMaker, model, nav, navItems, pushToTop, router, routes, self, setActiveTile, showPage, squared, swipeAnimationSeconds, testEasing, textShadowCss, touch, touchEnd, touchMove, touchStart, touching, view;
-      if ($.os.android) {
+      if (false && $.os.android) {
         view = SimpleAppView.init(options);
         return view;
       }
@@ -232,7 +232,7 @@
           return _.each(items, function(item) {
             var itemRow, redeemButton;
             if (name === "specials") {
-              redeemButton = $("<input type=\"button\" class=\"redeem-button\" value=\"Redeem\">");
+              redeemButton = $("<input type=\"button\" class=\"redeem-button\" value=\"Redeem\"> " + model.redeemDisclaimer);
               redeemButton.bind("click", function(e) {
                 var phone;
                 phone = getPhone();
@@ -467,7 +467,7 @@
         }
       };
       touchEnd = function(e) {
-        var $tile, contentX, contentY, distance, index, minTranslateX, newDistance, newX, newXLen, newXNotRounded, newY, newYLen, speed, tile, tileHeight, tileIndex, tileX, tileY, time, x, x0, x1, x2, xLen, y, y0, y1, y2, yLen, _ref, _ref2, _ref3, _ref4;
+        var $tile, contentX, contentY, distance, index, minTranslateX, newDistance, newX, newXLen, newXNotRounded, newY, newYLen, slideFactor, speed, tile, tileHeight, tileIndex, tileX, tileY, time, x, x0, x1, x2, xLen, y, y0, y1, y2, yLen, _ref, _ref2, _ref3, _ref4, _swipeAnimationSeconds;
         x0 = touch.x0, x1 = touch.x1, x2 = touch.x2, y0 = touch.y0, y1 = touch.y1, y2 = touch.y2;
         time = touch.time2 - touch.time1;
         xLen = x2 - x1;
@@ -476,7 +476,11 @@
         y = Math.pow(yLen, 2);
         distance = Math.pow(x + y, 0.5);
         speed = distance / time;
-        newDistance = distance + speed * 100;
+        slideFactor = 100;
+        if (touch.yOnly) {
+          slideFactor = 1000;
+        }
+        newDistance = distance + speed * slideFactor;
         if (distance !== 0) {
           newXLen = xLen * newDistance / distance;
           newYLen = yLen * newDistance / distance;
@@ -513,9 +517,14 @@
               tileY = -$(tile).height() + innerHeight;
             }
           }
+          if (touch.yOnly) {
+            _swipeAnimationSeconds = swipeAnimationSeconds * 4;
+          } else {
+            _swipeAnimationSeconds = swipeAnimationSeconds;
+          }
           $(tile).anim({
             translate3d: "0, " + tileY + "px, 0"
-          }, swipeAnimationSeconds, 'cubic-bezier(0.000, 0.000, 0.005, 0.9999)', function() {
+          }, _swipeAnimationSeconds, 'cubic-bezier(0.000, 0.000, 0.005, 0.9999)', function() {
             return touch.transitionDone = true;
           });
         }

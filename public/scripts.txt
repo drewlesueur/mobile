@@ -7,5 +7,4 @@ json2.js
 router.js
 mobilemin.js
 severus2.js
-scrollability.js
 text.js

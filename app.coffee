@@ -18,6 +18,7 @@ drewsSignIn = (req, res, next) ->
 enableCORS = (req, res, next) ->
   res.setHeader "Access-Control-Allow-Origin", "*"
   res.setHeader "Access-Control-Allow-Headers", "Content-Type"
+  res.setHeader "Cache-Control", "no-cache" #cors android older versions?
   next()
 
 
@@ -120,7 +121,7 @@ saveSite = (name, attrs, cb) ->
 
   setupTwilio = (cb) ->
     if attrs.twilioPhone
-      setupPhoneListenerServer attrs.twilioPhone, cb
+      setupPhoneListenerServer attrs.twilioPhone, attrs, cb
 
   series [
     mkdir
@@ -166,9 +167,9 @@ findAllPhones = (callback) ->
     callback err, phoneAppMap
     
 
-findApp = (authorizedSender, callback) ->
-  console.log "findind app with twitterdealsname #{authorizedSender}"
-  mobilemin.find "mins", {adminPhone: authorizedSender}, (err, apps) ->
+findAppByAdminPhoneAndTwilioPhone = (adminPhone, twilioPhone, callback) ->
+  console.log "findind app with adminPhone #{adminPhone}, twilioPhone: #{twilioPhone}"
+  mobilemin.find "mins", {adminPhone: adminPhone, twilioPhone: twilioPhone}, (err, apps) ->
     console.log "----"
     console.log err
     console.log "found #{apps?.length} apps"
@@ -186,7 +187,8 @@ findPhones = (app, callback) ->
 
 currentPhoneNumbersListening = []
 twilioPort = 31337
-setupPhoneListenerServer = (phone, cb = ->) -> 
+setupPhoneListenerServer = (phone, app, cb = ->) -> 
+  originalApp = app
   if phone in currentPhoneNumbersListening
     console.log "already listening for #{phone}'s account"
     return cb null
@@ -201,20 +203,42 @@ setupPhoneListenerServer = (phone, cb = ->) ->
     console.log "Listining for #{phone}"
     phoneClient.on 'incomingSms', (reqParams, res) ->
       console.log("received text from #{reqParams.From} for account #{phone}")
-      from = drews.s reqParams.From, 2
-      body = reqParams.Body
-      findApp from, (err, app) ->
-        (not err) and findPhones app, (err, phones) ->
-          _.each phones, (toPhone) ->
-            phoneClient.sendSms toPhone, body, {}, (err) -> #is this really an error?
-              console.log "sent #{body} from #{phone}, to #{toPhone}"
+      from = reqParams.From
+      if (drews.s from, 0, 2) == "+1"
+        from = reqParams.From = drews.s from, 2
 
+      body = reqParams.Body
+      findAppByAdminPhoneAndTwilioPhone from, phone, (err, app) ->
+        if not err
+          findPhones app, (err, phones) ->
+            phoneClient.sendSms from, "Going to send that message to #{phones.length} people", {}, ->
+            _.each phones, (toPhone) ->
+              phoneClient.sendSms toPhone, body, {}, (err) -> #is this really an error?
+                console.log "sent #{body} from #{phone}, to #{toPhone}"
+        else
+          app = originalApp
+          if not body.match /stop/i
+            sendText = () ->
+              phoneClient.sendSms from, app.joinText or "You are signed up to receive special offers from #{app.title}. Text STOP to unsubscribe", {}, ->
+
+            mobileminApp.db = "mobilemin_#{app.name}"
+            mobileminApp.find "phones", {phone: from}, (err, phones) ->
+              if phones.length
+                sendText()
+              else
+                mobileminApp.save "phones", {phone: from}, (err, phones) ->
+                  sendText()
+          else
+            mobileminApp.db = "mobilemin_#{app.name}"
+            mobileminApp.remove "phones", {phone: from}, (err, phones) ->
+              phoneClient.sendSms from, app.stopText or "You were unsubscribed from special offers from #{app.title}", {}, ->
+          
     cb null
 
 findAllPhones (err, phoneAppMap) ->
   _.each phoneAppMap, (app, phone) ->
     console.log phone
-    setupPhoneListenerServer phone
+    setupPhoneListenerServer phone, app
     
   
 
