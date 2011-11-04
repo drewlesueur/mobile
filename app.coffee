@@ -188,6 +188,7 @@ findPhones = (app, callback) ->
 currentPhoneNumbersListening = []
 twilioPort = 31337
 setupPhoneListenerServer = (phone, app, cb = ->) -> 
+  if phone.length < 10 then return cb "bad length"
   originalApp = app
   if phone in currentPhoneNumbersListening
     console.log "already listening for #{phone}'s account"
@@ -197,7 +198,7 @@ setupPhoneListenerServer = (phone, app, cb = ->) ->
   client = new TwilioClient(ACCOUNT_SID, AUTH_TOKEN, MY_HOSTNAME, {port: twilioPort})
 
   currentPhoneNumbersListening.push phone
-
+  
   phoneClient = client.getPhoneNumber(phone)  #("+14804208755")
   phoneClient.setup ->
     console.log "Listining for #{phone}"
@@ -257,6 +258,10 @@ errorMaker = (error) ->
 
 pg "/", (req, res) ->
   res.send("server is running")
+
+pg "/restart", (req, res) ->
+  _.wait 500, -> throw new Error("eject!. Supervisor should restart this for you")
+ 
 
 pg "/rpc", (req, res) ->
   body = req.body
