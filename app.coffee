@@ -202,6 +202,12 @@ setupPhoneListenerServer = (phone, app, cb = ->) ->
   phoneClient = client.getPhoneNumber(phone)  #("+14804208755")
   phoneClient.setup ->
     console.log "Listining for #{phone}"
+    phoneClient.on "incomingCall", (reqParams, res) ->
+      console.log("yea!")
+      #res.append(new Twiml.Dial(new Twiml.Num("480-381-3855")))
+      res.append(new Twiml.Dial(app.phone))
+      res.send()
+
     phoneClient.on 'incomingSms', (reqParams, res) ->
       console.log("received text from #{reqParams.From} for account #{phone}")
       from = reqParams.From
@@ -236,12 +242,13 @@ setupPhoneListenerServer = (phone, app, cb = ->) ->
           
     cb null
 
+DailyBackup = require "./public/daily_backup.js"
 findAllPhones (err, phoneAppMap) ->
   _.each phoneAppMap, (app, phone) ->
     console.log phone
     setupPhoneListenerServer phone, app
-    
-  
+    dailyBackup = new DailyBackup app.name
+    #dailyBackup.startBackup()
 
  
     
@@ -257,7 +264,7 @@ errorMaker = (error) ->
     cb error, null
 
 pg "/", (req, res) ->
-  res.send("server is running")
+  res.send("<a href='http://mobilemin-server.drewl.us/test/index.html'>See tests</a>")
 
 pg "/restart", (req, res) ->
   _.wait 500, -> throw new Error("eject!. Supervisor should restart this for you")
