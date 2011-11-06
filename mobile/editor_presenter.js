@@ -22,8 +22,11 @@
         return this.app.find();
       };
       EditorPresenter.prototype.applyBindings = function() {
-        return this.app.bind("found", __bind(function(apps) {
+        this.app.bind("found", __bind(function(apps) {
           return this.view.populateApps(apps);
+        }, this));
+        return this.view.bind("appclick", __bind(function(app) {
+          return this.view.populateSingleApp(app);
         }, this));
       };
       return EditorPresenter;

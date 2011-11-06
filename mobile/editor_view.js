@@ -14,18 +14,31 @@
     return EditorView = (function() {
       __extends(EditorView, Backbone.View);
       function EditorView() {
+        this.populateSingleApp = __bind(this.populateSingleApp, this);
         this.populateApps = __bind(this.populateApps, this);
         this.add = __bind(this.add, this);
         this.setUpDom = __bind(this.setUpDom, this);
-        this.addAppsSlate = __bind(this.addAppsSlate, this);        this.appsSlate = new SlateView();
-        this.singleAppsSlate = new SlateView();
+        this.addSingleAppSlate = __bind(this.addSingleAppSlate, this);
+        this.addAppsSlate = __bind(this.addAppsSlate, this);
+        this.applyBindings = __bind(this.applyBindings, this);        this.appsSlate = new SlateView();
+        this.singleAppSlate = new SlateView();
         this.appsList = new ListView();
         this.$ = $;
         this.setUpDom();
         this.addAppsSlate();
+        this.addSingleAppSlate();
+        this.applyBindings();
       }
+      EditorView.prototype.applyBindings = function() {
+        return this.appsList.bind("click", __bind(function(name, app) {
+          return this.trigger("appclick", app);
+        }, this));
+      };
       EditorView.prototype.addAppsSlate = function() {
         return this.el.append(this.appsSlate.el);
+      };
+      EditorView.prototype.addSingleAppSlate = function() {
+        return this.el.append(this.singleAppSlate.el);
       };
       EditorView.prototype.setUpDom = function() {
         this.el = this.$("<div class=\"editor\"></div>");
@@ -42,6 +55,7 @@
         });
         return this.appsList.fill(titles);
       };
+      EditorView.prototype.populateSingleApp = function(app) {};
       EditorView.prototype.activate = function() {};
       return EditorView;
     })();

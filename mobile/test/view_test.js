@@ -10,14 +10,21 @@
     it("should be initialized", function() {
       spyOn(EditorView.prototype, "setUpDom");
       spyOn(EditorView.prototype, "addAppsSlate");
+      spyOn(EditorView.prototype, "addSingleAppSlate");
       view = new EditorView();
       expect(EditorView.prototype.setUpDom).toHaveBeenCalled();
-      return expect(EditorView.prototype.addAppsSlate).toHaveBeenCalled();
+      expect(EditorView.prototype.addAppsSlate).toHaveBeenCalled();
+      return expect(EditorView.prototype.addSingleAppSlate).toHaveBeenCalled();
     });
     it("should add the app slate", function() {
       spyOn(view.el, "append");
       view.addAppsSlate();
       return expect(view.el.append).toHaveBeenCalledWith(view.appsSlate.el);
+    });
+    it("should add the a single app slate", function() {
+      spyOn(view.el, "append");
+      view.addSingleAppSlate();
+      return expect(view.el.append).toHaveBeenCalledWith(view.singleAppSlate.el);
     });
     it("should set up the dom", function() {
       spyOn(view.appsSlate, "add");
@@ -25,7 +32,7 @@
       expect(view.el.attr("class")).toBe("editor");
       return expect(view.appsSlate.add).toHaveBeenCalledWith(view.appsList);
     });
-    return it("should populate the apps", function() {
+    it("should populate the apps", function() {
       var titles;
       spyOn(view, "activate");
       spyOn(view.appsList, "fill");
@@ -35,6 +42,15 @@
         return [app.title, app];
       });
       return expect(view.appsList.fill).toHaveBeenCalledWith(titles);
+    });
+    it("should dispatch the apps list click as appclick", function() {
+      spyOn(view, "trigger");
+      view.appsList.trigger("click", "some title", "some app object");
+      return expect(view.trigger).toHaveBeenCalledWith("appclick", "some app object");
+    });
+    return it("should populate a single app", function() {
+      view.populateSingleApp;
+      return expect("this").toBe("inplemented");
     });
   });
   describe("slate view", function() {

@@ -8,10 +8,13 @@ describe "view", ->
   it "should be initialized", ->
     spyOn(EditorView::, "setUpDom")
     spyOn(EditorView::, "addAppsSlate")
+    spyOn(EditorView::, "addSingleAppSlate")
 
     view = new EditorView()
     expect(EditorView::setUpDom).toHaveBeenCalled()
     expect(EditorView::addAppsSlate).toHaveBeenCalled()
+    expect(EditorView::addSingleAppSlate).toHaveBeenCalled()
+
 
   it "should add the app slate", ->
     spyOn view.el, "append"
@@ -19,6 +22,11 @@ describe "view", ->
     view.addAppsSlate()
     expect(view.el.append).toHaveBeenCalledWith(view.appsSlate.el)
     
+  it "should add the a single app slate", ->
+    spyOn view.el, "append"
+
+    view.addSingleAppSlate()
+    expect(view.el.append).toHaveBeenCalledWith(view.singleAppSlate.el)
 
   it "should set up the dom", ->
     spyOn view.appsSlate,"add"
@@ -34,6 +42,15 @@ describe "view", ->
     titles = _.map(appFixtures, (app) -> [app.title, app])
     expect(view.appsList.fill).toHaveBeenCalledWith( titles)
 
+  it "should dispatch the apps list click as appclick", ->
+    spyOn view, "trigger" 
+    view.appsList.trigger "click", "some title", "some app object"
+    expect(view.trigger).toHaveBeenCalledWith "appclick", "some app object"
+
+  it "should populate a single app", ->
+
+    view.populateSingleApp
+    expect("this").toBe("inplemented")
 
 describe "slate view", ->
   SlateView = require "slate-view"

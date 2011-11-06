@@ -4,14 +4,25 @@ define "editor-view", () ->
   class EditorView extends Backbone.View
     constructor: ->
       @appsSlate = new SlateView()
-      @singleAppsSlate = new SlateView()
+      @singleAppSlate = new SlateView()
       @appsList = new ListView()
       @$ = $
       @setUpDom()
       @addAppsSlate()
+      @addSingleAppSlate()
+      @applyBindings()
+
+
+    applyBindings: =>
+      @appsList.bind "click", (name, app) =>
+        @trigger "appclick", app
 
     addAppsSlate: () =>
       @el.append @appsSlate.el
+
+    addSingleAppSlate: =>
+      @el.append @singleAppSlate.el
+
       
 
     setUpDom: () =>
@@ -19,7 +30,6 @@ define "editor-view", () ->
         <div class="editor"></div>
       """
       @appsSlate.add @appsList
-      #@add @appSlate
 
     add: (otherView) =>
       @el.append otherView.el
@@ -28,6 +38,9 @@ define "editor-view", () ->
       @activate @appsSlate
       titles = _.map apps, (app) -> [app.title, app]
       @appsList.fill  titles
+
+    populateSingleApp: (app) =>
+
 
     activate: () ->
       

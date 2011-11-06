@@ -21,10 +21,12 @@ describe "presenter", ->
     expect(view.populateApps).toHaveBeenCalledWith(appFixtures)
 
   it "should handle a click on an app", ->
-    spyOn view.singleAppSlate, "populate" 
+    spyOn view, "populateSingleApp" 
 
     view.trigger "appclick", app
-    expect(view.singleAppSlate.populate).toBeCalledWith(app)
+    expect(view.populateSingleApp).toHaveBeenCalledWith(app)
+
+
 
 
     

@@ -14,6 +14,9 @@ define "editor-presenter", () ->
       @app.bind "found", (apps) =>
         @view.populateApps(apps)
 
+      @view.bind "appclick", (app) =>
+        @view.populateSingleApp(app) 
+
 
 
         

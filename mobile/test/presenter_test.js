@@ -22,9 +22,9 @@
       return expect(view.populateApps).toHaveBeenCalledWith(appFixtures);
     });
     return it("should handle a click on an app", function() {
-      spyOn(view.singleAppSlate, "populate");
+      spyOn(view, "populateSingleApp");
       view.trigger("appclick", app);
-      return expect(view.singleAppSlate.populate).toBeCalledWith(app);
+      return expect(view.populateSingleApp).toHaveBeenCalledWith(app);
     });
   });
 }).call(this);
