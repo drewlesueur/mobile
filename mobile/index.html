@@ -1,0 +1,54 @@
+<!doctype html>
+<html>
+  <head>
+  <meta name = "viewport" content = "width = device-width" />
+  <script type="text/javascript" src="module.js"></script>
+  <script type="text/javascript" src="severus2.js"></script>
+  <script type="text/javascript" src="nimble.js"></script>
+  <script type="text/javascript" src="jquery.js"></script>
+  <script type="text/javascript" src="underscore.js"></script>
+  <script>
+    define("underscore", function () {return _})
+    define("jquery", function () {return $})
+    define("nimble", function () {return _})
+  </script>
+  <script type="text/javascript" src="drews-mixins.js"></script>
+  <script type="text/javascript" src="backbone.js"></script>
+  <script type="text/javascript" src="presenter.js"></script>
+  <script type="text/javascript" src="editor_view.js"></script>
+  <script type="text/javascript" src="editor_presenter.js"></script>
+  <script type="text/javascript" src="app.js"></script>
+  <script>
+    $(function () {
+    })
+  </script>
+  <style>
+    * {
+      margin:0;
+      padding: 0;
+    }
+    body {
+      font-family: Helvetica;
+      font-size: 20px;
+    }
+    .item {
+      padding: 20px;
+      font-weight: bold;
+    }
+  </style>
+  <script>
+    $(function () {
+      EditorPresenter = require("editor-presenter")
+      editorPresenter = new EditorPresenter()
+      editorPresenter.getApps()
+      $(document.body).append(editorPresenter.view.el);
+    })
+
+  </script>
+</head>
+<body>
+</body>
+</html>
+
+
+
