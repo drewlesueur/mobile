@@ -1,12 +1,17 @@
 #TODO: add a special property that only super admin can edit
-config = require './config.coffee'
+config = require './config.js'
 _ = require "underscore"
 drews = require("drews-mixins")
+
 nimble = require "nimble"
 fs = require "fs"
 exec = require("child_process").exec
 {wait, trigger, bind, once, log} = _
 {series, parallel} = nimble
+
+process.on "uncaughtException", (err) ->
+  console.log "there whas a hitch, but we're still up"
+  console.log err.stack
 
 express = require('express')
 
@@ -142,8 +147,6 @@ saveSite = (name, attrs, cb) ->
 rpcMethods = {
   saveSite  
 }
-
-
 
 severus = require("severus2")()
 severus.db = "mobilemin_dev"

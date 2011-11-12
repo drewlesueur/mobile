@@ -1,4 +1,4 @@
-(function() {
+
   define("mobilemin", function() {
     var drews, nimble, self, server, _;
     _ = require("underscore");
@@ -11,4 +11,3 @@
     };
     return self;
   });
-}).call(this);

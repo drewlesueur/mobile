@@ -1,4 +1,4 @@
-(function() {
+
   define("router", function() {
     var Router, _;
     _ = require("underscore");
@@ -28,9 +28,7 @@
       routesList = [];
       addRoute = self.addRoute = function(route, callback) {
         var newCallback;
-        if (!(_.isRegExp(route))) {
-          route = routeToRegExp(route);
-        }
+        if (!(_.isRegExp(route))) route = routeToRegExp(route);
         newCallback = function(actualFragment) {
           var args;
           args = extractParameters(route, actualFragment);
@@ -55,9 +53,7 @@
       checkUrl = function(callback) {
         var hash;
         hash = location.hash.slice(1);
-        if (hash !== oldHash) {
-          callback();
-        }
+        if (hash !== oldHash) callback();
         return oldHash = hash;
       };
       self.disable = function() {
@@ -70,9 +66,7 @@
         callback || (callback = function(e) {
           var hash;
           hash = location.hash.slice(1);
-          if (watching) {
-            return testRoutes(hash);
-          }
+          if (watching) return testRoutes(hash);
         });
         callback();
         if ("onhashchange" in window) {
@@ -87,4 +81,3 @@
     };
     return Router;
   });
-}).call(this);

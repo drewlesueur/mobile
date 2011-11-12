@@ -1,34 +1,38 @@
 (function() {
   var $, AppPresenter, drews, eventer, severus;
+
   define("zepto", function() {
     return Zepto;
   });
+
   define("underscore", function() {
     return _;
   });
+
   define("nimble", function() {
     return _;
   });
+
   $ = require("zepto");
+
   drews = require("drews-mixins");
+
   severus = require("severus2")();
+
   eventer = require("drews-event");
+
   define("app-view", function() {
     var AppView, Router, days, daysMonday, getDayRow, timeToMili;
     days = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"];
     daysMonday = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"];
     timeToMili = function(time, date) {
       var am, hours, minutes, newDate, pm, ret;
-      if (date == null) {
-        date = new Date();
-      }
+      if (date == null) date = new Date();
       pm = _.s(time, -2, 2) === "pm";
       am = _.s(time, -2, 2) === "am";
       hours = 0;
       minutes = 0;
-      if (am || pm) {
-        time = _.s(time, 0, -2);
-      }
+      if (am || pm) time = _.s(time, 0, -2);
       if (time.indexOf(":") >= 0) {
         time = time.split(":");
         hours = time[0];
@@ -36,9 +40,7 @@
       } else {
         hours = time;
       }
-      if (pm) {
-        hours = hours - 0 + 12;
-      }
+      if (pm) hours = hours - 0 + 12;
       newDate = new Date(date.getFullYear(), date.getMonth(), date.getDate(), hours, minutes, 0, 0);
       return ret = newDate.getTime();
     };
@@ -67,9 +69,7 @@
       showPage = function(className) {
         var phoneText;
         $(".content .tile." + className).show();
-        if (className === "home") {
-          className = "";
-        }
+        if (className === "home") className = "";
         if (className !== "") {
           phoneText = model.phone;
         } else {
@@ -95,9 +95,7 @@
       nav = self.nav = function(className) {
         var existingPhone, phone;
         scrollTo(0, 0, 1);
-        if (className === "") {
-          className = "home";
-        }
+        if (className === "") className = "home";
         if (className === "specials") {
           existingPhone = localStorage.existingPhone;
           if (existingPhone != null ? existingPhone.match(/[\d]{10}/) : void 0) {
@@ -131,13 +129,9 @@
           routes[navItem] = function() {
             return nav(navItem);
           };
-          if (navItem === "") {
-            return;
-          }
+          if (navItem === "") return;
           href = "#" + navItem;
-          if (navItem === "call") {
-            href = "tel:" + model.phone;
-          }
+          if (navItem === "call") href = "tel:" + model.phone;
           if (navItem === "twitter") {
             if (model.twitterUrl) {
               href = model.twitterUrl;
@@ -202,9 +196,7 @@
         date = new Date();
         day = days[date.getDay()];
         isEvenOpen = model["" + day + "Open"];
-        if (!isEvenOpen) {
-          return $(".open").html("<a href=\"#hours\">Hours</a>");
-        }
+        if (!isEvenOpen) return $(".open").html("<a href=\"#hours\">Hours</a>");
         openText = model["" + day + "Start"];
         closeText = model["" + day + "End"];
         openTime = timeToMili(openText);
@@ -249,9 +241,7 @@
       };
       doEasing = function(info, callback, complete) {
         var duration, interval, time1, timer, timerFuncs, values;
-        if (complete == null) {
-          complete = function() {};
-        }
+        if (complete == null) complete = function() {};
         timerFuncs = {};
         values = info.values;
         duration = info.duration;
@@ -295,9 +285,7 @@
           return scrollTo(values.x, window.pageYOffset);
         });
         return $(".tile").each(function() {
-          if (this === activeTile) {
-            return;
-          }
+          if (this === activeTile) return;
           return this.style.webkitTransform = "translate3d(0, " + window.pageYOffset + "px, 0)";
         });
       });
@@ -327,9 +315,7 @@
       };
       touchMove = function(e) {
         var distance, speed, time, x, x1, x2, xLen, y, y1, y2, yLen;
-        if (touch.yOnly === true) {
-          return;
-        }
+        if (touch.yOnly === true) return;
         touch.x1 = touch.x2;
         touch.y1 = touch.y2;
         touch.time1 = touch.time2;
@@ -364,9 +350,7 @@
       };
       touchEnd = function(e) {
         var distance, index, newDistance, newX, newXLen, newXNotRounded, newY, newYLen, speed, time, x, x0, x1, x2, xLen, y, y0, y1, y2, yLen;
-        if (touch.yOnly === true) {
-          return;
-        }
+        if (touch.yOnly === true) return;
         x0 = touch.x0, x1 = touch.x1, x2 = touch.x2, y0 = touch.y0, y1 = touch.y1, y2 = touch.y2;
         time = touch.time2 - touch.time1;
         xLen = x2 - x1;
@@ -376,9 +360,7 @@
         distance = Math.pow(x + y, 0.5);
         speed = distance / time;
         newDistance = distance + speed * 100;
-        if (distance === 0) {
-          return;
-        }
+        if (distance === 0) return;
         newXLen = xLen * newDistance / distance;
         newYLen = yLen * newDistance / distance;
         newX = newXLen + touch.newX;
@@ -388,9 +370,7 @@
         newX = -index * 320;
         activeTile = $(".content .tile").get(index);
         document.title = $(activeTile).attr("class");
-        if (newX >= 320) {
-          newX = 0;
-        }
+        if (newX >= 320) newX = 0;
         touch.newX = newX;
         touch.newY = newY;
         return $(content).anim({
@@ -407,6 +387,7 @@
     };
     return AppView;
   });
+
   define("app-presenter", function() {
     var AppPresenter, AppView, model;
     model = require("model");
@@ -438,11 +419,14 @@
     };
     return AppPresenter;
   });
+
   AppPresenter = require("app-presenter");
+
   $(function() {
     AppPresenter.init();
     return drews.wait(1000, function() {
       return scrollTo(0, 0, 1);
     });
   });
+
 }).call(this);

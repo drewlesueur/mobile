@@ -1,5 +1,6 @@
 (function() {
   var __slice = Array.prototype.slice;
+
   define("drews-event", function() {
     var drews, drewsEventMaker;
     drews = require("drews-mixins");
@@ -24,4 +25,5 @@
       return obj;
     };
   });
+
 }).call(this);

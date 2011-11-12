@@ -1,17 +1,22 @@
 (function() {
   var DailyBackup, severus;
+
   define("../config.coffee", function() {
     return {
       email_pw: "fake"
     };
   });
+
   define("mailer", function() {
     return {
       send: function() {}
     };
   });
+
   DailyBackup = require("daily-backup");
+
   severus = require("severus2");
+
   describe("daily_backup", function() {
     var dailyBackup;
     dailyBackup = null;
@@ -104,4 +109,5 @@
       return expect(console.log).toHaveBeenCalledWith("error!!");
     });
   });
+
 }).call(this);

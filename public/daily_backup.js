@@ -1,18 +1,22 @@
 (function() {
+  var define;
   var __slice = Array.prototype.slice, __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
-  if (typeof define === "undefined" || define === null) {
+
+  if (module.exports) {
     define = function() {
       var args, ret, _i;
       args = 2 <= arguments.length ? __slice.call(arguments, 0, _i = arguments.length - 1) : (_i = 0, []), ret = arguments[_i++];
       return typeof module !== "undefined" && module !== null ? module.exports = ret() : void 0;
     };
   }
+
   define('daily-backup', function() {
     var DailyBackup, config, email, severus;
     email = require("mailer");
-    config = require("../config.coffee");
+    config = require("../config.js");
     severus = require("severus2");
     DailyBackup = (function() {
+
       function DailyBackup(name) {
         this.name = name;
         this.startBackup = __bind(this.startBackup, this);
@@ -27,6 +31,7 @@
         this.email = email;
         this.config = config;
       }
+
       DailyBackup.prototype.onFoundSelf = function(err, app) {
         app = app[0];
         this.self = app;
@@ -35,12 +40,15 @@
         this.performBackup();
         return setInterval(this.performBackup, this.backupInterval);
       };
+
       DailyBackup.prototype.performBackup = function() {
         return this.getPhones(this.onGotPhones);
       };
+
       DailyBackup.prototype.getPhones = function() {
         return this.mobileminApp.find("phones", this.onGotPhones);
       };
+
       DailyBackup.prototype.onGotPhones = function(err, phones) {
         console.log("going to send an email for " + this.name);
         return this.email.send({
@@ -57,21 +65,25 @@
           password: this.config.email_pw
         }, this.onSentEmail);
       };
+
       DailyBackup.prototype.onSentEmail = function(err) {
-        if (err) {
-          return console.log(err);
-        }
+        if (err) return console.log(err);
       };
+
       DailyBackup.prototype.findMyself = function() {
         return this.mobilemin.find("mins", {
           name: this.name
         }, this.onFoundSelf);
       };
+
       DailyBackup.prototype.startBackup = function() {
         return this.findMyself();
       };
+
       return DailyBackup;
+
     })();
     return DailyBackup;
   });
+
 }).call(this);

@@ -1,23 +1,34 @@
 (function() {
   var $, AppPresenter, drews, eventer, getPhone, severus, texter, _320;
+
   define("zepto", function() {
     return Zepto;
   });
+
   define("underscore", function() {
     return _;
   });
+
   define("nimble", function() {
     return _;
   });
+
   _.templateSettings = {
     interpolate: /\{\{(.+?)\}\}/g
   };
+
   _320 = null;
+
   $ = require("zepto");
+
   drews = require("drews-mixins");
+
   severus = require("severus2")();
+
   texter = require("text");
+
   eventer = require("drews-event");
+
   getPhone = function() {
     var existingPhone, phone;
     existingPhone = localStorage.existingPhone;
@@ -43,23 +54,21 @@
       return alert("You must enter your phone to redeem specials");
     }
   };
+
   getPhone = eventer(getPhone);
+
   define("app-view", function() {
     var AppView, Router, SimpleAppView, days, daysMonday, getDayRow, getHoursTable, timeToMili;
     days = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"];
     daysMonday = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"];
     timeToMili = function(time, date) {
       var am, hours, minutes, newDate, pm, ret;
-      if (date == null) {
-        date = new Date();
-      }
+      if (date == null) date = new Date();
       pm = _.s(time, -2, 2) === "pm";
       am = _.s(time, -2, 2) === "am";
       hours = 0;
       minutes = 0;
-      if (am || pm) {
-        time = _.s(time, 0, -2);
-      }
+      if (am || pm) time = _.s(time, 0, -2);
       if (time.indexOf(":") >= 0) {
         time = time.split(":");
         hours = time[0];
@@ -67,9 +76,7 @@
       } else {
         hours = time;
       }
-      if (pm) {
-        hours = hours - 0 + 12;
-      }
+      if (pm) hours = hours - 0 + 12;
       newDate = new Date(date.getFullYear(), date.getMonth(), date.getDate(), hours, minutes, 0, 0);
       return ret = newDate.getTime();
     };
@@ -100,9 +107,7 @@
         view = SimpleAppView.init(options);
         return view;
       }
-      if ($.os.ios && parseFloat($.os.version) >= 3.1) {
-        canSwipe = true;
-      }
+      if ($.os.ios && parseFloat($.os.version) >= 3.1) canSwipe = true;
       model = options.model;
       self = eventer({});
       emit = self.emit;
@@ -132,9 +137,7 @@
           }
         }
         index = myTile.index();
-        if (className === "home") {
-          className = "";
-        }
+        if (className === "home") className = "";
         if (className !== "") {
           phoneText = model.phone;
         } else {
@@ -164,9 +167,7 @@
       };
       nav = self.nav = function(className) {
         scrollTo(0, 0, 1);
-        if (className === "") {
-          className = "home";
-        }
+        if (className === "") className = "home";
         return showPage(className);
       };
       routes = {};
@@ -178,13 +179,9 @@
           routes[navItem] = function() {
             return nav(navItem);
           };
-          if (navItem === "") {
-            return;
-          }
+          if (navItem === "") return;
           href = "#" + navItem;
-          if (navItem === "phone") {
-            href = "tel:" + model.phone;
-          }
+          if (navItem === "phone") href = "tel:" + model.phone;
           if (navItem === "twitter") {
             if (model.twitterUrl) {
               href = model.twitterUrl;
@@ -236,9 +233,7 @@
               redeemButton.bind("click", function(e) {
                 var phone;
                 phone = getPhone();
-                if (phone) {
-                  return emit("redeem", phone, item);
-                }
+                if (phone) return emit("redeem", phone, item);
               });
             } else {
               redeemButton = "";
@@ -257,9 +252,7 @@
         date = new Date();
         day = days[date.getDay()];
         isEvenOpen = model["" + day + "Open"];
-        if (!isEvenOpen) {
-          return $(".open").html("<a href=\"#hours\">Hours</a>");
-        }
+        if (!isEvenOpen) return $(".open").html("<a href=\"#hours\">Hours</a>");
         openText = model["" + day + "Start"];
         closeText = model["" + day + "End"];
         openTime = timeToMili(openText);
@@ -306,9 +299,7 @@
       };
       doEasing = function(info, callback, complete) {
         var duration, interval, time1, timer, timerFuncs, values;
-        if (complete == null) {
-          complete = function() {};
-        }
+        if (complete == null) complete = function() {};
         timerFuncs = {};
         values = info.values;
         duration = info.duration;
@@ -342,9 +333,7 @@
         var page;
         activeTile = _activeTile;
         page = $(activeTile).attr("data-page");
-        if (page === "home") {
-          page = "";
-        }
+        if (page === "home") page = "";
         return location.href = "#" + page;
       };
       $(document).bind("scroll", function() {
@@ -361,9 +350,7 @@
           return scrollTo(values.x, window.pageYOffset);
         });
         return $(".tile").each(function() {
-          if (this === activeTile) {
-            return;
-          }
+          if (this === activeTile) return;
           return this.style.webkitTransform = "translate3d(0, " + window.pageYOffset + "px, 0)";
         });
       });
@@ -374,12 +361,8 @@
       };
       getXY = function(el) {
         var matrix, transform;
-        if (el == null) {
-          el = null;
-        }
-        if (!el) {
-          return [0, 0];
-        }
+        if (el == null) el = null;
+        if (!el) return [0, 0];
         transform = getComputedStyle(el).webkitTransform;
         matrix = new WebKitCSSMatrix(transform);
         return [matrix.m41, matrix.m42];
@@ -477,9 +460,7 @@
         distance = Math.pow(x + y, 0.5);
         speed = distance / time;
         slideFactor = 100;
-        if (touch.yOnly) {
-          slideFactor = 1000;
-        }
+        if (touch.yOnly) slideFactor = 1000;
         newDistance = distance + speed * slideFactor;
         if (distance !== 0) {
           newXLen = xLen * newDistance / distance;
@@ -507,9 +488,7 @@
             _ref4 = getXY(tile), tileX = _ref4[0], tileY = _ref4[1];
           }
           if (tileHeight <= innerHeight) {
-            if (tileY !== 0) {
-              tileY = 0;
-            }
+            if (tileY !== 0) tileY = 0;
           } else {
             if (tileY > 0) {
               tileY = 0;
@@ -536,9 +515,7 @@
           index = 0;
         } else {
           minTranslateX = -$(".tile").length * _320 + _320;
-          if (newX <= minTranslateX) {
-            newX = minTranslateX;
-          }
+          if (newX <= minTranslateX) newX = minTranslateX;
           index = -Math.round(newX / _320);
         }
         setActiveTile($(".content .tile").get(index));
@@ -557,9 +534,7 @@
         $(document).bind("touchmove", touchMove);
         return $(document).bind("touchend", touchEnd);
       };
-      if (canSwipe) {
-        touching();
-      }
+      if (canSwipe) touching();
       return self;
     };
     SimpleAppView = {};
@@ -577,6 +552,7 @@
     };
     return AppView;
   });
+
   define("app-presenter", function() {
     var AppPresenter, AppView, model;
     model = require("model");
@@ -604,9 +580,7 @@
         });
         return items;
       };
-      if (typeof view.addMenu === "function") {
-        view.addMenu(itemSort(model.menu));
-      }
+      if (typeof view.addMenu === "function") view.addMenu(itemSort(model.menu));
       if (typeof view.addSpecials === "function") {
         view.addSpecials(itemSort(model.specials));
       }
@@ -625,7 +599,9 @@
     };
     return AppPresenter;
   });
+
   AppPresenter = require("app-presenter");
+
   $(function() {
     _320 = innerWidth;
     AppPresenter.init();
@@ -633,4 +609,5 @@
       return scrollTo(0, 0, 1);
     });
   });
+
 }).call(this);
