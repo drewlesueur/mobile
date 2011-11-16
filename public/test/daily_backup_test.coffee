@@ -1,5 +1,5 @@
 # mock mailer
-define "../config.coffee", () ->
+define "../config", () ->
   email_pw: "fake" 
 
 define "mailer", () ->

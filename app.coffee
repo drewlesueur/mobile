@@ -251,7 +251,7 @@ findAllPhones (err, phoneAppMap) ->
     console.log phone
     setupPhoneListenerServer phone, app
     dailyBackup = new DailyBackup app.name
-    #dailyBackup.startBackup()
+    dailyBackup.startBackup()
 
  
     

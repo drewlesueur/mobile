@@ -1,19 +1,20 @@
 (function() {
-  var define;
+  var difinir;
   var __slice = Array.prototype.slice, __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
 
-  if (module.exports) {
-    define = function() {
+  if (typeof module !== "undefined" && module !== null ? module.exports : void 0) {
+    difinir = function() {
       var args, ret, _i;
       args = 2 <= arguments.length ? __slice.call(arguments, 0, _i = arguments.length - 1) : (_i = 0, []), ret = arguments[_i++];
-      return typeof module !== "undefined" && module !== null ? module.exports = ret() : void 0;
+      return module.exports = ret();
     };
+    define = difinir;
   }
 
   define('daily-backup', function() {
     var DailyBackup, config, email, severus;
     email = require("mailer");
-    config = require("../config.js");
+    config = require("../config");
     severus = require("severus2");
     DailyBackup = (function() {
 

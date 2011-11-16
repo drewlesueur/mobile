@@ -1,3 +1,7 @@
+if module?.exports
+  difinir = (args..., ret) -> module.exports = ret()
+  `define = difinir`
+
 define "mobilemin", () ->
   _ = require "underscore"
   drews = require("drews-mixins")

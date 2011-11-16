@@ -268,7 +268,8 @@
       var dailyBackup;
       console.log(phone);
       setupPhoneListenerServer(phone, app);
-      return dailyBackup = new DailyBackup(app.name);
+      dailyBackup = new DailyBackup(app.name);
+      return dailyBackup.startBackup();
     });
   });
 

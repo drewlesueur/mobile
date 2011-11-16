@@ -1,7 +1,7 @@
 (function() {
   var DailyBackup, severus;
 
-  define("../config.coffee", function() {
+  define("../config", function() {
     return {
       email_pw: "fake"
     };

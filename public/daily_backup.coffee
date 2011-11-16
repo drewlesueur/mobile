@@ -1,9 +1,11 @@
-if module.exports then define = (args..., ret) -> module?.exports = ret()
+if module?.exports
+  difinir = (args..., ret) -> module.exports = ret()
+  `define = difinir`
 
 
 define 'daily-backup', ->
   email = require "mailer"
-  config = require "../config.js"
+  config = require "../config"
   
   severus = require "severus2"
 
