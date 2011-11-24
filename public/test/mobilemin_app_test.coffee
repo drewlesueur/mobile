@@ -18,19 +18,25 @@ describe "MobileminApp", ->
     findQuery = {title: "yk"}
     mmCallback = mobileminApp.find findQuery, callback
     expect(mobileminApp.severus.find).toHaveBeenCalledWith(
-      "mobilemin", findQuery, mmCallback
+      "mins", findQuery, mmCallback
     )
     expect(_.isFunction(mmCallback)).toBeTruthy()
-    mmCallback(false, [{title: "yk", name: "test"}])
+    mmCallback(false, [{title: "yk", name: "myappy"}])
     expect(myCallBackCalled).toBeTruthy()
     expect(mobileminApp.app.title).toBe("yk")
+    expect(mobileminApp.data.db).toBe "mobilemin_myappy"
 
-    
+  describe "after having found an app", ->
+    beforeEach ->
+      mobileminApp.name = "myappy"
+    it "should be able to get the phones", ->
+      spyOn mobileminApp.data, "find"
+      myCallBackCalled = false
+      findPhonesCallback = -> myCallBackCalled = true
+      mmCallback = mobileminApp.findPhones {}, findPhonesCallback
+      expect(mobileminApp.data.find).toHaveBeenCalledWith(
+        "phones", {}, findPhonesCallback
+      )
 
 
-
-
-
-
-  
 

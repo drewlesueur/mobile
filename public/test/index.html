@@ -10,22 +10,22 @@
   <script type="text/javascript" src="jasmine.js"></script>
   <script type="text/javascript" src="jasmine-html.js"></script>
 
-  <script type="text/javascript" src="../module.js"></script>
+  <script type="text/javascript" src="../dmodule.js"></script>
   <script type="text/javascript" src="../severus2.js"></script>
   <script type="text/javascript" src="../underscore.js"></script>
   <script type="text/javascript" src="../nimble.js"></script>
   <script type="text/javascript" src="../jquery.js"></script>
   <script>
-    define("underscore", function() {return _});
-    define("jquery", function() {return $});
-    define("nimble", function() {return _});
+    dModule.define("underscore", function() {return _});
+    dModule.define("jquery", function() {return $});
+    dModule.define("nimble", function() {return _});
   </script>
   <script type="text/javascript" src="../drews-mixins.js"></script>
 
   <!-- include source files here... -->
   <script type="text/javascript" src="../daily_backup.js"></script>
-  <script type="text/javascript" src="../mobilemin_twilio.js"></script>
-  <script type="text/javascript" src="../mobilemin_app.js"></script>
+  <script type="text/javascript" src="../mobilemin-twilio.js"></script>
+  <script type="text/javascript" src="../mobilemin-app.js"></script>
 
   <!-- include spec files here... -->
   <script type="text/javascript" src="daily_backup_test.js"></script>

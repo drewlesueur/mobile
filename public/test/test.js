@@ -55,7 +55,7 @@
       expect(mobileminTwilio.mobileminApp.find).toHaveBeenCalledWith({}, gotAppsCallback);
       expect(_.isFunction(gotAppsCallback)).toBeTruthy();
       spyOn(mobileminTwilio.twilioClient, "updateIncomingNumber");
-      cbs = gotAppsCallback(null, [
+      cbs = gotAppsCallback([
         {
           twilioPhone: "4808405406"
         }, {
