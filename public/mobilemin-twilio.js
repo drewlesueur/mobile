@@ -26,12 +26,32 @@
           console.log("got " + apps.length + " apps");
           cbs = [];
           nimble.each(apps, function(app, index, cb) {
+            var success;
+            if ((!app.twilioPhone) || (app.twilioPhone.length < 10)) {
+              return cb(null);
+            }
+            success = function(resp) {
+              var phoneSid, xErr, xSuccess;
+              phoneSid = resp.incoming_phone_numbers[0].sid;
+              xSuccess = function(data) {
+                return cb(null);
+              };
+              xErr = function(d) {
+                return cb(d);
+              };
+              return _this.twilioClient.updateIncomingNumber(phoneSid, {
+                VoiceUrl: "http://mobilemin-server.com/phone",
+                SmsUrl: "http://mobilemin-server.com/sms"
+              }, xSuccess, xErr);
+            };
+            err = function(data) {
+              console.log("error with " + app.twilioPhone);
+              return cb(data);
+            };
             cbs.push(cb);
-            return _this.twilioClient.updateIncomingNumber(_this.twilioClient.sid, {
-              PhoneNumber: app.twilioPhone,
-              VoiceUrl: "http://mobilemin-server.com/phone",
-              SmsUrl: "http://mobilemin-server.com/sms"
-            }, cb);
+            return _this.twilioClient.getIncomingNumbers({
+              PhoneNumber: "+1" + app.twilioPhone
+            }, success, err);
           }, function() {});
           return cbs;
         };

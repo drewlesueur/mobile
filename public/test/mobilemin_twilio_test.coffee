@@ -50,7 +50,9 @@ describe "MobileminTwilio", ->
 
     cbs = gotAppsCallback(null, [
       {twilioPhone: "4808405406"},
-      {twilioPhone: "4808405407"}
+      {twilioPhone: "4808405407"},
+      {twilioPhone: ""},
+      {twilioPhone: "1"}
     ])
 
     expect(mobileminTwilio.twilioClient.updateIncomingNumber).toHaveBeenCalledWith(
