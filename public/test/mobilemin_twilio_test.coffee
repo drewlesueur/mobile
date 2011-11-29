@@ -38,14 +38,14 @@ describe "MobileminTwilio", ->
     spyOn mobileminTwilio.mobileminApp, "find"
     callbackCalled = false
     callback = -> callbackCalled = true
-    gotAppsCallback = mobileminTwilio.setupNumbers callback
+    mobileminTwilio.setupNumbers callback
 
     expect(mobileminTwilio.mobileminApp.find).toHaveBeenCalledWith(
       {},
-      gotAppsCallback
+      @onGotApps
     )
-    expect(_.isFunction(gotAppsCallback)).toBeTruthy()
-
+  it "should get the twilio phone sids once it finds the apps", ->
+    
     spyOn mobileminTwilio.twilioClient, "updateIncomingNumber"
 
     cbs = gotAppsCallback(null, [

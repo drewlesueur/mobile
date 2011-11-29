@@ -44,16 +44,18 @@
     it("should have access to mobilemin database", function() {
       return expect(mobileminTwilio.mobileminApp.constructor).toBe(MobileminApp);
     });
-    return it("should setup all the phone numbers with twilio", function() {
-      var callback, callbackCalled, cbs, gotAppsCallback;
+    it("should setup all the phone numbers with twilio", function() {
+      var callback, callbackCalled;
       spyOn(mobileminTwilio.mobileminApp, "find");
       callbackCalled = false;
       callback = function() {
         return callbackCalled = true;
       };
-      gotAppsCallback = mobileminTwilio.setupNumbers(callback);
-      expect(mobileminTwilio.mobileminApp.find).toHaveBeenCalledWith({}, gotAppsCallback);
-      expect(_.isFunction(gotAppsCallback)).toBeTruthy();
+      mobileminTwilio.setupNumbers(callback);
+      return expect(mobileminTwilio.mobileminApp.find).toHaveBeenCalledWith({}, this.onGotApps);
+    });
+    return it("should get the twilio phone sids once it finds the apps", function() {
+      var cbs;
       spyOn(mobileminTwilio.twilioClient, "updateIncomingNumber");
       cbs = gotAppsCallback(null, [
         {
