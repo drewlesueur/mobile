@@ -10,25 +10,26 @@ dModule.define "mobilemin-twilio", ->
 
     setupNumbers: =>
 
-      @mobileminApp.find {}, gotAppsCallback
-      return gotAppsCallback
+      @mobileminApp.find {}, @onGotApps
+      return @onGotApps
 
     onGotApps: (err, apps) =>
-      console.log "was there an error?"
-      console.log err
-      console.log "got #{apps.length} apps"
+
       cbs = []
-      nimble.each apps, (app, index, cb) =>
-        @getPhoneNumberSidsForUpdating app.twilioPhone, cb
+      nimble.each apps, (app, index, arr, cb) =>
+        cbs.push @getPhoneNumberSidsForUpdating app.twilioPhone, cb
+        
+      return cbs
    
-    updateCallbackNumber: () =>
-    updateCallbackNumbers: (twilioPhone, cb) =>
-      if (not app.twilioPhone) or (app.twilioPhone.length < 10)
+    updateCallbackNumbers: (cb) =>
+    getPhoneNumberSidsForUpdating: (twilioPhone, cb = ->) =>
+      if (not twilioPhone) or (twilioPhone.length < 10)
         return cb null
+
       success = (resp) =>
         phoneSid = resp.incoming_phone_numbers[0].sid
-        @updateCallbackNumber
         xSuccess = (data) =>
+          console.log("updated #{twilioPhone}")
           cb null
         xErr = (d) =>
           cb d
@@ -37,16 +38,15 @@ dModule.define "mobilemin-twilio", ->
           SmsUrl: "http://mobilemin-server.com/sms"
         , xSuccess
         , xErr
+        return [xSuccess, xErr] #ug. should be one callback node.js style
 
       err = (data) ->
-        console.log "error with #{app.twilioPhone}"
         cb data
-      cbs.push cb
-
       @twilioClient.getIncomingNumbers
-        PhoneNumber: "+1" + app.twilioPhone
+        PhoneNumber: "+1" + twilioPhone
       , success
       , err
-    return cbs
+      return [success, err]
+
 
   MobileMinTwilio

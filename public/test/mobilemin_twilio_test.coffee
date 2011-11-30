@@ -4,6 +4,7 @@ describe "MobileminTwilio", ->
     class RestClient
       constructor: (@sid, @authToken)->
       updateIncomingNumber: =>
+      getIncomingNumbers: =>
 
     return {RestClient: RestClient}
       
@@ -34,7 +35,7 @@ describe "MobileminTwilio", ->
       MobileminApp
     )
 
-  it "should setup all the phone numbers with twilio", ->
+  it "should set up all the phone numbers with twilio", ->
     spyOn mobileminTwilio.mobileminApp, "find"
     callbackCalled = false
     callback = -> callbackCalled = true
@@ -42,37 +43,52 @@ describe "MobileminTwilio", ->
 
     expect(mobileminTwilio.mobileminApp.find).toHaveBeenCalledWith(
       {},
-      @onGotApps
+      mobileminTwilio.onGotApps
     )
+
   it "should get the twilio phone sids once it finds the apps", ->
     
-    spyOn mobileminTwilio.twilioClient, "updateIncomingNumber"
+    spyOn(mobileminTwilio.twilioClient, "getIncomingNumbers")
+    spyOn(mobileminTwilio.twilioClient, "updateIncomingNumber")
 
-    cbs = gotAppsCallback(null, [
+    cbs = mobileminTwilio.onGotApps(null, [
       {twilioPhone: "4808405406"},
       {twilioPhone: "4808405407"},
       {twilioPhone: ""},
       {twilioPhone: "1"}
     ])
 
-    expect(mobileminTwilio.twilioClient.updateIncomingNumber).toHaveBeenCalledWith(
-      sid,
-      {
-        PhoneNumber: "4808405406"
-        VoiceUrl: "http://mobilemin-server.com/phone"
-        SmsUrl: "http://mobilemin-server.com/sms"
-      }, cbs[0]
-
+  
+    expect(cbs[0]).toBeTruthy()
+    [success, err] = cbs[0]
+    expect(mobileminTwilio.twilioClient.getIncomingNumbers).toHaveBeenCalledWith(
+      {PhoneNumber: "+14808405406"},
+      success,
+      err
+    )
+    expect(mobileminTwilio.twilioClient.getIncomingNumbers).toHaveBeenCalledWith(
+      {PhoneNumber: "+14808405407"},
+      cbs[1][0],
+      cbs[1][1],
+    )
+    expect(mobileminTwilio.twilioClient.getIncomingNumbers).not.toHaveBeenCalledWith(
+      {PhoneNumber: "+1"},
+      cbs[1][0],
+      cbs[1][1],
     )
 
+    [success, err] = cbs[0][0]({incoming_phone_numbers: [{sid:"a fake sid"}]})
     expect(mobileminTwilio.twilioClient.updateIncomingNumber).toHaveBeenCalledWith(
-      sid,
+      "a fake sid"
       {
-        PhoneNumber: "4808405407"
-        VoiceUrl: "http://mobilemin-server.com/phone"
+        VoiceUrl: "http://mobilemin-server.com/phone",
         SmsUrl: "http://mobilemin-server.com/sms"
-      }, cbs[1]
+      },
+      success,
+      err
     )
+
+
 
 
 

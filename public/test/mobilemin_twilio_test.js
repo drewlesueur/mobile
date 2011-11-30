@@ -10,10 +10,13 @@
         function RestClient(sid, authToken) {
           this.sid = sid;
           this.authToken = authToken;
+          this.getIncomingNumbers = __bind(this.getIncomingNumbers, this);
           this.updateIncomingNumber = __bind(this.updateIncomingNumber, this);
         }
 
         RestClient.prototype.updateIncomingNumber = function() {};
+
+        RestClient.prototype.getIncomingNumbers = function() {};
 
         return RestClient;
 
@@ -44,7 +47,7 @@
     it("should have access to mobilemin database", function() {
       return expect(mobileminTwilio.mobileminApp.constructor).toBe(MobileminApp);
     });
-    it("should setup all the phone numbers with twilio", function() {
+    it("should set up all the phone numbers with twilio", function() {
       var callback, callbackCalled;
       spyOn(mobileminTwilio.mobileminApp, "find");
       callbackCalled = false;
@@ -52,12 +55,13 @@
         return callbackCalled = true;
       };
       mobileminTwilio.setupNumbers(callback);
-      return expect(mobileminTwilio.mobileminApp.find).toHaveBeenCalledWith({}, this.onGotApps);
+      return expect(mobileminTwilio.mobileminApp.find).toHaveBeenCalledWith({}, mobileminTwilio.onGotApps);
     });
     return it("should get the twilio phone sids once it finds the apps", function() {
-      var cbs;
+      var cbs, err, success, _ref, _ref2;
+      spyOn(mobileminTwilio.twilioClient, "getIncomingNumbers");
       spyOn(mobileminTwilio.twilioClient, "updateIncomingNumber");
-      cbs = gotAppsCallback(null, [
+      cbs = mobileminTwilio.onGotApps(null, [
         {
           twilioPhone: "4808405406"
         }, {
@@ -68,16 +72,28 @@
           twilioPhone: "1"
         }
       ]);
-      expect(mobileminTwilio.twilioClient.updateIncomingNumber).toHaveBeenCalledWith(sid, {
-        PhoneNumber: "4808405406",
+      expect(cbs[0]).toBeTruthy();
+      _ref = cbs[0], success = _ref[0], err = _ref[1];
+      expect(mobileminTwilio.twilioClient.getIncomingNumbers).toHaveBeenCalledWith({
+        PhoneNumber: "+14808405406"
+      }, success, err);
+      expect(mobileminTwilio.twilioClient.getIncomingNumbers).toHaveBeenCalledWith({
+        PhoneNumber: "+14808405407"
+      }, cbs[1][0], cbs[1][1]);
+      expect(mobileminTwilio.twilioClient.getIncomingNumbers).not.toHaveBeenCalledWith({
+        PhoneNumber: "+1"
+      }, cbs[1][0], cbs[1][1]);
+      _ref2 = cbs[0][0]({
+        incoming_phone_numbers: [
+          {
+            sid: "a fake sid"
+          }
+        ]
+      }), success = _ref2[0], err = _ref2[1];
+      return expect(mobileminTwilio.twilioClient.updateIncomingNumber).toHaveBeenCalledWith("a fake sid", {
         VoiceUrl: "http://mobilemin-server.com/phone",
         SmsUrl: "http://mobilemin-server.com/sms"
-      }, cbs[0]);
-      return expect(mobileminTwilio.twilioClient.updateIncomingNumber).toHaveBeenCalledWith(sid, {
-        PhoneNumber: "4808405407",
-        VoiceUrl: "http://mobilemin-server.com/phone",
-        SmsUrl: "http://mobilemin-server.com/sms"
-      }, cbs[1]);
+      }, success, err);
     });
   });
 
