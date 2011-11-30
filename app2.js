@@ -24,6 +24,9 @@ var mobileMinTwilio = new MobileMinTwilio(
   config.ACCOUNT_SID, config.AUTH_TOKEN
 )
 
+twizzle = require('twilio')
+Twiml = twizzle.Twiml
+
 express = require('express');
 
 drewsSignIn = function(req, res, next) {
@@ -36,7 +39,7 @@ drewsSignIn = function(req, res, next) {
 enableCORS = function(req, res, next) {
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type");
-  res.setHeader("Cache-Control", "no-cache");
+  res.setHeader("Cache-Control", "no-cache"); //andraoid
   return next();
 };
 
@@ -79,7 +82,12 @@ start = function() {
 };
 
 pg("/phone", function (req, res) {
-   res.send("good")
+   console.log(req)
+   twilioResponse = new Twiml.Response(res)
+   twilioResponse.append(new Twiml.Dial("4803813855"))
+   twilioResponse.send()
+
+
 })
 pg("/sms", function (req, res) {
    res.send("good")

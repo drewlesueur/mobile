@@ -34,8 +34,8 @@ dModule.define "mobilemin-twilio", ->
         xErr = (d) =>
           cb d
         @twilioClient.updateIncomingNumber phoneSid,
-          VoiceUrl: "http://mobilemin-server.com/phone"
-          SmsUrl: "http://mobilemin-server.com/sms"
+          VoiceUrl: "http://mobilemin-server.drewl.us/phone"
+          SmsUrl: "http://mobilemin-server.drewl.us/sms"
         , xSuccess
         , xErr
         return [xSuccess, xErr] #ug. should be one callback node.js style
