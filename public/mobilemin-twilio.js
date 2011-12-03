@@ -52,8 +52,8 @@
             return cb(d);
           };
           _this.twilioClient.updateIncomingNumber(phoneSid, {
-            VoiceUrl: "http://mobilemin-server.com/phone",
-            SmsUrl: "http://mobilemin-server.com/sms"
+            VoiceUrl: "http://mobilemin-server.drewl.us/phone",
+            SmsUrl: "http://mobilemin-server.drewl.us/sms"
           }, xSuccess, xErr);
           return [xSuccess, xErr];
         };
