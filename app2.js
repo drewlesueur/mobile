@@ -7,11 +7,11 @@ var twilio = require("twilio")
 dModule.define("twilio", function() { return twilio })
 require("./public/mobilemin-app.js")
 require("./public/mobilemin-twilio.js")
-var _ = require("./node_modules/underscore.js")
+var _ = require("./public/underscore.js")
 dModule.define("underscore", function () { return _ });
-var nimble = require("./node_modules/nimble.js")
+var nimble = require("./public/nimble.js")
 dModule.define("nimble", function () { return nimble });
-require("./node_modules/drews-mixins/drews-mixins.js")
+require("./public/drews-mixins.js")
 require("./config.js")
 
 var config = dModule.require("config")
