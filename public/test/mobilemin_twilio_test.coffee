@@ -81,8 +81,8 @@ describe "MobileminTwilio", ->
     expect(mobileminTwilio.twilioClient.updateIncomingNumber).toHaveBeenCalledWith(
       "a fake sid"
       {
-        VoiceUrl: "http://mobilemin-server.com/phone",
-        SmsUrl: "http://mobilemin-server.com/sms"
+        VoiceUrl: "http://mobilemin-server.drewl.us/phone",
+        SmsUrl: "http://mobilemin-server.drewl.us/sms"
       },
       success,
       err
