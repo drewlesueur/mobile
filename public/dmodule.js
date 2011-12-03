@@ -8,6 +8,7 @@ if (!root.dModule) {
   
   var define = dModule.define = function (name, fn) {
     defs[name] = fn;
+    delete modules[name]; 
   }
 
   var require = dModule.require = function (name) {

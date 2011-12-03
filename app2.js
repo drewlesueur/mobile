@@ -2,7 +2,7 @@
 // this way is kind of like how you use it in a browser
 
 require("./public/dmodule.js")
-require("./node_modules/severus2.js")
+require("./public/severus2.js")
 var twilio = require("twilio")
 dModule.define("twilio", function() { return twilio })
 require("./public/mobilemin-app.js")
@@ -90,7 +90,7 @@ pg("/phone", function (req, res) {
 
 })
 pg("/sms", function (req, res) {
-   res.send("good")
+  console.log(req)
 })
 
 start();
