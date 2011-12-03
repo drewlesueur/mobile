@@ -11,7 +11,11 @@ describe "MobileMinServer", ->
 
   RealMobileMinTwilio = dModule.require "mobilemin-twilio"
 
+
+  setupNumbersSpy = jasmine.createSpy()
   class FakeMobileminTwilio 
+    setupNumbers: setupNumbersSpy 
+
   dModule.define "mobilemin-twilio", () ->
     FakeMobileminTwilio
 
@@ -30,6 +34,13 @@ describe "MobileMinServer", ->
 
   it "should have a mobileminTwilio", ->
     expect(server.twilio.constructor).toBe(FakeMobileminTwilio)
+
+  it "should start", ->
+
+    server.start()
+    expect(server.expressApp.listen).toHaveBeenCalledWith 8010
+    expect(server.twilio.setupNumbers).toHaveBeenCalled()
+
 
   it "should handle a start", ->
     

@@ -1,6 +1,6 @@
 
   describe("MobileMinServer", function() {
-    var FakeMobileminTwilio, MobileMinServer, RealMobileMinTwilio, expressPost, expressRpcAppListen, expressRpcInit, expressRpcObj, server;
+    var FakeMobileminTwilio, MobileMinServer, RealMobileMinTwilio, expressPost, expressRpcAppListen, expressRpcInit, expressRpcObj, server, setupNumbersSpy;
     expressRpcAppListen = jasmine.createSpy();
     expressPost = jasmine.createSpy();
     expressRpcObj = {
@@ -12,9 +12,12 @@
       return expressRpcInit;
     });
     RealMobileMinTwilio = dModule.require("mobilemin-twilio");
+    setupNumbersSpy = jasmine.createSpy();
     FakeMobileminTwilio = (function() {
 
       function FakeMobileminTwilio() {}
+
+      FakeMobileminTwilio.prototype.setupNumbers = setupNumbersSpy;
 
       return FakeMobileminTwilio;
 
@@ -35,6 +38,11 @@
     });
     it("should have a mobileminTwilio", function() {
       return expect(server.twilio.constructor).toBe(FakeMobileminTwilio);
+    });
+    it("should start", function() {
+      server.start();
+      expect(server.expressApp.listen).toHaveBeenCalledWith(8010);
+      return expect(server.twilio.setupNumbers).toHaveBeenCalled();
     });
     it("should handle a start", function() {});
     it("should know how to handle an sms");

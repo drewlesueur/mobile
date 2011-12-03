@@ -11,11 +11,17 @@
 
       function MobileMinServer() {
         this.sms = __bind(this.sms, this);
-        this.phone = __bind(this.phone, this);        this.expressApp = expressRpc("/rpc", {});
+        this.phone = __bind(this.phone, this);
+        this.start = __bind(this.start, this);        this.expressApp = expressRpc("/rpc", {});
         this.expressApp.post("/phone", this.phone);
         this.expressApp.post("/sms", this.sms);
         this.twilio = new MobileminTwilio();
       }
+
+      MobileMinServer.prototype.start = function() {
+        this.expressApp.listen(8010);
+        return this.twilio.setupNumbers();
+      };
 
       MobileMinServer.prototype.phone = function() {};
 

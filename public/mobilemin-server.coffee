@@ -7,6 +7,9 @@ dModule.define "mobilemin-server", ->
       @expressApp.post "/phone", @phone
       @expressApp.post "/sms", @sms
       @twilio = new MobileminTwilio()
+    start: =>
+      @expressApp.listen 8010 #TODO: use config
+      @twilio.setupNumbers()
     phone: =>
     sms: =>
 
