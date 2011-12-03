@@ -8,7 +8,7 @@
       return expect(mobileminApp).toBeTruthy();
     });
     it("should have a severus", function() {
-      return expect(mobileminApp.severus.db).toBe("mobilemin_dev");
+      return expect(mobileminApp.severus.db).toBe("new_mobilemin");
     });
     it("should find an app", function() {
       var callback, findQuery, mmCallback, myCallBackCalled;
@@ -21,7 +21,7 @@
         title: "yk"
       };
       mmCallback = mobileminApp.find(findQuery, callback);
-      expect(mobileminApp.severus.find).toHaveBeenCalledWith("mins", findQuery, mmCallback);
+      expect(mobileminApp.severus.find).toHaveBeenCalledWith("apps", findQuery, mmCallback);
       expect(_.isFunction(mmCallback)).toBeTruthy();
       mmCallback(false, [
         {
@@ -31,7 +31,7 @@
       ]);
       expect(myCallBackCalled).toBeTruthy();
       expect(mobileminApp.app.title).toBe("yk");
-      return expect(mobileminApp.data.db).toBe("mobilemin_myappy");
+      return expect(mobileminApp.data.db).toBe("new_mobilemin");
     });
     return describe("after having found an app", function() {
       beforeEach(function() {
@@ -45,7 +45,7 @@
           return myCallBackCalled = true;
         };
         mmCallback = mobileminApp.findPhones({}, findPhonesCallback);
-        return expect(mobileminApp.data.find).toHaveBeenCalledWith("phones", {}, findPhonesCallback);
+        return expect(mobileminApp.data.find).toHaveBeenCalledWith("app_myappy_phones", {}, findPhonesCallback);
       });
     });
   });

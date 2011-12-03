@@ -87,11 +87,3 @@ describe "MobileminTwilio", ->
       success,
       err
     )
-
-
-
-
-
-    
-
-
