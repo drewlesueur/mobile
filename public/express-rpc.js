@@ -46,7 +46,7 @@
         };
       };
       url || (url = "/rpc");
-      return pg(url, function(req, res) {
+      pg(url, function(req, res) {
         var body, fn, id, method, params;
         body = req.body;
         method = body.method, params = body.params, id = body.id;
@@ -59,6 +59,7 @@
           });
         }]));
       });
+      return app;
     };
   });
 

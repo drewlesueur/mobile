@@ -53,6 +53,8 @@ dModule.define "express-rpc", ->
           error: err
           id: id
 
+    app
+
   
 
 if (!module.parent) 
