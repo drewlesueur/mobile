@@ -1,6 +1,6 @@
 
   describe("MobileMinServer", function() {
-    var FakeMobileminTwilio, FakeTwilioClient, MobileminServer, RealMobileMinTwilio, allFunc, expressPost, expressRpcAppListen, expressRpcInit, expressRpcObj, fakeIncomingStartText, fakeIncomingText, getAvailableLocalNumbersSpy, isEqual, notFakeIncomingStartText, obj, server, setupNumbersSpy;
+    var FakeMobileminTwilio, FakeTwilioClient, MobileminServer, RealMobileMinTwilio, allFunc, config, expressPost, expressRpcAppListen, expressRpcInit, expressRpcObj, fakeIncomingStartText, fakeIncomingText, getAvailableLocalNumbersSpy, isEqual, notFakeIncomingStartText, obj, server, setupNumbersSpy;
     allFunc = dModule.require("all-func");
     obj = allFunc("object");
     isEqual = allFunc("isEqual");
@@ -42,11 +42,21 @@
     dModule.define("express-rpc", function() {
       return expressRpcInit;
     });
+    dModule.define("config", function() {
+      return {
+        ACCOUNT_SID: 'sid',
+        AUTH_TOKEN: 'authToken'
+      };
+    });
+    config = dModule.require("config");
     RealMobileMinTwilio = dModule.require("mobilemin-twilio");
     getAvailableLocalNumbersSpy = jasmine.createSpy();
     FakeTwilioClient = (function() {
 
-      function FakeTwilioClient() {}
+      function FakeTwilioClient(sid, authToken) {
+        this.sid = sid;
+        this.authToken = authToken;
+      }
 
       FakeTwilioClient.prototype.getAvailableLocalNumbers = getAvailableLocalNumbersSpy;
 
@@ -56,8 +66,10 @@
     setupNumbersSpy = jasmine.createSpy();
     FakeMobileminTwilio = (function() {
 
-      function FakeMobileminTwilio() {
-        this.twilioClient = new FakeTwilioClient();
+      function FakeMobileminTwilio(sid, authToken) {
+        this.sid = sid;
+        this.authToken = authToken;
+        this.twilioClient = new FakeTwilioClient(this.sid, this.authToken);
       }
 
       FakeMobileminTwilio.prototype.setupNumbers = setupNumbersSpy;
@@ -80,7 +92,9 @@
       return expect((server("expressApp")).post).toHaveBeenCalledWith("/sms", server.sms);
     });
     it("should have a mobileminTwilio", function() {
-      return expect(server("twilio").constructor).toBe(FakeMobileminTwilio);
+      expect(server("twilio").constructor).toBe(FakeMobileminTwilio);
+      expect(server("twilio").sid).toBe(config.ACCOUNT_SID);
+      return expect(server("twilio").authToken).toBe(config.AUTH_TOKEN);
     });
     it("should start", function() {
       server("start")();

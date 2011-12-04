@@ -3,6 +3,7 @@ dModule.define "mobilemin-server", ->
   obj = allFunc "object"
   expressRpc = dModule.require "express-rpc" 
   drews = dModule.require "drews-mixins"
+  config = dModule.require "config"
 
   MobileminTwilio = dModule.require "mobilemin-twilio"
 
@@ -12,7 +13,7 @@ dModule.define "mobilemin-server", ->
     self("expressApp", expressRpc("/rpc", {}))
     self("expressApp").post "/phone", @phone
     self("expressApp").post "/sms", @sms
-    self "twilio", new MobileminTwilio()
+    self "twilio", new MobileminTwilio config.ACCOUNT_SID, config.AUTH_TOKEN
     twilio = self "twilio"
 
 

@@ -41,19 +41,24 @@ describe "MobileMinServer", ->
   expressRpcInit = jasmine.createSpy().andReturn expressRpcObj
 
   dModule.define "express-rpc", -> expressRpcInit
+  dModule.define "config", ->
+    ACCOUNT_SID: 'sid',
+    AUTH_TOKEN: 'authToken',
+
+  config = dModule.require "config"
 
   RealMobileMinTwilio = dModule.require "mobilemin-twilio"
 
 
   getAvailableLocalNumbersSpy = jasmine.createSpy()
   class FakeTwilioClient
-    constructor: ->
+    constructor: (@sid, @authToken)->
     getAvailableLocalNumbers: getAvailableLocalNumbersSpy
     
   setupNumbersSpy = jasmine.createSpy()
   class FakeMobileminTwilio 
-    constructor: ->
-      @twilioClient = new FakeTwilioClient()
+    constructor: (@sid, @authToken) ->
+      @twilioClient = new FakeTwilioClient(@sid, @authToken)
     setupNumbers: setupNumbersSpy 
 
     
@@ -75,6 +80,8 @@ describe "MobileMinServer", ->
 
   it "should have a mobileminTwilio", ->
     expect(server("twilio").constructor).toBe(FakeMobileminTwilio)
+    expect(server("twilio").sid).toBe config.ACCOUNT_SID
+    expect(server("twilio").authToken).toBe config.AUTH_TOKEN
 
   it "should start", ->
     server("start")()

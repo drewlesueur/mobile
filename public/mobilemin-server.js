@@ -1,10 +1,11 @@
 
   dModule.define("mobilemin-server", function() {
-    var MobileminServer, MobileminTwilio, allFunc, drews, expressRpc, obj;
+    var MobileminServer, MobileminTwilio, allFunc, config, drews, expressRpc, obj;
     allFunc = dModule.require("all-func");
     obj = allFunc("object");
     expressRpc = dModule.require("express-rpc");
     drews = dModule.require("drews-mixins");
+    config = dModule.require("config");
     MobileminTwilio = dModule.require("mobilemin-twilio");
     MobileminServer = obj();
     MobileminServer("init", function() {
@@ -13,7 +14,7 @@
       self("expressApp", expressRpc("/rpc", {}));
       self("expressApp").post("/phone", this.phone);
       self("expressApp").post("/sms", this.sms);
-      self("twilio", new MobileminTwilio());
+      self("twilio", new MobileminTwilio(config.ACCOUNT_SID, config.AUTH_TOKEN));
       twilio = self("twilio");
       self("start", function() {
         self("expressApp").listen(8010);
