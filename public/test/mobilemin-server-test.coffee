@@ -1,3 +1,4 @@
+
 describe "MobileMinServer", ->
   allFunc = dModule.require "all-func" 
   obj = allFunc "object"
@@ -56,16 +57,15 @@ describe "MobileMinServer", ->
     setupNumbers: setupNumbersSpy 
 
     
-
   dModule.define "mobilemin-twilio", () ->
     FakeMobileminTwilio
 
-  MobileMinServer = dModule.require "mobilemin-server"
+  MobileminServer = dModule.require "mobilemin-server"
   
   server = null 
 
   beforeEach ->
-    server = new MobileMinServer()
+    server = MobileminServer("init")()
 
   it "should have an express rpc", ->
     expect(expressRpcInit).toHaveBeenCalledWith "/rpc", {}

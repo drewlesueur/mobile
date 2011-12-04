@@ -1,6 +1,6 @@
 
   describe("MobileMinServer", function() {
-    var FakeMobileminTwilio, FakeTwilioClient, MobileMinServer, RealMobileMinTwilio, allFunc, expressPost, expressRpcAppListen, expressRpcInit, expressRpcObj, fakeIncomingStartText, fakeIncomingText, getAvailableLocalNumbersSpy, isEqual, notFakeIncomingStartText, obj, server, setupNumbersSpy;
+    var FakeMobileminTwilio, FakeTwilioClient, MobileminServer, RealMobileMinTwilio, allFunc, expressPost, expressRpcAppListen, expressRpcInit, expressRpcObj, fakeIncomingStartText, fakeIncomingText, getAvailableLocalNumbersSpy, isEqual, notFakeIncomingStartText, obj, server, setupNumbersSpy;
     allFunc = dModule.require("all-func");
     obj = allFunc("object");
     isEqual = allFunc("isEqual");
@@ -68,10 +68,10 @@
     dModule.define("mobilemin-twilio", function() {
       return FakeMobileminTwilio;
     });
-    MobileMinServer = dModule.require("mobilemin-server");
+    MobileminServer = dModule.require("mobilemin-server");
     server = null;
     beforeEach(function() {
-      return server = new MobileMinServer();
+      return server = MobileminServer("init")();
     });
     it("should have an express rpc", function() {
       expect(expressRpcInit).toHaveBeenCalledWith("/rpc", {});

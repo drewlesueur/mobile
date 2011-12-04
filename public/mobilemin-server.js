@@ -7,7 +7,7 @@
     drews = dModule.require("drews-mixins");
     MobileminTwilio = dModule.require("mobilemin-twilio");
     MobileminServer = obj();
-    return MobileminServer("init", function() {
+    MobileminServer("init", function() {
       var self, twilio;
       self = obj();
       self("expressApp", expressRpc("/rpc", {}));
@@ -32,4 +32,5 @@
       });
       return self;
     });
+    return MobileminServer;
   });

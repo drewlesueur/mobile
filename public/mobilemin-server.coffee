@@ -4,8 +4,6 @@ dModule.define "mobilemin-server", ->
   expressRpc = dModule.require "express-rpc" 
   drews = dModule.require "drews-mixins"
 
-
-
   MobileminTwilio = dModule.require "mobilemin-twilio"
 
   MobileminServer = obj()
@@ -32,3 +30,4 @@ dModule.define "mobilemin-server", ->
         AreaCode: drews.s(from, 2, 3) #get rid of +1, and get area code
 
     self
+  MobileminServer
