@@ -1,35 +1,35 @@
-(function() {
-  var __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
 
   dModule.define("mobilemin-server", function() {
-    var MobileMinServer, MobileminTwilio;
+    var MobileminServer, MobileminTwilio, allFunc, drews, expressRpc, obj;
+    allFunc = dModule.require("all-func");
+    obj = allFunc("object");
+    expressRpc = dModule.require("express-rpc");
+    drews = dModule.require("drews-mixins");
     MobileminTwilio = dModule.require("mobilemin-twilio");
-    return MobileMinServer = (function() {
-      var expressRpc;
-
-      expressRpc = dModule.require("express-rpc");
-
-      function MobileMinServer() {
-        this.sms = __bind(this.sms, this);
-        this.phone = __bind(this.phone, this);
-        this.start = __bind(this.start, this);        this.expressApp = expressRpc("/rpc", {});
-        this.expressApp.post("/phone", this.phone);
-        this.expressApp.post("/sms", this.sms);
-        this.twilio = new MobileminTwilio();
-      }
-
-      MobileMinServer.prototype.start = function() {
-        this.expressApp.listen(8010);
-        return this.twilio.setupNumbers();
-      };
-
-      MobileMinServer.prototype.phone = function() {};
-
-      MobileMinServer.prototype.sms = function() {};
-
-      return MobileMinServer;
-
-    })();
+    MobileminServer = obj();
+    return MobileminServer("init", function() {
+      var self, twilio;
+      self = obj();
+      self("expressApp", expressRpc("/rpc", {}));
+      self("expressApp").post("/phone", this.phone);
+      self("expressApp").post("/sms", this.sms);
+      self("twilio", new MobileminTwilio());
+      twilio = self("twilio");
+      self("start", function() {
+        self("expressApp").listen(8010);
+        return self("twilio").setupNumbers();
+      });
+      self("phone", function() {});
+      self("sms", function(req, res) {
+        var text;
+        text = req.body;
+        return self("handleNewCustomerWhoTextedStart")(res, text.From);
+      });
+      self("handleNewCustomerWhoTextedStart", function(res, from) {
+        return twilio.twilioClient.getAvailableLocalNumbers("US", {
+          AreaCode: drews.s(from, 2, 3)
+        });
+      });
+      return self;
+    });
   });
-
-}).call(this);

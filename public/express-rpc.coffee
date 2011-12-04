@@ -1,9 +1,7 @@
-
 dModule.define "express-rpc", -> 
   getApp = (url, methods) ->
     config = dModule.require "config"
     express = dModule.require "express"
-
 
     enableCORS = (req, res, next) ->
       res.setHeader "Access-Control-Allow-Origin", "*"
