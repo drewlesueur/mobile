@@ -1,9 +1,36 @@
 
   describe("MobileMinServer", function() {
-    var FakeMobileminTwilio, FakeTwilioClient, MobileminServer, RealMobileMinTwilio, allFunc, config, expressPost, expressRpcAppListen, expressRpcInit, expressRpcObj, fakeIncomingStartText, fakeIncomingText, getAvailableLocalNumbersSpy, isEqual, notFakeIncomingStartText, obj, server, setupNumbersSpy;
+    var FakeMobileminTwilio, FakeTwilioClient, MobileminServer, RealMobileMinTwilio, allFunc, apiCallSpy, config, expressPost, expressRpcAppListen, expressRpcInit, expressRpcObj, fakeIncomingStartText, fakeIncomingText, getAvailableLocalNumbersSpy, isEqual, justBoughtNumber, notFakeIncomingStartText, obj, provisionIncomingNumberSpy, sendSmsSpy, server, setupNumbersSpy;
     allFunc = dModule.require("all-func");
     obj = allFunc("object");
     isEqual = allFunc("isEqual");
+    justBoughtNumber = {
+      sid: 'PN139f6f56936749f585ae9ab952682e98',
+      account_sid: 'fake sid',
+      friendly_name: '(480) 428-2578',
+      phone_number: '+14804282578',
+      voice_url: 'http://mobilemin-server.drewl.us/phone',
+      voice_method: 'POST',
+      voice_fallback_url: '',
+      voice_fallback_method: 'POST',
+      voice_caller_id_lookup: false,
+      date_created: 'Tue, 06 Dec 2011 00:03:10 +0000',
+      date_updated: 'Tue, 06 Dec 2011 00:03:10 +0000',
+      sms_url: 'http://mobilemin-server.drewl.us/sms',
+      sms_method: 'POST',
+      sms_fallback_url: '',
+      sms_fallback_method: 'POST',
+      capabilities: {
+        voice: true,
+        sms: true
+      },
+      status_callback: '',
+      status_callback_method: 'POST',
+      api_version: '2010-04-01',
+      voice_application_sid: '',
+      sms_application_sid: '',
+      uri: '/2010-04-01/Accounts/fakesid/IncomingPhoneNumbers/PN139f6f56936749f585ae9ab952682e98.json'
+    };
     notFakeIncomingStartText = {
       Body: 'start',
       To: '+14804208755',
@@ -51,6 +78,9 @@
     config = dModule.require("config");
     RealMobileMinTwilio = dModule.require("mobilemin-twilio");
     getAvailableLocalNumbersSpy = jasmine.createSpy();
+    apiCallSpy = jasmine.createSpy();
+    provisionIncomingNumberSpy = jasmine.createSpy();
+    sendSmsSpy = jasmine.createSpy();
     FakeTwilioClient = (function() {
 
       function FakeTwilioClient(sid, authToken) {
@@ -59,6 +89,12 @@
       }
 
       FakeTwilioClient.prototype.getAvailableLocalNumbers = getAvailableLocalNumbersSpy;
+
+      FakeTwilioClient.prototype.apiCall = apiCallSpy;
+
+      FakeTwilioClient.prototype.provisionIncomingNumber = provisionIncomingNumberSpy;
+
+      FakeTwilioClient.prototype.sendSms = sendSmsSpy;
 
       return FakeTwilioClient;
 
@@ -118,13 +154,64 @@
       return expect(arg).toBe(expectedArg);
     });
     it("should know how to handle a new customer who texted start", function() {
-      var cb, fakeRes;
+      var buyCallbacks, buyError, buySuccess, fakeRes, sendFeedbackCallbacks, sendFeedbackError, sendFeedbackSuccess;
       fakeRes = {
         send: function() {}
       };
-      cb = server("handleNewCustomerWhoTextedStart")(fakeRes, "+14808405406");
-      return expect(getAvailableLocalNumbersSpy).toHaveBeenCalledWith("US", {
+      buyCallbacks = server("handleNewCustomerWhoTextedStart")(fakeRes, "+14808405406");
+      buySuccess = buyCallbacks(0);
+      buyError = buyCallbacks(1);
+      expect(apiCallSpy).toHaveBeenCalledWith("POST", "/IncomingPhoneNumbers", {
+        params: {
+          VoiceUrl: "http://mobilemin-server.drewl.us/phone",
+          SmsUrl: "http://mobilemin-server.drewl.us/sms",
+          AreaCode: "480"
+        }
+      }, buySuccess, buyError, "ffff`");
+      sendFeedbackCallbacks = buySuccess(justBoughtNumber);
+      sendFeedbackSuccess = sendFeedbackCallbacks(0);
+      sendFeedbackError = sendFeedbackCallbacks(1);
+      return expect(sendSmsSpy).toHaveBeenCalledWith(server("mobileminNumber"), justBoughtNumber.phone_number, "Your mobilemin text number is " + justBoughtNumber.friendly_name + ". Subscribers will receive texts from that number. Text 'help' for more info and to manage your account.", null, sendFeedbackSuccess, sendFeedbackError);
+    });
+    xit("should know how to handle a new customer who texted start", function() {
+      var error, fakeAvailablePhones, fakeRes, success, twilioClient, _ref;
+      fakeAvailablePhones = {
+        available_phone_numbers: [
+          {
+            friendly_name: '(480) 409-2352',
+            phone_number: '+14804092352',
+            latitude: null,
+            longitude: null,
+            region: 'Arizona',
+            postal_code: null,
+            iso_country: 'US',
+            lata: null,
+            rate_center: null
+          }, {
+            friendly_name: '(480) 428-3732',
+            phone_number: '+14804283732',
+            latitude: null,
+            longitude: null,
+            region: 'AZ',
+            postal_code: null,
+            iso_country: 'US',
+            lata: null,
+            rate_center: null
+          }
+        ]
+      };
+      fakeRes = {
+        send: function() {}
+      };
+      _ref = server("handleNewCustomerWhoTextedStart")(fakeRes, "+14808405406"), success = _ref[0], error = _ref[1];
+      expect(getAvailableLocalNumbersSpy).toHaveBeenCalledWith("US", {
         "AreaCode": "480"
+      }, success, error);
+      twilioClient = server("twilio").twilioClient;
+      success(fakeAvailablePhones);
+      return expect(provisionIncomingNumberSpy).toHaveBeenCalledWith('+14804092352', {
+        voiceUrl: "http://mobilemin-server.drewl.us/phone",
+        smsUrl: "http://mobilemin-server.drewl.us/sms"
       });
     });
     return dModule.define("mobilemin-twilio", RealMobileMinTwilio);

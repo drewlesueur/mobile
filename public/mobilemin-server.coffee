@@ -10,6 +10,7 @@ dModule.define "mobilemin-server", ->
   MobileminServer = obj()
   MobileminServer "init", ->
     self = obj()
+    self "mobileminNumber", "+14804673355"
     self("expressApp", expressRpc("/rpc", {}))
     self("expressApp").post "/phone", @phone
     self("expressApp").post "/sms", @sms
@@ -27,8 +28,43 @@ dModule.define "mobilemin-server", ->
       self("handleNewCustomerWhoTextedStart") res, text.From
 
     self "handleNewCustomerWhoTextedStart", (res, from) ->
+      areaCode = drews.s(from, 2, 3) #get rid of +1, and get area code 
+      buySuccess = (newNumber) =>
+        sendSmsSuccess = () =>
+        sendSmsError = () =>
+        twilio.twilioClient.sendSms()
+        return obj({
+          0: sendSmsSuccess,
+          1: sendSmsError
+        })
+     
+      buyError = (error) =>
+        console.log "There was an error"
+        
+      twilio.twilioClient.apiCall('POST', '/IncomingPhoneNumbers', {params: {
+        VoiceUrl: "http://mobilemin-server.drewl.us/phone"
+        SmsUrl: "http://mobilemin-server.drewl.us/sms"
+        AreaCode: areaCode
+      }}, buySuccess, buyError)
+      return obj({
+        0: buySuccess,
+        1: buyError
+      })
+
+
+    __getAvailableNumbers: =>
+      success = (response) ->
+        firstPhone = response.available_phone_numbers[0].phone_number
+        console.log "going to buy #{firstPhone}" 
+        false and twilio.twilioClient.provisionIncomingNumber firstPhone,
+          VoiceUrl: "http://mobilemin-server.drewl.us/phone"
+          SmsUrl: "http://mobilemin-server.drewl.us/sms"
+      error = ->
+     
       twilio.twilioClient.getAvailableLocalNumbers "US",
         AreaCode: drews.s(from, 2, 3) #get rid of +1, and get area code
+      , success, error
+      [success, error]
 
     self
   MobileminServer
