@@ -17,7 +17,9 @@
         return self.handleNewCustomerWhoTextedStart(res, text.From);
       };
       self.status = function(req, res) {
-        return console.log(req.body);
+        console.log("new status");
+        console.log(req.body);
+        return console.log("end new status");
       };
       self.mobileminNumber = "+14804673355";
       self.expressApp = expressRpc("/rpc", {});
@@ -36,12 +38,15 @@
         to = info.to, body = info.body, triedToSendCallback = info.triedToSendCallback, sentCallback = info.sentCallback, responseCallback = info.responseCallback, sendSmsSuccess = info.sendSmsSuccess;
         sendSmsSuccess = function(res) {
           var sid;
-          sid = res.SMSMessage.Sid;
-          self.smsSidsWaitingStatus[sid] = res.SMSMessage;
-          return triedToSendCallback(null, res);
+          console.log("send success");
+          console.log(res);
+          console.log("end send success");
+          sid = res.sid;
+          self.smsSidsWaitingStatus[sid] = res;
+          return typeof triedToSendCallback === "function" ? triedToSendCallback(null, res) : void 0;
         };
         sendSmsError = function() {};
-        twilio.twilioClient.sendSms(self.mobileminNumber, to, body, null, sendSmsSuccess, sendSmsError);
+        twilio.twilioClient.sendSms(self.mobileminNumber, to, body, "http://mobilemin-server.drewl.us/status", sendSmsSuccess, sendSmsError);
         return [sendSmsSuccess, sendSmsError];
       };
       self.handleNewCustomerWhoTextedStart = function(res, from) {

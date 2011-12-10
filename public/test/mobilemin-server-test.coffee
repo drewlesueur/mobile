@@ -151,8 +151,7 @@ describe "MobileMinServer", ->
       responseCallback = jasmine.createSpy()
 
       fakeTriedToSendResponse = 
-        SMSMessage:
-          Sid: "fake sid"
+        sid: "fake sid"
 
       sendSmsCallbacks = server.sendSms
         to: "4808405406"
@@ -169,21 +168,20 @@ describe "MobileMinServer", ->
         server.mobileminNumber,
         "4808405406"
         "testing" 
-        null, #statusCallback 
+        "http://mobilemin-server.drewl.us/status",
         sendSmsSuccess,
         sendSmsError
       )
 
     it "should handle the sms response", ->
       fakeSendSmsResponse =
-        SMSMessage:
-          Sid: "fake sid"
-          Status: "queued"
+          sid: "fake sid"
+          status: "queued"
 
       sendSmsSuccess fakeSendSmsResponse
       expect(triedToSendCallback).toHaveBeenCalledWith(null, fakeSendSmsResponse)
       expect(server.smsSidsWaitingStatus["fake sid"]).toEqual(
-        fakeSendSmsResponse.SMSMessage
+        fakeSendSmsResponse
       )
 
       fakeGoodStatusResponse = 
@@ -197,7 +195,7 @@ describe "MobileMinServer", ->
 
       server.status(fakeRequest, fakeResponse)
 
-      expect(server.smsSidsWaitingStatus["fake sid"].Status).toEqual(
+      expect(server.smsSidsWaitingStatus["fake sid"].status).toEqual(
         "sent"
       )
 

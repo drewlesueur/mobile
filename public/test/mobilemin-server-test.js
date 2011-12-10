@@ -168,9 +168,7 @@
         sentCallback = jasmine.createSpy();
         responseCallback = jasmine.createSpy();
         fakeTriedToSendResponse = {
-          SMSMessage: {
-            Sid: "fake sid"
-          }
+          sid: "fake sid"
         };
         sendSmsCallbacks = server.sendSms({
           to: "4808405406",
@@ -182,19 +180,17 @@
         return sendSmsSuccess = sendSmsCallbacks[0], sendSmsError = sendSmsCallbacks[1], sendSmsCallbacks;
       });
       it("should have called the twilio clietn sms", function() {
-        return expect(sendSmsSpy).toHaveBeenCalledWith(server.mobileminNumber, "4808405406", "testing", null, sendSmsSuccess, sendSmsError);
+        return expect(sendSmsSpy).toHaveBeenCalledWith(server.mobileminNumber, "4808405406", "testing", "http://mobilemin-server.drewl.us/status", sendSmsSuccess, sendSmsError);
       });
       return it("should handle the sms response", function() {
         var fakeGoodStatusResponse, fakeRequest, fakeResponse, fakeSendSmsResponse;
         fakeSendSmsResponse = {
-          SMSMessage: {
-            Sid: "fake sid",
-            Status: "queued"
-          }
+          sid: "fake sid",
+          status: "queued"
         };
         sendSmsSuccess(fakeSendSmsResponse);
         expect(triedToSendCallback).toHaveBeenCalledWith(null, fakeSendSmsResponse);
-        expect(server.smsSidsWaitingStatus["fake sid"]).toEqual(fakeSendSmsResponse.SMSMessage);
+        expect(server.smsSidsWaitingStatus["fake sid"]).toEqual(fakeSendSmsResponse);
         fakeGoodStatusResponse = {
           SmsStatus: "sent",
           SmsSid: ["fake sid"]
@@ -204,7 +200,7 @@
         };
         fakeResponse = {};
         server.status(fakeRequest, fakeResponse);
-        return expect(server.smsSidsWaitingStatus["fake sid"].Status).toEqual("sent");
+        return expect(server.smsSidsWaitingStatus["fake sid"].status).toEqual("sent");
       });
     });
     it("should know how to handle a new customer who texted start", function() {

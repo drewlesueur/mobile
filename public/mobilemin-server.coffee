@@ -12,8 +12,12 @@ dModule.define "mobilemin-server", ->
     self.sms =  (req, res) ->
       text = req.body 
       self.handleNewCustomerWhoTextedStart res, text.From
+
     self.status = (req, res) ->
+      console.log("new status")
       console.log req.body 
+      console.log("end new status")
+
 
     self.mobileminNumber =  "+14804673355"
     self.expressApp = expressRpc("/rpc", {})
@@ -32,9 +36,12 @@ dModule.define "mobilemin-server", ->
     self.sendSms = (info)-> 
       {to, body, triedToSendCallback, sentCallback, responseCallback, sendSmsSuccess} = info
       sendSmsSuccess = (res) ->
-        sid = res.SMSMessage.Sid
-        self.smsSidsWaitingStatus[sid] = res.SMSMessage
-        triedToSendCallback(null, res)
+        console.log("send success")
+        console.log(res)
+        console.log("end send success")
+        sid = res.sid
+        self.smsSidsWaitingStatus[sid] = res
+        triedToSendCallback?(null, res)
 
       sendSmsError = ->
 
@@ -42,7 +49,7 @@ dModule.define "mobilemin-server", ->
         self.mobileminNumber
         to,
         body
-        null, #statusCallback 
+        "http://mobilemin-server.drewl.us/status",
         sendSmsSuccess,
         sendSmsError
       )
