@@ -28,7 +28,7 @@ describe "MobileMinServer", ->
 
 
   notFakeIncomingStartText =
-    Body: 'start',
+    Body: 'not start',
     To: '+14804208755',
     From: '+14808405406',
 
@@ -117,7 +117,7 @@ describe "MobileMinServer", ->
   it "should start", ->
     server.start()
     expect(server.expressApp.listen).toHaveBeenCalledWith 8010
-    expect(server.twilio.setupNumbers).toHaveBeenCalled()
+    #expect(server.twilio.setupNumbers).toHaveBeenCalled()
 
   it "should know when to start handling a new customer", ->
     arg = null
@@ -143,20 +143,23 @@ describe "MobileMinServer", ->
     sendSmsSuccess = null
     sendSmsError = null
     sms = null
-    eventOn = jasmine.createSpy()
-    eventEmit = jasmine.createSpy()
-    eventful = 
-      on: eventOn 
-      emit: eventEmit
+    eventOn = null
+    eventEmit = null
+    eventful = null
 
 
     beforeEach ->
-      spyOn(drews, "makeEventful").andReturn eventful
       smsTriedToSendSuccess = jasmine.createSpy()
       smsTriedToSendError = jasmine.createSpy()
       smsSent = jasmine.createSpy()
       smsErrored = jasmine.createSpy()
       smsResponse = jasmine.createSpy()
+      eventOn = jasmine.createSpy()
+      eventEmit = jasmine.createSpy()
+      eventful = 
+        on: eventOn 
+        emit: eventEmit
+      spyOn(drews, "makeEventful").andReturn eventful
 
       fakeTriedToSendResponse = 
         sid: "fake sid"
@@ -168,7 +171,7 @@ describe "MobileMinServer", ->
       {sendSmsSuccess, sendSmsError} = sms
 
 
-    it "should have called the twilio clietn sms", ->
+    it "should have called the twilio client sms", ->
       expect(sendSmsSpy).toHaveBeenCalledWith(
         server.mobileminNumber,
         "4808405406"
@@ -210,6 +213,7 @@ describe "MobileMinServer", ->
       expect(server.smsSidsWaitingStatus["fake sid"].status).toEqual(
         "sent"
       )
+      expect(sms.emit).toHaveBeenCalledWith("sent")
 
       
 

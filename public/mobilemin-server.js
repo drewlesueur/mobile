@@ -14,15 +14,17 @@
       self.sms = function(req, res) {
         var text;
         text = req.body;
-        return self.handleNewCustomerWhoTextedStart(res, text.From);
+        return console.log(text);
       };
       self.status = function(req, res) {
-        var info, sid, status;
+        var info, sid, sms, status;
         info = req.body;
         sid = info.SmsSid;
         status = info.SmsStatus;
         if (sid && self.smsSidsWaitingStatus[sid]) {
-          return self.smsSidsWaitingStatus[sid].status = status;
+          sms = self.smsSidsWaitingStatus[sid];
+          sms.status = status;
+          return sms.emit("sent");
         }
       };
       self.mobileminNumber = "+14804673355";
@@ -34,8 +36,7 @@
       self.smsSidsWaitingStatus = {};
       twilio = self.twilio;
       self.start = function() {
-        self.expressApp.listen(8010);
-        return self.twilio.setupNumbers();
+        return self.expressApp.listen(8010);
       };
       self.sendSms = function(to, body) {
         var sendSmsError, sendSmsSuccess, sms;

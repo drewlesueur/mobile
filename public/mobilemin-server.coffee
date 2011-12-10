@@ -11,16 +11,18 @@ dModule.define "mobilemin-server", ->
     self.phone = ->
     self.sms =  (req, res) ->
       text = req.body 
-      self.handleNewCustomerWhoTextedStart res, text.From
+      console.log(text)
+      #self.handleNewCustomerWhoTextedStart res, text.From
 
     self.status = (req, res) ->
       info = req.body
       sid = info.SmsSid
       status = info.SmsStatus
       if sid and self.smsSidsWaitingStatus[sid]
-        self.smsSidsWaitingStatus[sid].status = status
-
-
+        sms = self.smsSidsWaitingStatus[sid] 
+        sms.status = status
+        sms.emit("sent")
+        
 
     self.mobileminNumber =  "+14804673355"
     self.expressApp = expressRpc("/rpc", {})
@@ -34,7 +36,7 @@ dModule.define "mobilemin-server", ->
 
     self.start =  ->
       self.expressApp.listen 8010 #TODO: use config
-      self.twilio.setupNumbers()
+      #self.twilio.setupNumbers()
 
     self.sendSms = (to, body)-> 
       sms = null

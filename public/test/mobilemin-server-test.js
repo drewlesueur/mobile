@@ -30,7 +30,7 @@
       uri: '/2010-04-01/Accounts/fakesid/IncomingPhoneNumbers/PN139f6f56936749f585ae9ab952682e98.json'
     };
     notFakeIncomingStartText = {
-      Body: 'start',
+      Body: 'not start',
       To: '+14804208755',
       From: '+14808405406'
     };
@@ -133,8 +133,7 @@
     });
     it("should start", function() {
       server.start();
-      expect(server.expressApp.listen).toHaveBeenCalledWith(8010);
-      return expect(server.twilio.setupNumbers).toHaveBeenCalled();
+      return expect(server.expressApp.listen).toHaveBeenCalledWith(8010);
     });
     it("should know when to start handling a new customer", function() {
       var arg, expectedArg, fakeReq, fakeRes;
@@ -161,20 +160,23 @@
       sendSmsSuccess = null;
       sendSmsError = null;
       sms = null;
-      eventOn = jasmine.createSpy();
-      eventEmit = jasmine.createSpy();
-      eventful = {
-        on: eventOn,
-        emit: eventEmit
-      };
+      eventOn = null;
+      eventEmit = null;
+      eventful = null;
       beforeEach(function() {
         var fakeTriedToSendResponse, smsErrored, smsResponse, smsSent, smsTriedToSendError, smsTriedToSendSuccess;
-        spyOn(drews, "makeEventful").andReturn(eventful);
         smsTriedToSendSuccess = jasmine.createSpy();
         smsTriedToSendError = jasmine.createSpy();
         smsSent = jasmine.createSpy();
         smsErrored = jasmine.createSpy();
         smsResponse = jasmine.createSpy();
+        eventOn = jasmine.createSpy();
+        eventEmit = jasmine.createSpy();
+        eventful = {
+          on: eventOn,
+          emit: eventEmit
+        };
+        spyOn(drews, "makeEventful").andReturn(eventful);
         fakeTriedToSendResponse = {
           sid: "fake sid"
         };
@@ -183,7 +185,7 @@
         expect(sms).toBe(eventful);
         return sendSmsSuccess = sms.sendSmsSuccess, sendSmsError = sms.sendSmsError, sms;
       });
-      it("should have called the twilio clietn sms", function() {
+      it("should have called the twilio client sms", function() {
         return expect(sendSmsSpy).toHaveBeenCalledWith(server.mobileminNumber, "4808405406", "testing", "http://mobilemin-server.drewl.us/status", sendSmsSuccess, sendSmsError);
       });
       return it("should handle the sms response", function() {
@@ -209,7 +211,8 @@
         };
         fakeResponse = {};
         server.status(fakeRequest, fakeResponse);
-        return expect(server.smsSidsWaitingStatus["fake sid"].status).toEqual("sent");
+        expect(server.smsSidsWaitingStatus["fake sid"].status).toEqual("sent");
+        return expect(sms.emit).toHaveBeenCalledWith("sent");
       });
     });
     it("should know how to handle a new customer who texted start", function() {
