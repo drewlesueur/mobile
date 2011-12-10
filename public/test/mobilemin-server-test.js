@@ -119,100 +119,115 @@
     MobileminServer = dModule.require("mobilemin-server");
     server = null;
     beforeEach(function() {
-      return server = MobileminServer("init")();
+      return server = MobileminServer.init();
     });
     it("should have an express rpc", function() {
       expect(expressRpcInit).toHaveBeenCalledWith("/rpc", {});
-      expect(server("expressApp")).toBe(expressRpcObj);
-      expect((server("expressApp")).post).toHaveBeenCalledWith("/phone", server.phone);
-      return expect((server("expressApp")).post).toHaveBeenCalledWith("/sms", server.sms);
+      expect(server.expressApp).toBe(expressRpcObj);
+      expect(server.expressApp.post).toHaveBeenCalledWith("/phone", server.phone);
+      expect(server.expressApp.post).toHaveBeenCalledWith("/sms", server.sms);
+      return expect(server.expressApp.post).toHaveBeenCalledWith("/status", server.status);
     });
     it("should have a mobileminTwilio", function() {
-      expect(server("twilio").constructor).toBe(FakeMobileminTwilio);
-      expect(server("twilio").sid).toBe(config.ACCOUNT_SID);
-      return expect(server("twilio").authToken).toBe(config.AUTH_TOKEN);
+      expect(server.twilio.constructor).toBe(FakeMobileminTwilio);
+      expect(server.twilio.sid).toBe(config.ACCOUNT_SID);
+      return expect(server.twilio.authToken).toBe(config.AUTH_TOKEN);
     });
     it("should start", function() {
-      server("start")();
-      expect(server("expressApp").listen).toHaveBeenCalledWith(8010);
-      return expect(server("twilio").setupNumbers).toHaveBeenCalled();
+      server.start();
+      expect(server.expressApp.listen).toHaveBeenCalledWith(8010);
+      return expect(server.twilio.setupNumbers).toHaveBeenCalled();
     });
     it("should know when to start handling a new customer", function() {
       var arg, expectedArg, fakeReq, fakeRes;
       arg = null;
-      server("handleNewCustomerWhoTextedStart", function(res, _arg) {
+      server.handleNewCustomerWhoTextedStart = function(res, _arg) {
         return arg = _arg;
-      });
+      };
       fakeReq = {
         body: fakeIncomingStartText
       };
       fakeRes = {
         send: function() {}
       };
-      server("sms")(fakeReq, fakeRes);
+      server.sms(fakeReq, fakeRes);
       expectedArg = "+14808405406";
       return expect(arg).toBe(expectedArg);
+    });
+    it("should know what to do with a status url", function() {});
+    describe("should be able to send a text message from mobilemin", function() {
+      var responseCallback, sendSmsError, sendSmsSuccess, sentCallback, triedToSendCallback;
+      triedToSendCallback = null;
+      sentCallback = null;
+      responseCallback = null;
+      sendSmsSuccess = null;
+      sendSmsError = null;
+      beforeEach(function() {
+        var fakeTriedToSendResponse, sendSmsCallbacks;
+        triedToSendCallback = jasmine.createSpy();
+        sentCallback = jasmine.createSpy();
+        responseCallback = jasmine.createSpy();
+        fakeTriedToSendResponse = {
+          SMSMessage: {
+            Sid: "fake sid"
+          }
+        };
+        sendSmsCallbacks = server.sendSms({
+          to: "4808405406",
+          body: "testing",
+          triedToSendCallback: triedToSendCallback,
+          sentCallback: sentCallback,
+          responseCallback: responseCallback
+        });
+        return sendSmsSuccess = sendSmsCallbacks[0], sendSmsError = sendSmsCallbacks[1], sendSmsCallbacks;
+      });
+      it("should have called the twilio clietn sms", function() {
+        return expect(sendSmsSpy).toHaveBeenCalledWith(server.mobileminNumber, "4808405406", "testing", null, sendSmsSuccess, sendSmsError);
+      });
+      return it("should handle the sms response", function() {
+        var fakeGoodStatusResponse, fakeRequest, fakeResponse, fakeSendSmsResponse;
+        fakeSendSmsResponse = {
+          SMSMessage: {
+            Sid: "fake sid",
+            Status: "queued"
+          }
+        };
+        sendSmsSuccess(fakeSendSmsResponse);
+        expect(triedToSendCallback).toHaveBeenCalledWith(null, fakeSendSmsResponse);
+        expect(server.smsSidsWaitingStatus["fake sid"]).toEqual(fakeSendSmsResponse.SMSMessage);
+        fakeGoodStatusResponse = {
+          SmsStatus: "sent",
+          SmsSid: ["fake sid"]
+        };
+        fakeRequest = {
+          body: fakeGoodStatusResponse
+        };
+        fakeResponse = {};
+        server.status(fakeRequest, fakeResponse);
+        return expect(server.smsSidsWaitingStatus["fake sid"].Status).toEqual("sent");
+      });
     });
     it("should know how to handle a new customer who texted start", function() {
       var buyCallbacks, buyError, buySuccess, fakeRes, sendFeedbackCallbacks, sendFeedbackError, sendFeedbackSuccess;
       fakeRes = {
         send: function() {}
       };
-      buyCallbacks = server("handleNewCustomerWhoTextedStart")(fakeRes, "+14808405406");
-      buySuccess = buyCallbacks(0);
-      buyError = buyCallbacks(1);
+      buyCallbacks = server.handleNewCustomerWhoTextedStart(fakeRes, "+14808405406");
+      buySuccess = buyCallbacks[0];
+      buyError = buyCallbacks[1];
+      console.log(buySuccess);
       expect(apiCallSpy).toHaveBeenCalledWith("POST", "/IncomingPhoneNumbers", {
         params: {
           VoiceUrl: "http://mobilemin-server.drewl.us/phone",
           SmsUrl: "http://mobilemin-server.drewl.us/sms",
-          AreaCode: "480"
+          AreaCode: "480",
+          StatusUrl: "http://mobilemin-server.drewl.us/status"
         }
-      }, buySuccess, buyError, "ffff`");
+      }, buySuccess, buyError);
       sendFeedbackCallbacks = buySuccess(justBoughtNumber);
-      sendFeedbackSuccess = sendFeedbackCallbacks(0);
-      sendFeedbackError = sendFeedbackCallbacks(1);
-      return expect(sendSmsSpy).toHaveBeenCalledWith(server("mobileminNumber"), justBoughtNumber.phone_number, "Your mobilemin text number is " + justBoughtNumber.friendly_name + ". Subscribers will receive texts from that number. Text 'help' for more info and to manage your account.", null, sendFeedbackSuccess, sendFeedbackError);
-    });
-    xit("should know how to handle a new customer who texted start", function() {
-      var error, fakeAvailablePhones, fakeRes, success, twilioClient, _ref;
-      fakeAvailablePhones = {
-        available_phone_numbers: [
-          {
-            friendly_name: '(480) 409-2352',
-            phone_number: '+14804092352',
-            latitude: null,
-            longitude: null,
-            region: 'Arizona',
-            postal_code: null,
-            iso_country: 'US',
-            lata: null,
-            rate_center: null
-          }, {
-            friendly_name: '(480) 428-3732',
-            phone_number: '+14804283732',
-            latitude: null,
-            longitude: null,
-            region: 'AZ',
-            postal_code: null,
-            iso_country: 'US',
-            lata: null,
-            rate_center: null
-          }
-        ]
-      };
-      fakeRes = {
-        send: function() {}
-      };
-      _ref = server("handleNewCustomerWhoTextedStart")(fakeRes, "+14808405406"), success = _ref[0], error = _ref[1];
-      expect(getAvailableLocalNumbersSpy).toHaveBeenCalledWith("US", {
-        "AreaCode": "480"
-      }, success, error);
-      twilioClient = server("twilio").twilioClient;
-      success(fakeAvailablePhones);
-      return expect(provisionIncomingNumberSpy).toHaveBeenCalledWith('+14804092352', {
-        voiceUrl: "http://mobilemin-server.drewl.us/phone",
-        smsUrl: "http://mobilemin-server.drewl.us/sms"
-      });
+      sendFeedbackSuccess = sendFeedbackCallbacks[0];
+      sendFeedbackError = sendFeedbackCallbacks[1];
+      return expect(sendSmsSpy).toHaveBeenCalledWith(server.mobileminNumber, justBoughtNumber.phone_number, "Your mobilemin text number is " + justBoughtNumber.friendly_name + ". Subscribers will receive texts from that number. Text 'help' for more info and to manage your account.", null, sendFeedbackSuccess, sendFeedbackError);
     });
     return dModule.define("mobilemin-twilio", RealMobileMinTwilio);
   });

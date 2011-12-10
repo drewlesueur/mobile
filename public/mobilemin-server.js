@@ -1,34 +1,50 @@
 
   dModule.define("mobilemin-server", function() {
-    var MobileminServer, MobileminTwilio, allFunc, config, drews, expressRpc, obj;
-    allFunc = dModule.require("all-func");
-    obj = allFunc("object");
+    var MobileminServer, MobileminTwilio, config, drews, expressRpc;
     expressRpc = dModule.require("express-rpc");
     drews = dModule.require("drews-mixins");
     config = dModule.require("config");
     MobileminTwilio = dModule.require("mobilemin-twilio");
-    MobileminServer = obj();
-    MobileminServer("init", function() {
+    MobileminServer = {};
+    MobileminServer.init = function() {
       var self, twilio;
       var _this = this;
-      self = obj();
-      self("mobileminNumber", "+14804673355");
-      self("expressApp", expressRpc("/rpc", {}));
-      self("expressApp").post("/phone", this.phone);
-      self("expressApp").post("/sms", this.sms);
-      self("twilio", new MobileminTwilio(config.ACCOUNT_SID, config.AUTH_TOKEN));
-      twilio = self("twilio");
-      self("start", function() {
-        self("expressApp").listen(8010);
-        return self("twilio").setupNumbers();
-      });
-      self("phone", function() {});
-      self("sms", function(req, res) {
+      self = {};
+      self.phone = function() {};
+      self.sms = function(req, res) {
         var text;
         text = req.body;
-        return self("handleNewCustomerWhoTextedStart")(res, text.From);
-      });
-      self("handleNewCustomerWhoTextedStart", function(res, from) {
+        return self.handleNewCustomerWhoTextedStart(res, text.From);
+      };
+      self.status = function(req, res) {
+        return console.log(req.body);
+      };
+      self.mobileminNumber = "+14804673355";
+      self.expressApp = expressRpc("/rpc", {});
+      self.expressApp.post("/phone", self.phone);
+      self.expressApp.post("/sms", self.sms);
+      self.expressApp.post("/status", self.status);
+      self.twilio = new MobileminTwilio(config.ACCOUNT_SID, config.AUTH_TOKEN);
+      self.smsSidsWaitingStatus = [];
+      twilio = self.twilio;
+      self.start = function() {
+        self.expressApp.listen(8010);
+        return self.twilio.setupNumbers();
+      };
+      self.sendSms = function(info) {
+        var body, responseCallback, sendSmsError, sendSmsSuccess, sentCallback, to, triedToSendCallback;
+        to = info.to, body = info.body, triedToSendCallback = info.triedToSendCallback, sentCallback = info.sentCallback, responseCallback = info.responseCallback, sendSmsSuccess = info.sendSmsSuccess;
+        sendSmsSuccess = function(res) {
+          var sid;
+          sid = res.SMSMessage.Sid;
+          self.smsSidsWaitingStatus[sid] = res.SMSMessage;
+          return triedToSendCallback(null, res);
+        };
+        sendSmsError = function() {};
+        twilio.twilioClient.sendSms(self.mobileminNumber, to, body, null, sendSmsSuccess, sendSmsError);
+        return [sendSmsSuccess, sendSmsError];
+      };
+      self.handleNewCustomerWhoTextedStart = function(res, from) {
         var areaCode, buyError, buySuccess;
         var _this = this;
         areaCode = drews.s(from, 2, 3);
@@ -36,11 +52,8 @@
           var sendSmsError, sendSmsSuccess;
           sendSmsSuccess = function() {};
           sendSmsError = function() {};
-          twilio.twilioClient.sendSms();
-          return obj({
-            0: sendSmsSuccess,
-            1: sendSmsError
-          });
+          twilio.twilioClient.sendSms(self.mobileminNumber, newNumber.phone_number, "Your mobilemin text number is " + newNumber.friendly_name + ". Subscribers will receive texts from that number. Text 'help' for more info and to manage your account.", null, sendSmsSuccess, sendSmsError);
+          return [sendSmsSuccess, sendSmsError];
         };
         buyError = function(error) {
           return console.log("There was an error");
@@ -49,14 +62,12 @@
           params: {
             VoiceUrl: "http://mobilemin-server.drewl.us/phone",
             SmsUrl: "http://mobilemin-server.drewl.us/sms",
-            AreaCode: areaCode
+            AreaCode: areaCode,
+            StatusUrl: "http://mobilemin-server.drewl.us/status"
           }
         }, buySuccess, buyError);
-        return obj({
-          0: buySuccess,
-          1: buyError
-        });
-      });
+        return [buySuccess, buyError];
+      };
       ({
         __getAvailableNumbers: function() {
           var error, success;
@@ -77,6 +88,6 @@
         }
       });
       return self;
-    });
+    };
     return MobileminServer;
   });

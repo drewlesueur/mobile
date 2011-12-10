@@ -102,57 +102,130 @@ describe "MobileMinServer", ->
   server = null 
 
   beforeEach ->
-    server = MobileminServer("init")()
+    server = MobileminServer.init()
 
   it "should have an express rpc", ->
     expect(expressRpcInit).toHaveBeenCalledWith "/rpc", {}
-    expect(server "expressApp").toBe(expressRpcObj)
-    expect((server "expressApp").post).toHaveBeenCalledWith("/phone", server.phone)
-    expect((server "expressApp").post).toHaveBeenCalledWith("/sms", server.sms)
+    expect(server.expressApp).toBe(expressRpcObj)
+    expect((server.expressApp).post).toHaveBeenCalledWith("/phone", server.phone)
+    expect((server.expressApp).post).toHaveBeenCalledWith("/sms", server.sms)
+    expect((server.expressApp).post).toHaveBeenCalledWith("/status", server.status)
 
   it "should have a mobileminTwilio", ->
-    expect(server("twilio").constructor).toBe(FakeMobileminTwilio)
-    expect(server("twilio").sid).toBe config.ACCOUNT_SID
-    expect(server("twilio").authToken).toBe config.AUTH_TOKEN
+    expect(server.twilio.constructor).toBe(FakeMobileminTwilio)
+    expect(server.twilio.sid).toBe config.ACCOUNT_SID
+    expect(server.twilio.authToken).toBe config.AUTH_TOKEN
 
   it "should start", ->
-    server("start")()
-    expect(server("expressApp").listen).toHaveBeenCalledWith 8010
-    expect(server("twilio").setupNumbers).toHaveBeenCalled()
+    server.start()
+    expect(server.expressApp.listen).toHaveBeenCalledWith 8010
+    expect(server.twilio.setupNumbers).toHaveBeenCalled()
 
   it "should know when to start handling a new customer", ->
     arg = null
-    server "handleNewCustomerWhoTextedStart", (res, _arg) ->
+    server.handleNewCustomerWhoTextedStart =  (res, _arg) ->
       arg = _arg
     fakeReq = 
       body: fakeIncomingStartText
     fakeRes =
       send: ->
 
-    server("sms") fakeReq, fakeRes
+    server.sms fakeReq, fakeRes
     expectedArg = "+14808405406"
        
     expect(arg).toBe(expectedArg)
 
+  it "should know what to do with a status url", ->
+    #TODO: implement this
+
+  describe "should be able to send a text message from mobilemin", ->
+    triedToSendCallback = null 
+    sentCallback = null
+    responseCallback = null
+    sendSmsSuccess = null
+    sendSmsError = null
+
+    beforeEach ->
+      triedToSendCallback = jasmine.createSpy()
+      sentCallback = jasmine.createSpy()
+      responseCallback = jasmine.createSpy()
+
+      fakeTriedToSendResponse = 
+        SMSMessage:
+          Sid: "fake sid"
+
+      sendSmsCallbacks = server.sendSms
+        to: "4808405406"
+        body: "testing"
+        triedToSendCallback: triedToSendCallback
+        sentCallback: sentCallback 
+        responseCallback: responseCallback
+
+      [sendSmsSuccess, sendSmsError] = sendSmsCallbacks
+
+
+    it "should have called the twilio clietn sms", ->
+      expect(sendSmsSpy).toHaveBeenCalledWith(
+        server.mobileminNumber,
+        "4808405406"
+        "testing" 
+        null, #statusCallback 
+        sendSmsSuccess,
+        sendSmsError
+      )
+
+    it "should handle the sms response", ->
+      fakeSendSmsResponse =
+        SMSMessage:
+          Sid: "fake sid"
+          Status: "queued"
+
+      sendSmsSuccess fakeSendSmsResponse
+      expect(triedToSendCallback).toHaveBeenCalledWith(null, fakeSendSmsResponse)
+      expect(server.smsSidsWaitingStatus["fake sid"]).toEqual(
+        fakeSendSmsResponse.SMSMessage
+      )
+
+      fakeGoodStatusResponse = 
+        SmsStatus: "sent"
+        SmsSid: ["fake sid"]
+     
+      fakeRequest = 
+        body: fakeGoodStatusResponse
+
+      fakeResponse = {}
+
+      server.status(fakeRequest, fakeResponse)
+
+      expect(server.smsSidsWaitingStatus["fake sid"].Status).toEqual(
+        "sent"
+      )
+
+      
+
+      
+
   it "should know how to handle a new customer who texted start", ->
     fakeRes =
       send: ->
-    buyCallbacks = server("handleNewCustomerWhoTextedStart")(fakeRes, "+14808405406")
-    buySuccess = buyCallbacks 0
-    buyError = buyCallbacks 1
+    buyCallbacks = server.handleNewCustomerWhoTextedStart(fakeRes, "+14808405406")
+    buySuccess = buyCallbacks[0]
+    buyError = buyCallbacks[1]
+    console.log buySuccess
     expect(apiCallSpy).toHaveBeenCalledWith(
       "POST","/IncomingPhoneNumbers", {params: {
         VoiceUrl: "http://mobilemin-server.drewl.us/phone"
         SmsUrl: "http://mobilemin-server.drewl.us/sms"
         AreaCode: "480"
-      }}, buySuccess, buyError, "ffff`"
+        StatusUrl: "http://mobilemin-server.drewl.us/status" 
+      }}, buySuccess, buyError
     )
 
     sendFeedbackCallbacks = buySuccess(justBoughtNumber)
-    sendFeedbackSuccess = sendFeedbackCallbacks 0
-    sendFeedbackError = sendFeedbackCallbacks 1
+    sendFeedbackSuccess = sendFeedbackCallbacks[0]
+    sendFeedbackError = sendFeedbackCallbacks[1]
     expect(sendSmsSpy).toHaveBeenCalledWith(
-      server("mobileminNumber"),
+      server.mobileminNumber,
       justBoughtNumber.phone_number,
       "Your mobilemin text number is #{justBoughtNumber.friendly_name}. Subscribers will receive texts from that number. Text 'help' for more info and to manage your account." 
       null, 
@@ -161,48 +234,6 @@ describe "MobileMinServer", ->
     )
     
 
-  xit "should know how to handle a new customer who texted start", ->
-    fakeAvailablePhones = {available_phone_numbers : [ 
-     {
-       friendly_name: '(480) 409-2352',
-       phone_number: '+14804092352',
-       latitude: null,
-       longitude: null,
-       region: 'Arizona',
-       postal_code: null,
-       iso_country: 'US',
-       lata: null,
-       rate_center: null
-     }, { 
-       friendly_name: '(480) 428-3732',
-       phone_number: '+14804283732',
-       latitude: null,
-       longitude: null,
-       region: 'AZ',
-       postal_code: null,
-       iso_country: 'US',
-       lata: null,
-       rate_center: null 
-     }
-    ]}
-    fakeRes =
-      send: ->
-    [success, error] = server("handleNewCustomerWhoTextedStart")(fakeRes, "+14808405406")
-    expect(getAvailableLocalNumbersSpy).toHaveBeenCalledWith(
-      "US",
-      {
-        "AreaCode": "480"
-      }, success, error
-    )
-    twilioClient = server("twilio").twilioClient
-    success fakeAvailablePhones
-    expect(provisionIncomingNumberSpy).toHaveBeenCalledWith(
-       '+14804092352',
-       {
-         voiceUrl: "http://mobilemin-server.drewl.us/phone"
-         smsUrl: "http://mobilemin-server.drewl.us/sms"
-       }
-    )
     
 
   dModule.define "mobilemin-twilio", RealMobileMinTwilio

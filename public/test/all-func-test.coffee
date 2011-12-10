@@ -3,6 +3,7 @@ describe "all-func", ->
   obj = allFunc "object"
   list = allFunc "list" 
   isEqual = allFunc "isEqual"
+
   it "should wrap objects", ->
     myObj = obj
       name: "Drew"
@@ -29,6 +30,15 @@ describe "all-func", ->
 
     expect(isEqual myObj, myOtherObj).toBe true
   
+  it "should get a key of 0", ->
+    myObj = obj
+      0: "hello"
+      1: "world"
+    expect(myObj(0)).toBe "hello"
 
+  it "should wrap arrays", ->
+    myList = list ["a", "b", "c"]
+    expect(myList(0)).toBe "a"
+    
     
 

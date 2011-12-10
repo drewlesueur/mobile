@@ -19,6 +19,7 @@
 
   describe("daily_backup", function() {
     var dailyBackup;
+    return;
     dailyBackup = null;
     beforeEach(function() {
       dailyBackup = new DailyBackup("mobilemin-site");
