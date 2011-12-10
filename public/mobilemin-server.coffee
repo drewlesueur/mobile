@@ -14,9 +14,12 @@ dModule.define "mobilemin-server", ->
       self.handleNewCustomerWhoTextedStart res, text.From
 
     self.status = (req, res) ->
-      console.log("new status")
-      console.log req.body 
-      console.log("end new status")
+      info = req.body
+      sid = info.SmsSid
+      status = info.SmsStatus
+      if sid and self.smsSidsWaitingStatus[sid]
+        self.smsSidsWaitingStatus[sid].status = status
+
 
 
     self.mobileminNumber =  "+14804673355"
@@ -25,7 +28,7 @@ dModule.define "mobilemin-server", ->
     self.expressApp.post "/sms", self.sms
     self.expressApp.post "/status", self.status
     self.twilio =  new MobileminTwilio config.ACCOUNT_SID, config.AUTH_TOKEN
-    self.smsSidsWaitingStatus =  []
+    self.smsSidsWaitingStatus =  {}
     twilio = self.twilio
 
 
@@ -33,15 +36,13 @@ dModule.define "mobilemin-server", ->
       self.expressApp.listen 8010 #TODO: use config
       self.twilio.setupNumbers()
 
-    self.sendSms = (info)-> 
-      {to, body, triedToSendCallback, sentCallback, responseCallback, sendSmsSuccess} = info
+    self.sendSms = (to, body)-> 
+      sms = null
       sendSmsSuccess = (res) ->
-        console.log("send success")
-        console.log(res)
-        console.log("end send success")
         sid = res.sid
-        self.smsSidsWaitingStatus[sid] = res
-        triedToSendCallback?(null, res)
+        self.smsSidsWaitingStatus[sid] = sms
+        _.extend(sms, res)
+        sms.emit("triedtosendsuccess")
 
       sendSmsError = ->
 
@@ -53,8 +54,11 @@ dModule.define "mobilemin-server", ->
         sendSmsSuccess,
         sendSmsError
       )
-
-      return [sendSmsSuccess, sendSmsError]
+      
+      sms = drews.makeEventful({})
+      sms.sendSmsSuccess = sendSmsSuccess
+      sms.sendSmsError = sendSmsError
+      return sms
 
     self.handleNewCustomerWhoTextedStart = (res, from) ->
       areaCode = drews.s(from, 2, 3) #get rid of +1, and get area code 

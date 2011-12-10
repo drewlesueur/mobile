@@ -185,6 +185,12 @@ dModule.define "drews-mixins", ->
     else
       makeHandler
     
+  exports.makeEventful = (obj) ->
+    obj.on = (args...) ->
+      exports.on obj, args...
+    obj.emit = (args...) ->
+      exports.emit obj, args...
+    obj
 
   #simple substring/slice functionality
   # for arrays and strings

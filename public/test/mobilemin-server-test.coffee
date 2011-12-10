@@ -1,8 +1,6 @@
 
 describe "MobileMinServer", ->
-  allFunc = dModule.require "all-func" 
-  obj = allFunc "object"
-  isEqual = allFunc "isEqual"
+  drews = dModule.require "drews-mixins"
   
   justBoughtNumber = 
     sid: 'PN139f6f56936749f585ae9ab952682e98',
@@ -40,7 +38,7 @@ describe "MobileMinServer", ->
     From: '+14808405406',
 
   fakeIncomingText =
-    AccountSid: 'ACa7ba1183dd4f2853f8af6043299bf892',
+    AccountSid: 'fake account sid',
     Body: 'test me',
     ToZip: '85034',
     FromState: 'AZ',
@@ -144,23 +142,30 @@ describe "MobileMinServer", ->
     responseCallback = null
     sendSmsSuccess = null
     sendSmsError = null
+    sms = null
+    eventOn = jasmine.createSpy()
+    eventEmit = jasmine.createSpy()
+    eventful = 
+      on: eventOn 
+      emit: eventEmit
+
 
     beforeEach ->
-      triedToSendCallback = jasmine.createSpy()
-      sentCallback = jasmine.createSpy()
-      responseCallback = jasmine.createSpy()
+      spyOn(drews, "makeEventful").andReturn eventful
+      smsTriedToSendSuccess = jasmine.createSpy()
+      smsTriedToSendError = jasmine.createSpy()
+      smsSent = jasmine.createSpy()
+      smsErrored = jasmine.createSpy()
+      smsResponse = jasmine.createSpy()
 
       fakeTriedToSendResponse = 
         sid: "fake sid"
 
-      sendSmsCallbacks = server.sendSms
-        to: "4808405406"
-        body: "testing"
-        triedToSendCallback: triedToSendCallback
-        sentCallback: sentCallback 
-        responseCallback: responseCallback
+      sms = server.sendSms "4808405406", "testing"
+      console.log sms == eventful
+      expect(sms).toBe(eventful)
 
-      [sendSmsSuccess, sendSmsError] = sendSmsCallbacks
+      {sendSmsSuccess, sendSmsError} = sms
 
 
     it "should have called the twilio clietn sms", ->
@@ -175,18 +180,25 @@ describe "MobileMinServer", ->
 
     it "should handle the sms response", ->
       fakeSendSmsResponse =
-          sid: "fake sid"
-          status: "queued"
+        sid: "fake sid"
+        status: "queued"
 
       sendSmsSuccess fakeSendSmsResponse
-      expect(triedToSendCallback).toHaveBeenCalledWith(null, fakeSendSmsResponse)
-      expect(server.smsSidsWaitingStatus["fake sid"]).toEqual(
-        fakeSendSmsResponse
+      expect(eventEmit).toHaveBeenCalledWith(
+        "triedtosendsuccess"
+      )
+      expect(server.smsSidsWaitingStatus["fake sid"]).toBe(
+        sms
       )
 
       fakeGoodStatusResponse = 
-        SmsStatus: "sent"
-        SmsSid: ["fake sid"]
+        AccountSid: 'fake account sid',
+        SmsStatus: 'sent',
+        Body: 'testing2',
+        SmsSid: 'fake sid',
+        To: '+14808405406',
+        From: '+14804673355',
+        ApiVersion: '2010-04-01'
      
       fakeRequest = 
         body: fakeGoodStatusResponse
@@ -209,7 +221,6 @@ describe "MobileMinServer", ->
     buyCallbacks = server.handleNewCustomerWhoTextedStart(fakeRes, "+14808405406")
     buySuccess = buyCallbacks[0]
     buyError = buyCallbacks[1]
-    console.log buySuccess
     expect(apiCallSpy).toHaveBeenCalledWith(
       "POST","/IncomingPhoneNumbers", {params: {
         VoiceUrl: "http://mobilemin-server.drewl.us/phone"

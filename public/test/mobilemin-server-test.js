@@ -1,9 +1,7 @@
 
   describe("MobileMinServer", function() {
-    var FakeMobileminTwilio, FakeTwilioClient, MobileminServer, RealMobileMinTwilio, allFunc, apiCallSpy, config, expressPost, expressRpcAppListen, expressRpcInit, expressRpcObj, fakeIncomingStartText, fakeIncomingText, getAvailableLocalNumbersSpy, isEqual, justBoughtNumber, notFakeIncomingStartText, obj, provisionIncomingNumberSpy, sendSmsSpy, server, setupNumbersSpy;
-    allFunc = dModule.require("all-func");
-    obj = allFunc("object");
-    isEqual = allFunc("isEqual");
+    var FakeMobileminTwilio, FakeTwilioClient, MobileminServer, RealMobileMinTwilio, apiCallSpy, config, drews, expressPost, expressRpcAppListen, expressRpcInit, expressRpcObj, fakeIncomingStartText, fakeIncomingText, getAvailableLocalNumbersSpy, justBoughtNumber, notFakeIncomingStartText, provisionIncomingNumberSpy, sendSmsSpy, server, setupNumbersSpy;
+    drews = dModule.require("drews-mixins");
     justBoughtNumber = {
       sid: 'PN139f6f56936749f585ae9ab952682e98',
       account_sid: 'fake sid',
@@ -42,7 +40,7 @@
       From: '+14808405406'
     };
     fakeIncomingText = {
-      AccountSid: 'ACa7ba1183dd4f2853f8af6043299bf892',
+      AccountSid: 'fake account sid',
       Body: 'test me',
       ToZip: '85034',
       FromState: 'AZ',
@@ -156,28 +154,34 @@
     });
     it("should know what to do with a status url", function() {});
     describe("should be able to send a text message from mobilemin", function() {
-      var responseCallback, sendSmsError, sendSmsSuccess, sentCallback, triedToSendCallback;
+      var eventEmit, eventOn, eventful, responseCallback, sendSmsError, sendSmsSuccess, sentCallback, sms, triedToSendCallback;
       triedToSendCallback = null;
       sentCallback = null;
       responseCallback = null;
       sendSmsSuccess = null;
       sendSmsError = null;
+      sms = null;
+      eventOn = jasmine.createSpy();
+      eventEmit = jasmine.createSpy();
+      eventful = {
+        on: eventOn,
+        emit: eventEmit
+      };
       beforeEach(function() {
-        var fakeTriedToSendResponse, sendSmsCallbacks;
-        triedToSendCallback = jasmine.createSpy();
-        sentCallback = jasmine.createSpy();
-        responseCallback = jasmine.createSpy();
+        var fakeTriedToSendResponse, smsErrored, smsResponse, smsSent, smsTriedToSendError, smsTriedToSendSuccess;
+        spyOn(drews, "makeEventful").andReturn(eventful);
+        smsTriedToSendSuccess = jasmine.createSpy();
+        smsTriedToSendError = jasmine.createSpy();
+        smsSent = jasmine.createSpy();
+        smsErrored = jasmine.createSpy();
+        smsResponse = jasmine.createSpy();
         fakeTriedToSendResponse = {
           sid: "fake sid"
         };
-        sendSmsCallbacks = server.sendSms({
-          to: "4808405406",
-          body: "testing",
-          triedToSendCallback: triedToSendCallback,
-          sentCallback: sentCallback,
-          responseCallback: responseCallback
-        });
-        return sendSmsSuccess = sendSmsCallbacks[0], sendSmsError = sendSmsCallbacks[1], sendSmsCallbacks;
+        sms = server.sendSms("4808405406", "testing");
+        console.log(sms === eventful);
+        expect(sms).toBe(eventful);
+        return sendSmsSuccess = sms.sendSmsSuccess, sendSmsError = sms.sendSmsError, sms;
       });
       it("should have called the twilio clietn sms", function() {
         return expect(sendSmsSpy).toHaveBeenCalledWith(server.mobileminNumber, "4808405406", "testing", "http://mobilemin-server.drewl.us/status", sendSmsSuccess, sendSmsError);
@@ -189,11 +193,16 @@
           status: "queued"
         };
         sendSmsSuccess(fakeSendSmsResponse);
-        expect(triedToSendCallback).toHaveBeenCalledWith(null, fakeSendSmsResponse);
-        expect(server.smsSidsWaitingStatus["fake sid"]).toEqual(fakeSendSmsResponse);
+        expect(eventEmit).toHaveBeenCalledWith("triedtosendsuccess");
+        expect(server.smsSidsWaitingStatus["fake sid"]).toBe(sms);
         fakeGoodStatusResponse = {
-          SmsStatus: "sent",
-          SmsSid: ["fake sid"]
+          AccountSid: 'fake account sid',
+          SmsStatus: 'sent',
+          Body: 'testing2',
+          SmsSid: 'fake sid',
+          To: '+14808405406',
+          From: '+14804673355',
+          ApiVersion: '2010-04-01'
         };
         fakeRequest = {
           body: fakeGoodStatusResponse
@@ -211,7 +220,6 @@
       buyCallbacks = server.handleNewCustomerWhoTextedStart(fakeRes, "+14808405406");
       buySuccess = buyCallbacks[0];
       buyError = buyCallbacks[1];
-      console.log(buySuccess);
       expect(apiCallSpy).toHaveBeenCalledWith("POST", "/IncomingPhoneNumbers", {
         params: {
           VoiceUrl: "http://mobilemin-server.drewl.us/phone",

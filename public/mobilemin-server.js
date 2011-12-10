@@ -17,9 +17,13 @@
         return self.handleNewCustomerWhoTextedStart(res, text.From);
       };
       self.status = function(req, res) {
-        console.log("new status");
-        console.log(req.body);
-        return console.log("end new status");
+        var info, sid, status;
+        info = req.body;
+        sid = info.SmsSid;
+        status = info.SmsStatus;
+        if (sid && self.smsSidsWaitingStatus[sid]) {
+          return self.smsSidsWaitingStatus[sid].status = status;
+        }
       };
       self.mobileminNumber = "+14804673355";
       self.expressApp = expressRpc("/rpc", {});
@@ -27,27 +31,28 @@
       self.expressApp.post("/sms", self.sms);
       self.expressApp.post("/status", self.status);
       self.twilio = new MobileminTwilio(config.ACCOUNT_SID, config.AUTH_TOKEN);
-      self.smsSidsWaitingStatus = [];
+      self.smsSidsWaitingStatus = {};
       twilio = self.twilio;
       self.start = function() {
         self.expressApp.listen(8010);
         return self.twilio.setupNumbers();
       };
-      self.sendSms = function(info) {
-        var body, responseCallback, sendSmsError, sendSmsSuccess, sentCallback, to, triedToSendCallback;
-        to = info.to, body = info.body, triedToSendCallback = info.triedToSendCallback, sentCallback = info.sentCallback, responseCallback = info.responseCallback, sendSmsSuccess = info.sendSmsSuccess;
+      self.sendSms = function(to, body) {
+        var sendSmsError, sendSmsSuccess, sms;
+        sms = null;
         sendSmsSuccess = function(res) {
           var sid;
-          console.log("send success");
-          console.log(res);
-          console.log("end send success");
           sid = res.sid;
-          self.smsSidsWaitingStatus[sid] = res;
-          return typeof triedToSendCallback === "function" ? triedToSendCallback(null, res) : void 0;
+          self.smsSidsWaitingStatus[sid] = sms;
+          _.extend(sms, res);
+          return sms.emit("triedtosendsuccess");
         };
         sendSmsError = function() {};
         twilio.twilioClient.sendSms(self.mobileminNumber, to, body, "http://mobilemin-server.drewl.us/status", sendSmsSuccess, sendSmsError);
-        return [sendSmsSuccess, sendSmsError];
+        sms = drews.makeEventful({});
+        sms.sendSmsSuccess = sendSmsSuccess;
+        sms.sendSmsError = sendSmsError;
+        return sms;
       };
       self.handleNewCustomerWhoTextedStart = function(res, from) {
         var areaCode, buyError, buySuccess;
