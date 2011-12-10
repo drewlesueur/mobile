@@ -1,6 +1,24 @@
 
 describe "MobileMinServer", ->
   drews = dModule.require "drews-mixins"
+  fakeIncomingText = 
+    AccountSid: 'fake account sid',
+    Body: 'what?',
+    ToZip: '85210',
+    FromState: 'AZ',
+    ToCity: 'PHOENIX',
+    SmsSid: 'SMa587315830214927a2375d610ef8d438',
+    ToState: 'AZ',
+    To: '+14804673355',
+    ToCountry: 'US',
+    FromCountry: 'US',
+    SmsMessageSid: 'SMa587315830214927a2375d610ef8d438',
+    ApiVersion: '2010-04-01',
+    FromCity: 'PHOENIX',
+    SmsStatus: 'received',
+    From: '+14808405406',
+    FromZip: '85256'
+
   
   justBoughtNumber = 
     sid: 'PN139f6f56936749f585ae9ab952682e98',
@@ -37,23 +55,6 @@ describe "MobileMinServer", ->
     To: '+14804208755',
     From: '+14808405406',
 
-  fakeIncomingText =
-    AccountSid: 'fake account sid',
-    Body: 'test me',
-    ToZip: '85034',
-    FromState: 'AZ',
-    ToCity: 'PHOENIX',
-    SmsSid: 'SMdbbf2ba79040b393c42878d01268e0fe',
-    ToState: 'AZ',
-    To: '+14804208755',
-    ToCountry: 'US',
-    FromCountry: 'US',
-    SmsMessageSid: 'SMdbbf2ba79040b393c42878d01268e0fe',
-    ApiVersion: '2010-04-01',
-    FromCity: 'PHOENIX',
-    SmsStatus: 'received',
-    From: '+14808405406',
-    FromZip: '85256'
 
   #mock express rpc
   expressRpcAppListen = jasmine.createSpy()
@@ -164,8 +165,7 @@ describe "MobileMinServer", ->
       fakeTriedToSendResponse = 
         sid: "fake sid"
 
-      sms = server.sendSms "4808405406", "testing"
-      console.log sms == eventful
+      sms = server.sendSms server.mobileminNumber, "4808405406", "testing"
       expect(sms).toBe(eventful)
 
       {sendSmsSuccess, sendSmsError} = sms
@@ -174,7 +174,7 @@ describe "MobileMinServer", ->
     it "should have called the twilio client sms", ->
       expect(sendSmsSpy).toHaveBeenCalledWith(
         server.mobileminNumber,
-        "4808405406"
+        "+14808405406"
         "testing" 
         "http://mobilemin-server.drewl.us/status",
         sendSmsSuccess,
@@ -190,6 +190,7 @@ describe "MobileMinServer", ->
       expect(eventEmit).toHaveBeenCalledWith(
         "triedtosendsuccess"
       )
+      expect(server.conversations[server.mobileminNumber]["+14808405406"]).toBe(sms)
       expect(server.smsSidsWaitingStatus["fake sid"]).toBe(
         sms
       )
@@ -214,6 +215,12 @@ describe "MobileMinServer", ->
         "sent"
       )
       expect(sms.emit).toHaveBeenCalledWith("sent")
+
+      fakeRequest =
+        body: fakeIncomingText
+      server.sms(fakeRequest, {})
+      
+      expect(sms.emit).toHaveBeenCalledWith("response", fakeIncomingText.Body, fakeIncomingText) 
 
       
 

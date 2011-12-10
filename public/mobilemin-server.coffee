@@ -2,17 +2,29 @@ dModule.define "mobilemin-server", ->
   expressRpc = dModule.require "express-rpc" 
   drews = dModule.require "drews-mixins"
   config = dModule.require "config"
+  _ = dModule.require "underscore"
 
   MobileminTwilio = dModule.require "mobilemin-twilio"
 
   MobileminServer = {}
   MobileminServer.init = ->
     self = {}
+    self.addPlus1 = (phone) ->
+      if drews.s(phone, 0, 2) != "+1" and phone.length == 10
+        phone = "+1" + phone
+      else if drews.s(phone, 0, 1) == "1" and phone.length == 11
+        phone = "+" + phone
+      return phone
     self.phone = ->
     self.sms =  (req, res) ->
       text = req.body 
-      console.log(text)
-      #self.handleNewCustomerWhoTextedStart res, text.From
+      if self.conversations[text.To]?[text.From]
+        sms = self.conversations[text.To]?[text.From]
+        sms.emit "response", text.Body, text
+      
+      #todo: check they don't already have and account
+      if req.body.Body.toLowerCase() == "start"
+        self.handleNewCustomerWhoTextedStart res, text.From
 
     self.status = (req, res) ->
       info = req.body
@@ -31,6 +43,7 @@ dModule.define "mobilemin-server", ->
     self.expressApp.post "/status", self.status
     self.twilio =  new MobileminTwilio config.ACCOUNT_SID, config.AUTH_TOKEN
     self.smsSidsWaitingStatus =  {}
+    self.conversations = {}
     twilio = self.twilio
 
 
@@ -38,24 +51,29 @@ dModule.define "mobilemin-server", ->
       self.expressApp.listen 8010 #TODO: use config
       #self.twilio.setupNumbers()
 
-    self.sendSms = (to, body)-> 
+    self.sendSms = (from, to, body)-> 
       sms = null
+      to = self.addPlus1 to
+      from = self.addPlus1 from
       sendSmsSuccess = (res) ->
         sid = res.sid
         self.smsSidsWaitingStatus[sid] = sms
         _.extend(sms, res)
+        self.conversations[from] or= {}
+        self.conversations[from][to] = sms
         sms.emit("triedtosendsuccess")
 
       sendSmsError = ->
 
       twilio.twilioClient.sendSms(
-        self.mobileminNumber
+        from,
         to,
         body
         "http://mobilemin-server.drewl.us/status",
         sendSmsSuccess,
         sendSmsError
       )
+
       
       sms = drews.makeEventful({})
       sms.sendSmsSuccess = sendSmsSuccess

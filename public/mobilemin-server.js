@@ -1,20 +1,35 @@
 
   dModule.define("mobilemin-server", function() {
-    var MobileminServer, MobileminTwilio, config, drews, expressRpc;
+    var MobileminServer, MobileminTwilio, config, drews, expressRpc, _;
     expressRpc = dModule.require("express-rpc");
     drews = dModule.require("drews-mixins");
     config = dModule.require("config");
+    _ = dModule.require("underscore");
     MobileminTwilio = dModule.require("mobilemin-twilio");
     MobileminServer = {};
     MobileminServer.init = function() {
       var self, twilio;
       var _this = this;
       self = {};
+      self.addPlus1 = function(phone) {
+        if (drews.s(phone, 0, 2) !== "+1" && phone.length === 10) {
+          phone = "+1" + phone;
+        } else if (drews.s(phone, 0, 1) === "1" && phone.length === 11) {
+          phone = "+" + phone;
+        }
+        return phone;
+      };
       self.phone = function() {};
       self.sms = function(req, res) {
-        var text;
+        var sms, text, _ref, _ref2;
         text = req.body;
-        return console.log(text);
+        if ((_ref = self.conversations[text.To]) != null ? _ref[text.From] : void 0) {
+          sms = (_ref2 = self.conversations[text.To]) != null ? _ref2[text.From] : void 0;
+          sms.emit("response", text.Body, text);
+        }
+        if (req.body.Body.toLowerCase() === "start") {
+          return self.handleNewCustomerWhoTextedStart(res, text.From);
+        }
       };
       self.status = function(req, res) {
         var info, sid, sms, status;
@@ -34,22 +49,27 @@
       self.expressApp.post("/status", self.status);
       self.twilio = new MobileminTwilio(config.ACCOUNT_SID, config.AUTH_TOKEN);
       self.smsSidsWaitingStatus = {};
+      self.conversations = {};
       twilio = self.twilio;
       self.start = function() {
         return self.expressApp.listen(8010);
       };
-      self.sendSms = function(to, body) {
+      self.sendSms = function(from, to, body) {
         var sendSmsError, sendSmsSuccess, sms;
         sms = null;
+        to = self.addPlus1(to);
+        from = self.addPlus1(from);
         sendSmsSuccess = function(res) {
-          var sid;
+          var sid, _base;
           sid = res.sid;
           self.smsSidsWaitingStatus[sid] = sms;
           _.extend(sms, res);
+          (_base = self.conversations)[from] || (_base[from] = {});
+          self.conversations[from][to] = sms;
           return sms.emit("triedtosendsuccess");
         };
         sendSmsError = function() {};
-        twilio.twilioClient.sendSms(self.mobileminNumber, to, body, "http://mobilemin-server.drewl.us/status", sendSmsSuccess, sendSmsError);
+        twilio.twilioClient.sendSms(from, to, body, "http://mobilemin-server.drewl.us/status", sendSmsSuccess, sendSmsError);
         sms = drews.makeEventful({});
         sms.sendSmsSuccess = sendSmsSuccess;
         sms.sendSmsError = sendSmsError;

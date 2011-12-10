@@ -30,6 +30,9 @@ var sms = server.sendSms("4808405406","testing3")
 sms.on("sent", function () {
   console.log("message sent")    
 })
+sms.on("response", function (message, moreInfo) {
+  console.log("response with " + message)
+})
 
 server.start()
 
