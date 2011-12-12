@@ -1,6 +1,9 @@
-
 describe "MobileMinServer", ->
   drews = dModule.require "drews-mixins"
+  fakeTimer = new jasmine.FakeTimer()
+  window.setTimeout = (args...) ->
+    fakeTimer.setTimeout args...
+    
   fakeIncomingText = 
     AccountSid: 'fake account sid',
     Body: 'what?',
@@ -148,6 +151,10 @@ describe "MobileMinServer", ->
     eventEmit = null
     eventful = null
 
+    fakeSendSmsResponse = null
+    fakeGoodStatusRequest = null
+    fakeIncomingTextRequest = null
+
 
     beforeEach ->
       smsTriedToSendSuccess = jasmine.createSpy()
@@ -170,6 +177,23 @@ describe "MobileMinServer", ->
 
       {sendSmsSuccess, sendSmsError} = sms
 
+      fakeSendSmsResponse =
+        sid: "fake sid"
+        status: "queued"
+
+      fakeGoodStatusRequest = 
+        body:
+          AccountSid: 'fake account sid',
+          SmsStatus: 'sent',
+          Body: 'testing2',
+          SmsSid: 'fake sid',
+          To: '+14808405406',
+          From: '+14804673355',
+          ApiVersion: '2010-04-01'
+
+      fakeIncomingTextRequest =
+        body: fakeIncomingText
+
 
     it "should have called the twilio client sms", ->
       expect(sendSmsSpy).toHaveBeenCalledWith(
@@ -182,49 +206,34 @@ describe "MobileMinServer", ->
       )
 
     it "should handle the sms response", ->
-      fakeSendSmsResponse =
-        sid: "fake sid"
-        status: "queued"
-
       sendSmsSuccess fakeSendSmsResponse
-      expect(eventEmit).toHaveBeenCalledWith(
-        "triedtosendsuccess"
-      )
+      expect(sms.emit).toHaveBeenCalledWith("triedtosendsuccess")
       expect(server.conversations[server.mobileminNumber]["+14808405406"]).toBe(sms)
-      expect(server.smsSidsWaitingStatus["fake sid"]).toBe(
-        sms
-      )
-
-      fakeGoodStatusResponse = 
-        AccountSid: 'fake account sid',
-        SmsStatus: 'sent',
-        Body: 'testing2',
-        SmsSid: 'fake sid',
-        To: '+14808405406',
-        From: '+14804673355',
-        ApiVersion: '2010-04-01'
-     
-      fakeRequest = 
-        body: fakeGoodStatusResponse
-
-      fakeResponse = {}
-
-      server.status(fakeRequest, fakeResponse)
-
-      expect(server.smsSidsWaitingStatus["fake sid"].status).toEqual(
-        "sent"
-      )
+      expect(server.smsSidsWaitingStatus["fake sid"]).toBe(sms)
+      server.status(fakeGoodStatusRequest, {})
+      expect(server.smsSidsWaitingStatus["fake sid"].status).toEqual("sent")
       expect(sms.emit).toHaveBeenCalledWith("sent")
-
-      fakeRequest =
-        body: fakeIncomingText
-      server.sms(fakeRequest, {})
-      
+      server.sms(fakeIncomingTextRequest, {})
       expect(sms.emit).toHaveBeenCalledWith("response", fakeIncomingText.Body, fakeIncomingText) 
 
-      
+    it "should resend in 3 seconds if if failed to try to send", ->
+      oldCallCount = sendSmsSpy.callCount
+      sendSmsError()
+      #TODO: log error
+      fakeTimer.tick(3000)
+      expect(sendSmsSpy.callCount).toBe(oldCallCount + 1)
+      expect(sendSmsSpy.mostRecentCall.args).toEqual [
+        server.mobileminNumber,
+        "+14808405406"
+        "testing" 
+        "http://mobilemin-server.drewl.us/status",
+        sms.sendSmsSuccess,
+        sms.sendSmsError
+      ]
 
-      
+
+    it "should have a send method", -> 
+      #TODO sms object should be able to send smss
 
   it "should know how to handle a new customer who texted start", ->
     fakeRes =

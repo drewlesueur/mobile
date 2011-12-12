@@ -1,7 +1,15 @@
+(function() {
+  var __slice = Array.prototype.slice;
 
   describe("MobileMinServer", function() {
-    var FakeMobileminTwilio, FakeTwilioClient, MobileminServer, RealMobileMinTwilio, apiCallSpy, config, drews, expressPost, expressRpcAppListen, expressRpcInit, expressRpcObj, fakeIncomingStartText, fakeIncomingText, getAvailableLocalNumbersSpy, justBoughtNumber, notFakeIncomingStartText, provisionIncomingNumberSpy, sendSmsSpy, server, setupNumbersSpy;
+    var FakeMobileminTwilio, FakeTwilioClient, MobileminServer, RealMobileMinTwilio, apiCallSpy, config, drews, expressPost, expressRpcAppListen, expressRpcInit, expressRpcObj, fakeIncomingStartText, fakeIncomingText, fakeTimer, getAvailableLocalNumbersSpy, justBoughtNumber, notFakeIncomingStartText, provisionIncomingNumberSpy, sendSmsSpy, server, setupNumbersSpy;
     drews = dModule.require("drews-mixins");
+    fakeTimer = new jasmine.FakeTimer();
+    window.setTimeout = function() {
+      var args;
+      args = 1 <= arguments.length ? __slice.call(arguments, 0) : [];
+      return fakeTimer.setTimeout.apply(fakeTimer, args);
+    };
     fakeIncomingText = {
       AccountSid: 'fake account sid',
       Body: 'what?',
@@ -153,7 +161,7 @@
     });
     it("should know what to do with a status url", function() {});
     describe("should be able to send a text message from mobilemin", function() {
-      var eventEmit, eventOn, eventful, responseCallback, sendSmsError, sendSmsSuccess, sentCallback, sms, triedToSendCallback;
+      var eventEmit, eventOn, eventful, fakeGoodStatusRequest, fakeIncomingTextRequest, fakeSendSmsResponse, responseCallback, sendSmsError, sendSmsSuccess, sentCallback, sms, triedToSendCallback;
       triedToSendCallback = null;
       sentCallback = null;
       responseCallback = null;
@@ -163,6 +171,9 @@
       eventOn = null;
       eventEmit = null;
       eventful = null;
+      fakeSendSmsResponse = null;
+      fakeGoodStatusRequest = null;
+      fakeIncomingTextRequest = null;
       beforeEach(function() {
         var fakeTriedToSendResponse, smsErrored, smsResponse, smsSent, smsTriedToSendError, smsTriedToSendSuccess;
         smsTriedToSendSuccess = jasmine.createSpy();
@@ -182,43 +193,49 @@
         };
         sms = server.sendSms(server.mobileminNumber, "4808405406", "testing");
         expect(sms).toBe(eventful);
-        return sendSmsSuccess = sms.sendSmsSuccess, sendSmsError = sms.sendSmsError, sms;
-      });
-      it("should have called the twilio client sms", function() {
-        return expect(sendSmsSpy).toHaveBeenCalledWith(server.mobileminNumber, "+14808405406", "testing", "http://mobilemin-server.drewl.us/status", sendSmsSuccess, sendSmsError);
-      });
-      return it("should handle the sms response", function() {
-        var fakeGoodStatusResponse, fakeRequest, fakeResponse, fakeSendSmsResponse;
+        sendSmsSuccess = sms.sendSmsSuccess, sendSmsError = sms.sendSmsError;
         fakeSendSmsResponse = {
           sid: "fake sid",
           status: "queued"
         };
-        sendSmsSuccess(fakeSendSmsResponse);
-        expect(eventEmit).toHaveBeenCalledWith("triedtosendsuccess");
-        expect(server.conversations[server.mobileminNumber]["+14808405406"]).toBe(sms);
-        expect(server.smsSidsWaitingStatus["fake sid"]).toBe(sms);
-        fakeGoodStatusResponse = {
-          AccountSid: 'fake account sid',
-          SmsStatus: 'sent',
-          Body: 'testing2',
-          SmsSid: 'fake sid',
-          To: '+14808405406',
-          From: '+14804673355',
-          ApiVersion: '2010-04-01'
+        fakeGoodStatusRequest = {
+          body: {
+            AccountSid: 'fake account sid',
+            SmsStatus: 'sent',
+            Body: 'testing2',
+            SmsSid: 'fake sid',
+            To: '+14808405406',
+            From: '+14804673355',
+            ApiVersion: '2010-04-01'
+          }
         };
-        fakeRequest = {
-          body: fakeGoodStatusResponse
-        };
-        fakeResponse = {};
-        server.status(fakeRequest, fakeResponse);
-        expect(server.smsSidsWaitingStatus["fake sid"].status).toEqual("sent");
-        expect(sms.emit).toHaveBeenCalledWith("sent");
-        fakeRequest = {
+        return fakeIncomingTextRequest = {
           body: fakeIncomingText
         };
-        server.sms(fakeRequest, {});
+      });
+      it("should have called the twilio client sms", function() {
+        return expect(sendSmsSpy).toHaveBeenCalledWith(server.mobileminNumber, "+14808405406", "testing", "http://mobilemin-server.drewl.us/status", sendSmsSuccess, sendSmsError);
+      });
+      it("should handle the sms response", function() {
+        sendSmsSuccess(fakeSendSmsResponse);
+        expect(sms.emit).toHaveBeenCalledWith("triedtosendsuccess");
+        expect(server.conversations[server.mobileminNumber]["+14808405406"]).toBe(sms);
+        expect(server.smsSidsWaitingStatus["fake sid"]).toBe(sms);
+        server.status(fakeGoodStatusRequest, {});
+        expect(server.smsSidsWaitingStatus["fake sid"].status).toEqual("sent");
+        expect(sms.emit).toHaveBeenCalledWith("sent");
+        server.sms(fakeIncomingTextRequest, {});
         return expect(sms.emit).toHaveBeenCalledWith("response", fakeIncomingText.Body, fakeIncomingText);
       });
+      it("should resend in 3 seconds if if failed to try to send", function() {
+        var oldCallCount;
+        oldCallCount = sendSmsSpy.callCount;
+        sendSmsError();
+        fakeTimer.tick(3000);
+        expect(sendSmsSpy.callCount).toBe(oldCallCount + 1);
+        return expect(sendSmsSpy.mostRecentCall.args).toEqual([server.mobileminNumber, "+14808405406", "testing", "http://mobilemin-server.drewl.us/status", sms.sendSmsSuccess, sms.sendSmsError]);
+      });
+      return it("should have a send method", function() {});
     });
     it("should know how to handle a new customer who texted start", function() {
       var buyCallbacks, buyError, buySuccess, fakeRes, sendFeedbackCallbacks, sendFeedbackError, sendFeedbackSuccess;
@@ -243,3 +260,5 @@
     });
     return dModule.define("mobilemin-twilio", RealMobileMinTwilio);
   });
+
+}).call(this);

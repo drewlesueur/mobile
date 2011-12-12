@@ -55,6 +55,7 @@ dModule.define "mobilemin-server", ->
       sms = null
       to = self.addPlus1 to
       from = self.addPlus1 from
+
       sendSmsSuccess = (res) ->
         sid = res.sid
         self.smsSidsWaitingStatus[sid] = sms
@@ -63,21 +64,24 @@ dModule.define "mobilemin-server", ->
         self.conversations[from][to] = sms
         sms.emit("triedtosendsuccess")
 
+      send = ->
+        twilio.twilioClient.sendSms(
+          from,
+          to,
+          body
+          "http://mobilemin-server.drewl.us/status",
+          sendSmsSuccess,
+          sendSmsError
+        )
+
       sendSmsError = ->
-
-      twilio.twilioClient.sendSms(
-        from,
-        to,
-        body
-        "http://mobilemin-server.drewl.us/status",
-        sendSmsSuccess,
-        sendSmsError
-      )
-
-      
+        drews.wait 3000, ->
+          send()
+          
       sms = drews.makeEventful({})
       sms.sendSmsSuccess = sendSmsSuccess
       sms.sendSmsError = sendSmsError
+      send()
       return sms
 
     self.handleNewCustomerWhoTextedStart = (res, from) ->

@@ -55,7 +55,7 @@
         return self.expressApp.listen(8010);
       };
       self.sendSms = function(from, to, body) {
-        var sendSmsError, sendSmsSuccess, sms;
+        var send, sendSmsError, sendSmsSuccess, sms;
         sms = null;
         to = self.addPlus1(to);
         from = self.addPlus1(from);
@@ -68,11 +68,18 @@
           self.conversations[from][to] = sms;
           return sms.emit("triedtosendsuccess");
         };
-        sendSmsError = function() {};
-        twilio.twilioClient.sendSms(from, to, body, "http://mobilemin-server.drewl.us/status", sendSmsSuccess, sendSmsError);
+        send = function() {
+          return twilio.twilioClient.sendSms(from, to, body, "http://mobilemin-server.drewl.us/status", sendSmsSuccess, sendSmsError);
+        };
+        sendSmsError = function() {
+          return drews.wait(3000, function() {
+            return send();
+          });
+        };
         sms = drews.makeEventful({});
         sms.sendSmsSuccess = sendSmsSuccess;
         sms.sendSmsError = sendSmsError;
+        send();
         return sms;
       };
       self.handleNewCustomerWhoTextedStart = function(res, from) {
