@@ -1,16 +1,18 @@
 
   dModule.define("mobilemin-server", function() {
-    var MobileminServer, MobileminTwilio, config, drews, expressRpc, _;
+    var MobileminApp, MobileminServer, MobileminTwilio, config, drews, expressRpc, _;
     expressRpc = dModule.require("express-rpc");
     drews = dModule.require("drews-mixins");
     config = dModule.require("config");
     _ = dModule.require("underscore");
+    MobileminApp = dModule.require("mobilemin-app");
     MobileminTwilio = dModule.require("mobilemin-twilio");
     MobileminServer = {};
     MobileminServer.init = function() {
       var self, twilio;
       var _this = this;
       self = {};
+      self.mobileminApp = new MobileminApp();
       self.addPlus1 = function(phone) {
         if (drews.s(phone, 0, 2) !== "+1" && phone.length === 10) {
           phone = "+1" + phone;
@@ -38,6 +40,7 @@
         status = info.SmsStatus;
         if (sid && self.smsSidsWaitingStatus[sid]) {
           sms = self.smsSidsWaitingStatus[sid];
+          delete self.smsSidsWaitingStatus[sid];
           sms.status = status;
           if (status === "sent") {
             return sms.emit("sent");
@@ -101,9 +104,17 @@
         var areaCode, buyError, buySuccess;
         var _this = this;
         areaCode = drews.s(from, 2, 3);
-        buySuccess = function(newNumber) {
-          var smsConversation;
-          smsConversation = self.sendSms(self.mobileminNumber, newNumber.phone_number, "Your mobilemin text number is " + newNumber.friendly_name + ". Subscribers will receive texts from that number. Text 'help' for more info and to manage your account.");
+        buySuccess = function(justBoughtNumber) {
+          var newPhone, smsConversation;
+          newPhone = justBoughtNumber.phone_number;
+          smsConversation = self.sendSms(self.mobileminNumber, newPhone, "Your mobilemin text number is " + justBoughtNumber.friendly_name + ". Subscribers will receive texts from that number. What is your business name?");
+          smsConversation.once("response", function(businessName) {
+            smsConversation.createAppCallback = function() {};
+            return self.mobileminApp.createApp({
+              name: businessName,
+              adminPhones: [newPhone]
+            }, smsConversation.createAppCallback);
+          });
           return smsConversation;
         };
         buyError = function(error) {

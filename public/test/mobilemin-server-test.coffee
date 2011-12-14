@@ -99,6 +99,7 @@ describe "MobileMinServer", ->
   dModule.define "mobilemin-twilio", () ->
     FakeMobileminTwilio
 
+
   MobileminServer = dModule.require "mobilemin-server"
   
   server = null 
@@ -225,7 +226,7 @@ describe "MobileMinServer", ->
       expect(server.conversations[server.mobileminNumber]["+14808405406"]).toBe(sms)
       expect(server.smsSidsWaitingStatus["fake sid"]).toBe(sms)
       server.status(fakeGoodStatusRequest, {})
-      expect(server.smsSidsWaitingStatus["fake sid"].status).toEqual("sent")
+      expect(server.smsSidsWaitingStatus["fake sid"]).toBeFalsy();
       expect(sms.emit).toHaveBeenCalledWith("sent")
       server.sms(fakeIncomingTextRequest, {})
       expect(sms.emit).toHaveBeenCalledWith("response", fakeIncomingText.Body, fakeIncomingText) 
@@ -238,7 +239,7 @@ describe "MobileMinServer", ->
       expect(server.conversations[server.mobileminNumber]["+14808405406"]).toBe(sms)
       expect(server.smsSidsWaitingStatus["fake sid"]).toBe(sms)
       server.status(fakeBadStatusRequest, {})
-      expect(server.smsSidsWaitingStatus["fake sid"].status).toEqual("error")
+      expect(server.smsSidsWaitingStatus["fake sid"]).toBeFalsy();
       expect(sms.emit).toHaveBeenCalledWith("error")
       expect(sms.emit).not.toHaveBeenCalledWith("sent")
       expect(sms.retry).toHaveBeenCalled()
@@ -305,12 +306,28 @@ describe "MobileMinServer", ->
       }}, buySuccess, buyError
     )
 
-    spyOn(server, "sendSms").andReturn()
+    spyOn(server, "sendSms").andCallThrough() #TODO: should i spy out a mock?
     smsConversation = buySuccess(justBoughtNumber)
+    newPhone = justBoughtNumber.phone_number
     expect(server.sendSms).toHaveBeenCalledWith(
       server.mobileminNumber,
-      justBoughtNumber.phone_number,
-      "Your mobilemin text number is #{justBoughtNumber.friendly_name}. Subscribers will receive texts from that number. Text 'help' for more info and to manage your account." 
+      newPhone,
+      "Your mobilemin text number is #{justBoughtNumber.friendly_name}. Subscribers will receive texts from that number. What is your business name?"
     )
+    
+    spyOn(server.mobileminApp, "createApp")
+    smsConversation.emit("response", "Frozen Yogurt!") #TODO remove other chars?
+    appData = {name: "Frozen Yogurt!", adminPhones: [newPhone]}
+    expect(server.mobileminApp.createApp).toHaveBeenCalledWith(
+      appData , smsConversation.createAppCallback
+    )
+    
+    spyOn(smsConversation, "send")
+    smsConversation.createAppCallback(null, appData)
+    expect(smsConversation.send).toHaveBeenCalledWith(
+      "Thank you."
+    )
+
+
 
   dModule.define "mobilemin-twilio", RealMobileMinTwilio

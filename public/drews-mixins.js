@@ -207,6 +207,16 @@
         args = 1 <= arguments.length ? __slice.call(arguments, 0) : [];
         return exports.emit.apply(exports, [obj].concat(__slice.call(args)));
       };
+      obj.removeEventListener = function() {
+        var args;
+        args = 1 <= arguments.length ? __slice.call(arguments, 0) : [];
+        return exports.removeEventListener.apply(exports, [obj].concat(__slice.call(args)));
+      };
+      obj.once = function() {
+        var args;
+        args = 1 <= arguments.length ? __slice.call(arguments, 0) : [];
+        return exports.once.apply(exports, [obj].concat(__slice.call(args)));
+      };
       return obj;
     };
     exports.s = function(val, start, end) {

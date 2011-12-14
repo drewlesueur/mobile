@@ -3,12 +3,14 @@ dModule.define "mobilemin-server", ->
   drews = dModule.require "drews-mixins"
   config = dModule.require "config"
   _ = dModule.require "underscore"
+  MobileminApp = dModule.require "mobilemin-app"
 
   MobileminTwilio = dModule.require "mobilemin-twilio"
 
   MobileminServer = {}
   MobileminServer.init = ->
     self = {}
+    self.mobileminApp = new MobileminApp()
     self.addPlus1 = (phone) ->
       if drews.s(phone, 0, 2) != "+1" and phone.length == 10
         phone = "+1" + phone
@@ -32,6 +34,7 @@ dModule.define "mobilemin-server", ->
       status = info.SmsStatus
       if sid and self.smsSidsWaitingStatus[sid]
         sms = self.smsSidsWaitingStatus[sid] 
+        delete self.smsSidsWaitingStatus[sid] 
         sms.status = status
         if status == "sent" 
           sms.emit("sent")
@@ -100,11 +103,21 @@ dModule.define "mobilemin-server", ->
 
     self.handleNewCustomerWhoTextedStart = (res, from) ->
       areaCode = drews.s(from, 2, 3) #get rid of +1, and get area code 
-      buySuccess = (newNumber) =>
+      buySuccess = (justBoughtNumber) =>
+        newPhone = justBoughtNumber.phone_number
         smsConversation = self.sendSms(
-          self.mobileminNumber, newNumber.phone_number,
-          "Your mobilemin text number is #{newNumber.friendly_name}. Subscribers will receive texts from that number. Text 'help' for more info and to manage your account." 
+          self.mobileminNumber, newPhone,
+          "Your mobilemin text number is #{justBoughtNumber.friendly_name}. Subscribers will receive texts from that number. What is your business name?"
         )
+        smsConversation.once "response", (businessName) ->
+          smsConversation.createAppCallback = () ->
+
+           
+          self.mobileminApp.createApp
+            name: businessName
+            adminPhones: [newPhone]
+          , smsConversation.createAppCallback
+
         return smsConversation
      
       buyError = (error) =>

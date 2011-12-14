@@ -33,9 +33,9 @@
       expect(mobileminApp.app.title).toBe("yk");
       return expect(mobileminApp.data.db).toBe("new_mobilemin");
     });
-    return describe("after having found an app", function() {
+    describe("after having found an app", function() {
       beforeEach(function() {
-        return mobileminApp.name = "myappy";
+        return mobileminApp.app.name = "myappy";
       });
       return it("should be able to get the phones", function() {
         var findPhonesCallback, mmCallback, myCallBackCalled;
@@ -47,5 +47,19 @@
         mmCallback = mobileminApp.findPhones({}, findPhonesCallback);
         return expect(mobileminApp.data.find).toHaveBeenCalledWith("app_myappy_phones", {}, findPhonesCallback);
       });
+    });
+    return it("should create an app", function() {
+      var myCallback, rawApp, saveCallback;
+      spyOn(mobileminApp.data, "save");
+      rawApp = {
+        name: "drewsapp",
+        test: 1
+      };
+      myCallback = jasmine.createSpy();
+      saveCallback = mobileminApp.createApp(rawApp, myCallback);
+      expect(mobileminApp.data.save).toHaveBeenCalledWith("apps", rawApp, saveCallback);
+      saveCallback(null, rawApp);
+      expect(myCallback).toHaveBeenCalledWith(null, mobileminApp);
+      return expect(mobileminApp.app.name).toBe("drewsapp");
     });
   });

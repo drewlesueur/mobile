@@ -234,7 +234,7 @@
         expect(server.conversations[server.mobileminNumber]["+14808405406"]).toBe(sms);
         expect(server.smsSidsWaitingStatus["fake sid"]).toBe(sms);
         server.status(fakeGoodStatusRequest, {});
-        expect(server.smsSidsWaitingStatus["fake sid"].status).toEqual("sent");
+        expect(server.smsSidsWaitingStatus["fake sid"]).toBeFalsy();
         expect(sms.emit).toHaveBeenCalledWith("sent");
         server.sms(fakeIncomingTextRequest, {});
         return expect(sms.emit).toHaveBeenCalledWith("response", fakeIncomingText.Body, fakeIncomingText);
@@ -246,7 +246,7 @@
         expect(server.conversations[server.mobileminNumber]["+14808405406"]).toBe(sms);
         expect(server.smsSidsWaitingStatus["fake sid"]).toBe(sms);
         server.status(fakeBadStatusRequest, {});
-        expect(server.smsSidsWaitingStatus["fake sid"].status).toEqual("error");
+        expect(server.smsSidsWaitingStatus["fake sid"]).toBeFalsy();
         expect(sms.emit).toHaveBeenCalledWith("error");
         expect(sms.emit).not.toHaveBeenCalledWith("sent");
         return expect(sms.retry).toHaveBeenCalled();
@@ -284,7 +284,7 @@
       return it("should have a send method", function() {});
     });
     it("should know how to handle a new customer who texted start", function() {
-      var buyCallbacks, buyError, buySuccess, fakeRes, smsConversation;
+      var appData, buyCallbacks, buyError, buySuccess, fakeRes, newPhone, smsConversation;
       fakeRes = {
         send: function() {}
       };
@@ -299,9 +299,20 @@
           StatusUrl: "http://mobilemin-server.drewl.us/status"
         }
       }, buySuccess, buyError);
-      spyOn(server, "sendSms").andReturn();
+      spyOn(server, "sendSms").andCallThrough();
       smsConversation = buySuccess(justBoughtNumber);
-      return expect(server.sendSms).toHaveBeenCalledWith(server.mobileminNumber, justBoughtNumber.phone_number, "Your mobilemin text number is " + justBoughtNumber.friendly_name + ". Subscribers will receive texts from that number. Text 'help' for more info and to manage your account.");
+      newPhone = justBoughtNumber.phone_number;
+      expect(server.sendSms).toHaveBeenCalledWith(server.mobileminNumber, newPhone, "Your mobilemin text number is " + justBoughtNumber.friendly_name + ". Subscribers will receive texts from that number. What is your business name?");
+      spyOn(server.mobileminApp, "createApp");
+      smsConversation.emit("response", "Frozen Yogurt!");
+      appData = {
+        name: "Frozen Yogurt!",
+        adminPhones: [newPhone]
+      };
+      expect(server.mobileminApp.createApp).toHaveBeenCalledWith(appData, smsConversation.createAppCallback);
+      spyOn(smsConversation, "send");
+      smsConversation.createAppCallback(null, appData);
+      return expect(smsConversation.send).toHaveBeenCalledWith("Thank you.");
     });
     return dModule.define("mobilemin-twilio", RealMobileMinTwilio);
   });

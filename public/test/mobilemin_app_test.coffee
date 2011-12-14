@@ -27,7 +27,7 @@ describe "MobileminApp", ->
 
   describe "after having found an app", ->
     beforeEach ->
-      mobileminApp.name = "myappy"
+      mobileminApp.app.name = "myappy"
     it "should be able to get the phones", ->
       spyOn mobileminApp.data, "find"
       myCallBackCalled = false
@@ -36,3 +36,19 @@ describe "MobileminApp", ->
       expect(mobileminApp.data.find).toHaveBeenCalledWith(
         "app_myappy_phones", {}, findPhonesCallback
       )
+
+  it "should create an app", ->
+
+    spyOn(mobileminApp.data, "save")
+    rawApp = {name: "drewsapp", test: 1}
+    myCallback = jasmine.createSpy()
+    saveCallback = mobileminApp.createApp(rawApp, myCallback)
+    expect(mobileminApp.data.save).toHaveBeenCalledWith(
+      "apps", rawApp, saveCallback
+    )
+    saveCallback(null, rawApp)
+    expect(myCallback).toHaveBeenCalledWith(null, mobileminApp)
+    expect(mobileminApp.app.name).toBe("drewsapp")
+
+
+
