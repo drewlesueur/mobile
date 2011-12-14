@@ -39,7 +39,12 @@
         if (sid && self.smsSidsWaitingStatus[sid]) {
           sms = self.smsSidsWaitingStatus[sid];
           sms.status = status;
-          return sms.emit("sent");
+          if (status === "sent") {
+            return sms.emit("sent");
+          } else {
+            sms.emit("error");
+            return sms.retry();
+          }
         }
       };
       self.mobileminNumber = "+14804673355";
@@ -68,15 +73,25 @@
           self.conversations[from][to] = sms;
           return sms.emit("triedtosendsuccess");
         };
+        sms = drews.makeEventful({});
+        sms.maxRetries = 3;
+        sms.retries = 0;
+        sms.retry = function() {
+          delete self.smsSidsWaitingStatus[sms.sid];
+          if (sms.maxRetries === sms.retries) {
+            return sms.emit("maxretriesreached", sms.maxRetries);
+          }
+          sms.retries += 1;
+          return send();
+        };
         send = function() {
           return twilio.twilioClient.sendSms(from, to, body, "http://mobilemin-server.drewl.us/status", sendSmsSuccess, sendSmsError);
         };
         sendSmsError = function() {
           return drews.wait(3000, function() {
-            return send();
+            return sms.retry();
           });
         };
-        sms = drews.makeEventful({});
         sms.sendSmsSuccess = sendSmsSuccess;
         sms.sendSmsError = sendSmsError;
         send();
@@ -87,11 +102,9 @@
         var _this = this;
         areaCode = drews.s(from, 2, 3);
         buySuccess = function(newNumber) {
-          var sendSmsError, sendSmsSuccess;
-          sendSmsSuccess = function() {};
-          sendSmsError = function() {};
-          twilio.twilioClient.sendSms(self.mobileminNumber, newNumber.phone_number, "Your mobilemin text number is " + newNumber.friendly_name + ". Subscribers will receive texts from that number. Text 'help' for more info and to manage your account.", null, sendSmsSuccess, sendSmsError);
-          return [sendSmsSuccess, sendSmsError];
+          var smsConversation;
+          smsConversation = self.sendSms(self.mobileminNumber, newNumber.phone_number, "Your mobilemin text number is " + newNumber.friendly_name + ". Subscribers will receive texts from that number. Text 'help' for more info and to manage your account.");
+          return smsConversation;
         };
         buyError = function(error) {
           return console.log("There was an error");

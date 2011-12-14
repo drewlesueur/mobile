@@ -33,7 +33,11 @@ dModule.define "mobilemin-server", ->
       if sid and self.smsSidsWaitingStatus[sid]
         sms = self.smsSidsWaitingStatus[sid] 
         sms.status = status
-        sms.emit("sent")
+        if status == "sent" 
+          sms.emit("sent")
+        else
+          sms.emit("error")
+          sms.retry()
         
 
     self.mobileminNumber =  "+14804673355"
@@ -63,6 +67,17 @@ dModule.define "mobilemin-server", ->
         self.conversations[from] or= {}
         self.conversations[from][to] = sms
         sms.emit("triedtosendsuccess")
+      
+      sms = drews.makeEventful({})
+      sms.maxRetries = 3
+      sms.retries = 0
+
+      sms.retry = ->
+        delete self.smsSidsWaitingStatus[sms.sid] 
+        if sms.maxRetries == sms.retries
+          return sms.emit("maxretriesreached", sms.maxRetries)
+        sms.retries += 1
+        send()
 
       send = ->
         twilio.twilioClient.sendSms(
@@ -76,9 +91,8 @@ dModule.define "mobilemin-server", ->
 
       sendSmsError = ->
         drews.wait 3000, ->
-          send()
+          sms.retry()
           
-      sms = drews.makeEventful({})
       sms.sendSmsSuccess = sendSmsSuccess
       sms.sendSmsError = sendSmsError
       send()
@@ -87,17 +101,11 @@ dModule.define "mobilemin-server", ->
     self.handleNewCustomerWhoTextedStart = (res, from) ->
       areaCode = drews.s(from, 2, 3) #get rid of +1, and get area code 
       buySuccess = (newNumber) =>
-        sendSmsSuccess = () =>
-        sendSmsError = () =>
-        twilio.twilioClient.sendSms(
-          self.mobileminNumber,
-          newNumber.phone_number,
+        smsConversation = self.sendSms(
+          self.mobileminNumber, newNumber.phone_number,
           "Your mobilemin text number is #{newNumber.friendly_name}. Subscribers will receive texts from that number. Text 'help' for more info and to manage your account." 
-          null, 
-          sendSmsSuccess,
-          sendSmsError
         )
-        return [sendSmsSuccess, sendSmsError]
+        return smsConversation
      
       buyError = (error) =>
         console.log "There was an error"

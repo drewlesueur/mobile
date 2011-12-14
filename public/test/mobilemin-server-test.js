@@ -161,7 +161,7 @@
     });
     it("should know what to do with a status url", function() {});
     describe("should be able to send a text message from mobilemin", function() {
-      var eventEmit, eventOn, eventful, fakeGoodStatusRequest, fakeIncomingTextRequest, fakeSendSmsResponse, responseCallback, sendSmsError, sendSmsSuccess, sentCallback, sms, triedToSendCallback;
+      var eventEmit, eventOn, eventful, fakeBadStatusRequest, fakeGoodStatusRequest, fakeIncomingTextRequest, fakeSendSmsResponse, responseCallback, sendSmsError, sendSmsSuccess, sentCallback, sms, triedToSendCallback;
       triedToSendCallback = null;
       sentCallback = null;
       responseCallback = null;
@@ -173,6 +173,7 @@
       eventful = null;
       fakeSendSmsResponse = null;
       fakeGoodStatusRequest = null;
+      fakeBadStatusRequest = null;
       fakeIncomingTextRequest = null;
       beforeEach(function() {
         var fakeTriedToSendResponse, smsErrored, smsResponse, smsSent, smsTriedToSendError, smsTriedToSendSuccess;
@@ -209,6 +210,17 @@
             ApiVersion: '2010-04-01'
           }
         };
+        fakeBadStatusRequest = {
+          body: {
+            AccountSid: 'fake account sid',
+            SmsStatus: 'error',
+            Body: 'testing2',
+            SmsSid: 'fake sid',
+            To: '+14808405406',
+            From: '+14804673355',
+            ApiVersion: '2010-04-01'
+          }
+        };
         return fakeIncomingTextRequest = {
           body: fakeIncomingText
         };
@@ -227,18 +239,52 @@
         server.sms(fakeIncomingTextRequest, {});
         return expect(sms.emit).toHaveBeenCalledWith("response", fakeIncomingText.Body, fakeIncomingText);
       });
+      it("should handle the sms response", function() {
+        sendSmsSuccess(fakeSendSmsResponse);
+        spyOn(sms, "retry");
+        expect(sms.emit).toHaveBeenCalledWith("triedtosendsuccess");
+        expect(server.conversations[server.mobileminNumber]["+14808405406"]).toBe(sms);
+        expect(server.smsSidsWaitingStatus["fake sid"]).toBe(sms);
+        server.status(fakeBadStatusRequest, {});
+        expect(server.smsSidsWaitingStatus["fake sid"].status).toEqual("error");
+        expect(sms.emit).toHaveBeenCalledWith("error");
+        expect(sms.emit).not.toHaveBeenCalledWith("sent");
+        return expect(sms.retry).toHaveBeenCalled();
+      });
       it("should resend in 3 seconds if if failed to try to send", function() {
-        var oldCallCount;
-        oldCallCount = sendSmsSpy.callCount;
+        spyOn(sms, "retry");
         sendSmsError();
         fakeTimer.tick(3000);
-        expect(sendSmsSpy.callCount).toBe(oldCallCount + 1);
-        return expect(sendSmsSpy.mostRecentCall.args).toEqual([server.mobileminNumber, "+14808405406", "testing", "http://mobilemin-server.drewl.us/status", sms.sendSmsSuccess, sms.sendSmsError]);
+        return expect(sms.retry).toHaveBeenCalled();
       });
+      it("should know how to retry", function() {
+        var oldCallCount, retry;
+        expect(sms.maxRetries).toBe(3);
+        sms.maxRetries = 4;
+        sms.sid = "a fake sid";
+        server.smsSidsWaitingStatus[sms.sid] = sms;
+        retry = function() {
+          var oldCallCount;
+          oldCallCount = sendSmsSpy.callCount;
+          sms.retry();
+          expect(server.smsSidsWaitingStatus[sms.sid]).toBeFalsy();
+          expect(sendSmsSpy.callCount).toBe(oldCallCount + 1);
+          return expect(sendSmsSpy.mostRecentCall.args).toEqual([server.mobileminNumber, "+14808405406", "testing", "http://mobilemin-server.drewl.us/status", sms.sendSmsSuccess, sms.sendSmsError]);
+        };
+        retry();
+        retry();
+        retry();
+        retry();
+        oldCallCount = sendSmsSpy.callCount;
+        sms.retry();
+        expect(sendSmsSpy.callCount).toBe(oldCallCount);
+        return expect(sms.emit).toHaveBeenCalledWith("maxretriesreached", 4);
+      });
+      it("should try to resend if it gets a bad status", function() {});
       return it("should have a send method", function() {});
     });
     it("should know how to handle a new customer who texted start", function() {
-      var buyCallbacks, buyError, buySuccess, fakeRes, sendFeedbackCallbacks, sendFeedbackError, sendFeedbackSuccess;
+      var buyCallbacks, buyError, buySuccess, fakeRes, smsConversation;
       fakeRes = {
         send: function() {}
       };
@@ -253,10 +299,9 @@
           StatusUrl: "http://mobilemin-server.drewl.us/status"
         }
       }, buySuccess, buyError);
-      sendFeedbackCallbacks = buySuccess(justBoughtNumber);
-      sendFeedbackSuccess = sendFeedbackCallbacks[0];
-      sendFeedbackError = sendFeedbackCallbacks[1];
-      return expect(sendSmsSpy).toHaveBeenCalledWith(server.mobileminNumber, justBoughtNumber.phone_number, "Your mobilemin text number is " + justBoughtNumber.friendly_name + ". Subscribers will receive texts from that number. Text 'help' for more info and to manage your account.", null, sendFeedbackSuccess, sendFeedbackError);
+      spyOn(server, "sendSms").andReturn();
+      smsConversation = buySuccess(justBoughtNumber);
+      return expect(server.sendSms).toHaveBeenCalledWith(server.mobileminNumber, justBoughtNumber.phone_number, "Your mobilemin text number is " + justBoughtNumber.friendly_name + ". Subscribers will receive texts from that number. Text 'help' for more info and to manage your account.");
     });
     return dModule.define("mobilemin-twilio", RealMobileMinTwilio);
   });
