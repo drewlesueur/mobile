@@ -99,6 +99,15 @@ dModule.define "mobilemin-server", ->
       sms.sendSmsSuccess = sendSmsSuccess
       sms.sendSmsError = sendSmsError
       send()
+      sms.send =  (body)->
+        twilio.twilioClient.sendSms(
+          from,
+          to,
+          body
+          "http://mobilemin-server.drewl.us/status",
+          sendSmsSuccess,
+          sendSmsError
+        )
       return sms
 
     self.handleNewCustomerWhoTextedStart = (res, from) ->
@@ -111,6 +120,7 @@ dModule.define "mobilemin-server", ->
         )
         smsConversation.once "response", (businessName) ->
           smsConversation.createAppCallback = () ->
+            smsConversation.send "Thank you."
 
            
           self.mobileminApp.createApp

@@ -98,6 +98,9 @@
         sms.sendSmsSuccess = sendSmsSuccess;
         sms.sendSmsError = sendSmsError;
         send();
+        sms.send = function(body) {
+          return twilio.twilioClient.sendSms(from, to, body, "http://mobilemin-server.drewl.us/status", sendSmsSuccess, sendSmsError);
+        };
         return sms;
       };
       self.handleNewCustomerWhoTextedStart = function(res, from) {
@@ -109,7 +112,9 @@
           newPhone = justBoughtNumber.phone_number;
           smsConversation = self.sendSms(self.mobileminNumber, newPhone, "Your mobilemin text number is " + justBoughtNumber.friendly_name + ". Subscribers will receive texts from that number. What is your business name?");
           smsConversation.once("response", function(businessName) {
-            smsConversation.createAppCallback = function() {};
+            smsConversation.createAppCallback = function() {
+              return smsConversation.send("Thank you.");
+            };
             return self.mobileminApp.createApp({
               name: businessName,
               adminPhones: [newPhone]

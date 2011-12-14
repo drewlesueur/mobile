@@ -281,7 +281,13 @@
         return expect(sms.emit).toHaveBeenCalledWith("maxretriesreached", 4);
       });
       it("should try to resend if it gets a bad status", function() {});
-      return it("should have a send method", function() {});
+      return it("should have a send method", function() {
+        var oldCallCount;
+        oldCallCount = sendSmsSpy.callCount;
+        sms.send("howdy");
+        expect(sendSmsSpy.callCount).toBe(oldCallCount + 1);
+        return expect(sendSmsSpy).toHaveBeenCalledWith(server.mobileminNumber, "+14808405406", "howdy", "http://mobilemin-server.drewl.us/status", sms.sendSmsSuccess, sms.sendSmsError);
+      });
     });
     it("should know how to handle a new customer who texted start", function() {
       var appData, buyCallbacks, buyError, buySuccess, fakeRes, newPhone, smsConversation;

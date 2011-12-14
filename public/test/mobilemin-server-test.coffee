@@ -289,6 +289,17 @@ describe "MobileMinServer", ->
 
 
     it "should have a send method", -> 
+      oldCallCount = sendSmsSpy.callCount
+      sms.send("howdy")
+      expect(sendSmsSpy.callCount).toBe(oldCallCount + 1)
+      expect(sendSmsSpy).toHaveBeenCalledWith(
+        server.mobileminNumber,
+        "+14808405406"
+        "howdy" 
+        "http://mobilemin-server.drewl.us/status",
+        sms.sendSmsSuccess,
+        sms.sendSmsError
+      )
       #TODO sms object should be able to send smss
 
   it "should know how to handle a new customer who texted start", ->
