@@ -313,7 +313,8 @@
       smsConversation.emit("response", "Frozen Yogurt!");
       appData = {
         name: "Frozen Yogurt!",
-        adminPhones: [newPhone]
+        adminPhones: [newPhone],
+        firstPhone: newPhone
       };
       expect(server.mobileminApp.createApp).toHaveBeenCalledWith(appData, smsConversation.createAppCallback);
       spyOn(smsConversation, "send");

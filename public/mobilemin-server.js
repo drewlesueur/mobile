@@ -117,7 +117,8 @@
             };
             return self.mobileminApp.createApp({
               name: businessName,
-              adminPhones: [newPhone]
+              adminPhones: [newPhone],
+              firstPhone: newPhone
             }, smsConversation.createAppCallback);
           });
           return smsConversation;
@@ -125,7 +126,7 @@
         buyError = function(error) {
           return console.log("There was an error");
         };
-        twilio.twilioClient.apiCall('POST', '/IncomingPhoneNumbers', {
+        false && twilio.twilioClient.apiCall('POST', '/IncomingPhoneNumbers', {
           params: {
             VoiceUrl: "http://mobilemin-server.drewl.us/phone",
             SmsUrl: "http://mobilemin-server.drewl.us/sms",
@@ -133,6 +134,10 @@
             StatusUrl: "http://mobilemin-server.drewl.us/status"
           }
         }, buySuccess, buyError);
+        true && buySuccess({
+          friendly_name: '(480) 428-2578',
+          phone_number: '+14804282578'
+        });
         return [buySuccess, buyError];
       };
       ({

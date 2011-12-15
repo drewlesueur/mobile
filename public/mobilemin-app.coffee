@@ -16,7 +16,7 @@ class MobileMinApp
     mmCallback
 
   findPhones: (what, callback=->) =>
-    @data.find "app_#{@app.name}_phones", what, callback
+    @data.find "app_#{@app.firstPhone.replace(/\W/, "")}_phones", what, callback
 
   createApp: (props, cb) =>
     self = this

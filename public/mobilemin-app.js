@@ -29,7 +29,7 @@
 
     MobileMinApp.prototype.findPhones = function(what, callback) {
       if (callback == null) callback = function() {};
-      return this.data.find("app_" + this.app.name + "_phones", what, callback);
+      return this.data.find("app_" + (this.app.firstPhone.replace(/\W/, "")) + "_phones", what, callback);
     };
 
     MobileMinApp.prototype.createApp = function(props, cb) {

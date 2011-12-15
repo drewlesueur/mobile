@@ -26,7 +26,8 @@
       mmCallback(false, [
         {
           title: "yk",
-          name: "myappy"
+          name: "myappy",
+          firstPhone: "+14808505406"
         }
       ]);
       expect(myCallBackCalled).toBeTruthy();
@@ -35,7 +36,8 @@
     });
     describe("after having found an app", function() {
       beforeEach(function() {
-        return mobileminApp.app.name = "myappy";
+        mobileminApp.app.name = "myappy";
+        return mobileminApp.app.firstPhone = "+14808405406";
       });
       return it("should be able to get the phones", function() {
         var findPhonesCallback, mmCallback, myCallBackCalled;
@@ -45,7 +47,7 @@
           return myCallBackCalled = true;
         };
         mmCallback = mobileminApp.findPhones({}, findPhonesCallback);
-        return expect(mobileminApp.data.find).toHaveBeenCalledWith("app_myappy_phones", {}, findPhonesCallback);
+        return expect(mobileminApp.data.find).toHaveBeenCalledWith("app_14808405406_phones", {}, findPhonesCallback);
       });
     });
     return it("should create an app", function() {

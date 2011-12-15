@@ -328,7 +328,7 @@ describe "MobileMinServer", ->
     
     spyOn(server.mobileminApp, "createApp")
     smsConversation.emit("response", "Frozen Yogurt!") #TODO remove other chars?
-    appData = {name: "Frozen Yogurt!", adminPhones: [newPhone]}
+    appData = {name: "Frozen Yogurt!", adminPhones: [newPhone], firstPhone: newPhone}
     expect(server.mobileminApp.createApp).toHaveBeenCalledWith(
       appData , smsConversation.createAppCallback
     )

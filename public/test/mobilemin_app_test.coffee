@@ -20,7 +20,7 @@ describe "MobileminApp", ->
       "apps", findQuery, mmCallback
     )
     expect(_.isFunction(mmCallback)).toBeTruthy()
-    mmCallback(false, [{title: "yk", name: "myappy"}])
+    mmCallback(false, [{title: "yk", name: "myappy", firstPhone: "+14808505406"}])
     expect(myCallBackCalled).toBeTruthy()
     expect(mobileminApp.app.title).toBe("yk")
     expect(mobileminApp.data.db).toBe "new_mobilemin"
@@ -28,13 +28,14 @@ describe "MobileminApp", ->
   describe "after having found an app", ->
     beforeEach ->
       mobileminApp.app.name = "myappy"
+      mobileminApp.app.firstPhone = "+14808405406"
     it "should be able to get the phones", ->
       spyOn mobileminApp.data, "find"
       myCallBackCalled = false
       findPhonesCallback = -> myCallBackCalled = true
       mmCallback = mobileminApp.findPhones {}, findPhonesCallback
       expect(mobileminApp.data.find).toHaveBeenCalledWith(
-        "app_myappy_phones", {}, findPhonesCallback
+        "app_14808405406_phones", {}, findPhonesCallback
       )
 
   it "should create an app", ->
