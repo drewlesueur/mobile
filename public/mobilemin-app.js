@@ -9,9 +9,8 @@
     function MobileMinApp() {
       this.createApp = __bind(this.createApp, this);
       this.findPhones = __bind(this.findPhones, this);
-      this.find = __bind(this.find, this);      this.severus = Severus.init();
-      this.severus.db = "new_mobilemin";
-      this.data = Severus.init();
+      this.find = __bind(this.find, this);      this.data = Severus.init();
+      this.data.db = "new_mobilemin";
     }
 
     MobileMinApp.prototype.find = function(what, callback) {
@@ -23,7 +22,7 @@
         callback(err, apps);
         return _this.data.db = "new_mobilemin";
       };
-      this.severus.find("apps", what, mmCallback);
+      this.data.find("apps", what, mmCallback);
       return mmCallback;
     };
 

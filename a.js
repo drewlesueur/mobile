@@ -26,14 +26,15 @@ var _ = dModule.require("underscore")
 Server = dModule.require("mobilemin-server")
 server = Server.init()
 //server.handleNewCustomerWhoTextedStart({},"+1480405406" )
-var sms = server.sendSms("4804673355", "4808405406","testing3")
-sms.on("sent", function () {
-  console.log("message sent")    
-})
-sms.on("response", function (message, moreInfo) {
-  console.log("response with " + message)
-})
+//
 
 server.start()
 
-
+//var sms = server.sendSms("4804673355", "4808405406","testing3")
+//sms.on("sent", function () {
+//  console.log("message sent")    
+//})
+//sms.on("response", function (message, moreInfo) {
+//  console.log("response with " + message)
+//})
+//

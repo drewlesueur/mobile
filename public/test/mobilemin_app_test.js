@@ -8,7 +8,7 @@
       return expect(mobileminApp).toBeTruthy();
     });
     it("should have a severus", function() {
-      return expect(mobileminApp.severus.db).toBe("new_mobilemin");
+      return expect(mobileminApp.data.db).toBe("new_mobilemin");
     });
     it("should find an app", function() {
       var callback, findQuery, mmCallback, myCallBackCalled;

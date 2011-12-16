@@ -2,9 +2,8 @@ Severus = dModule.require "severus2"
 #TODO: handle errors!!
 class MobileMinApp 
   constructor: ->
-    @severus = Severus.init()
-    @severus.db = "new_mobilemin"
     @data = Severus.init()
+    @data.db = "new_mobilemin"
 
   find: (what, callback=->) =>
     mmCallback = (err, apps) =>
@@ -12,7 +11,7 @@ class MobileMinApp
       callback(err, apps)
       @data.db = "new_mobilemin"
 
-    @severus.find "apps", what, mmCallback
+    @data.find "apps", what, mmCallback
     mmCallback
 
   findPhones: (what, callback=->) =>
