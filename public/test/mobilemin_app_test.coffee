@@ -1,8 +1,13 @@
 describe "MobileminApp", ->
   MobileminApp = require "mobilemin-app"
-  mobileminApp = new MobileminApp()
 
   Severus = require "severus2"
+  mobileminApp = null
+  app = null
+
+  beforeEach ->
+    mobileminApp = new MobileminApp()
+    app = mobileminApp
 
   it "should be there", ->
     expect(mobileminApp).toBeTruthy()
@@ -30,6 +35,7 @@ describe "MobileminApp", ->
       mobileminApp.app.name = "myappy"
       mobileminApp.app.firstPhone = "+14808405406"
       mobileminApp.app.twilioPhone = "+14805554444"
+      app = mobileminApp
     it "should be able to get the phones", ->
       spyOn mobileminApp.data, "find"
       myCallBackCalled = false
@@ -43,14 +49,45 @@ describe "MobileminApp", ->
 
     spyOn(mobileminApp.data, "save")
     rawApp = {name: "drewsapp", test: 1}
-    myCallback = jasmine.createSpy()
-    saveCallback = mobileminApp.createApp(rawApp, myCallback)
+    mobileminApp.createApp(rawApp)
     expect(mobileminApp.data.save).toHaveBeenCalledWith(
-      "apps", rawApp, saveCallback
+      "apps", rawApp, app.onCreate
     )
-    saveCallback(null, rawApp)
-    expect(myCallback).toHaveBeenCalledWith(null, mobileminApp)
+
+  it "should handle a create", ->
+    rawApp = {name: "drewsapp", test: 1, _id: "xx"}
+    spyOn app, "emit"
+    app.onCreate null, rawApp 
+    expect(app.emit).toHaveBeenCalledWith("created")
     expect(mobileminApp.app.name).toBe("drewsapp")
+
+  it "should handle a create error", ->
+    rawApp = {name: "drewsapp", test: 1, _id: "xx"}
+    spyOn app, "emit"
+    app.onCreate "fake error", rawApp 
+    expect(app.emit).toHaveBeenCalledWith("createerror", "fake error")
+
+  it "should save", ->
+    spyOn app.data, "save"
+    app.save()
+    expect(app.data.save).toHaveBeenCalledWith(
+      "apps",
+      app.app,
+      app.onSave
+    )
+    
+  it "should handle a successful save", ->
+    rawApp = {name: "drewsapp", test: 1, _id: "xx"}
+    spyOn app, "emit"
+    app.onSave(null, rawApp) 
+    expect(app.emit).toHaveBeenCalledWith("saved")
+    expect(mobileminApp.app.name).toBe("drewsapp")
+
+  it "should handle a save error", ->
+    rawApp = {name: "drewsapp", test: 1, _id: "xx"}
+    spyOn app, "emit"
+    app.onSave("error!", rawApp) 
+    expect(app.emit).toHaveBeenCalledWith("saveerror", "error!")
 
 
 
