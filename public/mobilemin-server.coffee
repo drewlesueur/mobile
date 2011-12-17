@@ -143,6 +143,7 @@ dModule.define "mobilemin-server", ->
             name: businessName
             adminPhones: [from]
             firstPhone: from
+            twilioPhone: newPhone
           , smsConversation.createAppCallback
 
         return smsConversation
@@ -150,7 +151,9 @@ dModule.define "mobilemin-server", ->
       buyError = (error) =>
         console.log "There was an error"
         
-      false and twilio.twilioClient.apiCall('POST', '/IncomingPhoneNumbers', {params: {
+
+      actuallyBuy = true
+      actuallyBuy and twilio.twilioClient.apiCall('POST', '/IncomingPhoneNumbers', {params: {
         VoiceUrl: "http://mobilemin-server.drewl.us/phone"
         SmsUrl: "http://mobilemin-server.drewl.us/sms"
         AreaCode: areaCode
@@ -159,7 +162,7 @@ dModule.define "mobilemin-server", ->
       }}, buySuccess, buyError)
       
 
-      true and buySuccess
+      actuallyBuy or buySuccess
         friendly_name: '(480) 428-2578',
         phone_number: '+14804282578',
 

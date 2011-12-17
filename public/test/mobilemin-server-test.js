@@ -2,7 +2,7 @@
   var __slice = Array.prototype.slice;
 
   describe("MobileMinServer", function() {
-    var FakeMobileminTwilio, FakeTwilioClient, MobileminServer, RealMobileMinTwilio, apiCallSpy, config, drews, expressPost, expressRpcAppListen, expressRpcInit, expressRpcObj, fakeIncomingStartText, fakeIncomingText, fakeTimer, getAvailableLocalNumbersSpy, justBoughtNumber, notFakeIncomingStartText, provisionIncomingNumberSpy, sendSmsSpy, server, setupNumbersSpy;
+    var FakeMobileminTwilio, FakeTwilioClient, MobileminServer, RealMobileMinTwilio, apiCallSpy, config, drews, expressPost, expressRpcAppListen, expressRpcInit, expressRpcObj, fakeIncomingStartText, fakeIncomingText, fakeTimer, getAvailableLocalNumbersSpy, justBoughtNumber, notFakeIncomingStartText, notFakeIncomingStartText2, provisionIncomingNumberSpy, sendSmsSpy, server, setupNumbersSpy;
     drews = dModule.require("drews-mixins");
     fakeTimer = new jasmine.FakeTimer();
     window.setTimeout = function() {
@@ -60,9 +60,14 @@
       To: '+14804208755',
       From: '+14808405406'
     };
+    notFakeIncomingStartText2 = {
+      Body: 'not start',
+      To: '+14804208755',
+      From: '+14808405406'
+    };
     fakeIncomingStartText = {
       Body: 'start',
-      To: '+14804208755',
+      To: "+14804673355",
       From: '+14808405406'
     };
     expressRpcAppListen = jasmine.createSpy();
@@ -144,11 +149,8 @@
       return expect(server.expressApp.listen).toHaveBeenCalledWith(8010);
     });
     it("should know when to start handling a new customer", function() {
-      var arg, expectedArg, fakeReq, fakeRes;
-      arg = null;
-      server.handleNewCustomerWhoTextedStart = function(res, _arg) {
-        return arg = _arg;
-      };
+      var expectedArg, fakeReq, fakeRes;
+      spyOn(server, "handleNewCustomerWhoTextedStart");
       fakeReq = {
         body: fakeIncomingStartText
       };
@@ -157,7 +159,31 @@
       };
       server.sms(fakeReq, fakeRes);
       expectedArg = "+14808405406";
-      return expect(arg).toBe(expectedArg);
+      return expect(server.handleNewCustomerWhoTextedStart).toHaveBeenCalledWith(fakeRes, expectedArg);
+    });
+    it("should know when not to handle a new customer", function() {
+      var fakeReq, fakeRes;
+      spyOn(server, "handleNewCustomerWhoTextedStart");
+      fakeReq = {
+        body: notFakeIncomingStartText
+      };
+      fakeRes = {
+        send: function() {}
+      };
+      server.sms(fakeReq, fakeRes);
+      return expect(server.handleNewCustomerWhoTextedStart).not.toHaveBeenCalled();
+    });
+    it("should know when not to handle a new customer", function() {
+      var fakeReq, fakeRes;
+      spyOn(server, "handleNewCustomerWhoTextedStart");
+      fakeReq = {
+        body: notFakeIncomingStartText2
+      };
+      fakeRes = {
+        send: function() {}
+      };
+      server.sms(fakeReq, fakeRes);
+      return expect(server.handleNewCustomerWhoTextedStart).not.toHaveBeenCalled();
     });
     it("should know what to do with a status url", function() {});
     describe("should be able to send a text message from mobilemin", function() {
@@ -236,7 +262,9 @@
         server.status(fakeGoodStatusRequest, {});
         expect(server.smsSidsWaitingStatus["fake sid"]).toBeFalsy();
         expect(sms.emit).toHaveBeenCalledWith("sent");
-        server.sms(fakeIncomingTextRequest, {});
+        server.sms(fakeIncomingTextRequest, {
+          send: function() {}
+        });
         return expect(sms.emit).toHaveBeenCalledWith("response", fakeIncomingText.Body, fakeIncomingText);
       });
       it("should handle the sms response", function() {
@@ -290,11 +318,12 @@
       });
     });
     it("should know how to handle a new customer who texted start", function() {
-      var appData, buyCallbacks, buyError, buySuccess, fakeRes, newPhone, smsConversation;
+      var appData, buyCallbacks, buyError, buySuccess, fakeFrom, fakeRes, newPhone, smsConversation;
       fakeRes = {
         send: function() {}
       };
-      buyCallbacks = server.handleNewCustomerWhoTextedStart(fakeRes, "+14808405406");
+      fakeFrom = "+14808405406";
+      buyCallbacks = server.handleNewCustomerWhoTextedStart(fakeRes, fakeFrom);
       buySuccess = buyCallbacks[0];
       buyError = buyCallbacks[1];
       expect(apiCallSpy).toHaveBeenCalledWith("POST", "/IncomingPhoneNumbers", {
@@ -308,13 +337,14 @@
       spyOn(server, "sendSms").andCallThrough();
       smsConversation = buySuccess(justBoughtNumber);
       newPhone = justBoughtNumber.phone_number;
-      expect(server.sendSms).toHaveBeenCalledWith(server.mobileminNumber, newPhone, "Your mobilemin text number is " + justBoughtNumber.friendly_name + ". Subscribers will receive texts from that number. What is your business name?");
+      expect(server.sendSms).toHaveBeenCalledWith(server.mobileminNumber, fakeFrom, "Your mobilemin text number is " + justBoughtNumber.friendly_name + ". Subscribers will receive texts from that number. What is your business name?");
       spyOn(server.mobileminApp, "createApp");
       smsConversation.emit("response", "Frozen Yogurt!");
       appData = {
         name: "Frozen Yogurt!",
-        adminPhones: [newPhone],
-        firstPhone: newPhone
+        adminPhones: [fakeFrom],
+        firstPhone: fakeFrom,
+        twilioPhone: newPhone
       };
       expect(server.mobileminApp.createApp).toHaveBeenCalledWith(appData, smsConversation.createAppCallback);
       spyOn(smsConversation, "send");

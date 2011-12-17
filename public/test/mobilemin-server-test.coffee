@@ -56,9 +56,14 @@ describe "MobileMinServer", ->
     To: '+14804208755',
     From: '+14808405406',
 
+  notFakeIncomingStartText2 =
+    Body: 'not start',
+    To: '+14804208755',
+    From: '+14808405406',
+
   fakeIncomingStartText =
     Body: 'start',
-    To: '+14804208755',
+    To: "+14804673355",
     From: '+14808405406',
 
 
@@ -128,18 +133,33 @@ describe "MobileMinServer", ->
     #expect(server.twilio.setupNumbers).toHaveBeenCalled()
 
   it "should know when to start handling a new customer", ->
-    arg = null
-    server.handleNewCustomerWhoTextedStart =  (res, _arg) ->
-      arg = _arg
+    spyOn(server, "handleNewCustomerWhoTextedStart")
     fakeReq = 
       body: fakeIncomingStartText
     fakeRes =
       send: ->
 
     server.sms fakeReq, fakeRes
+
     expectedArg = "+14808405406"
-       
-    expect(arg).toBe(expectedArg)
+    expect(server.handleNewCustomerWhoTextedStart).toHaveBeenCalledWith(
+      fakeRes,
+      expectedArg
+    )
+
+  it "should know when not to handle a new customer", ->
+    spyOn(server, "handleNewCustomerWhoTextedStart")
+    fakeReq = body: notFakeIncomingStartText
+    fakeRes = send: ->
+    server.sms fakeReq, fakeRes
+    expect(server.handleNewCustomerWhoTextedStart).not.toHaveBeenCalled()
+
+  it "should know when not to handle a new customer", ->
+    spyOn(server, "handleNewCustomerWhoTextedStart")
+    fakeReq = body: notFakeIncomingStartText2
+    fakeRes = send: ->
+    server.sms fakeReq, fakeRes
+    expect(server.handleNewCustomerWhoTextedStart).not.toHaveBeenCalled()
 
   it "should know what to do with a status url", ->
     #TODO: implement this
@@ -231,7 +251,7 @@ describe "MobileMinServer", ->
       server.status(fakeGoodStatusRequest, {})
       expect(server.smsSidsWaitingStatus["fake sid"]).toBeFalsy();
       expect(sms.emit).toHaveBeenCalledWith("sent")
-      server.sms(fakeIncomingTextRequest, {})
+      server.sms(fakeIncomingTextRequest, {send: ->})
       expect(sms.emit).toHaveBeenCalledWith("response", fakeIncomingText.Body, fakeIncomingText) 
 
 
@@ -308,7 +328,8 @@ describe "MobileMinServer", ->
   it "should know how to handle a new customer who texted start", ->
     fakeRes =
       send: ->
-    buyCallbacks = server.handleNewCustomerWhoTextedStart(fakeRes, "+14808405406")
+    fakeFrom = "+14808405406"
+    buyCallbacks = server.handleNewCustomerWhoTextedStart(fakeRes, fakeFrom)
     buySuccess = buyCallbacks[0]
     buyError = buyCallbacks[1]
     expect(apiCallSpy).toHaveBeenCalledWith(
@@ -325,13 +346,13 @@ describe "MobileMinServer", ->
     newPhone = justBoughtNumber.phone_number
     expect(server.sendSms).toHaveBeenCalledWith(
       server.mobileminNumber,
-      newPhone,
+      fakeFrom,
       "Your mobilemin text number is #{justBoughtNumber.friendly_name}. Subscribers will receive texts from that number. What is your business name?"
     )
     
     spyOn(server.mobileminApp, "createApp")
     smsConversation.emit("response", "Frozen Yogurt!") #TODO remove other chars?
-    appData = {name: "Frozen Yogurt!", adminPhones: [newPhone], firstPhone: newPhone}
+    appData = {name: "Frozen Yogurt!", adminPhones: [fakeFrom], firstPhone: fakeFrom, twilioPhone: newPhone}
     expect(server.mobileminApp.createApp).toHaveBeenCalledWith(
       appData , smsConversation.createAppCallback
     )
