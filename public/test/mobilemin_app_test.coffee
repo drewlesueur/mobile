@@ -8,7 +8,7 @@ describe "MobileminApp", ->
     expect(mobileminApp).toBeTruthy()
 
   it "should have a severus", ->
-    expect(mobileminApp.severus.db).toBe("new_mobilemin")
+    expect(mobileminApp.data.db).toBe("new_mobilemin")
 
   it "should find an app", ->
     spyOn mobileminApp.severus, "find"

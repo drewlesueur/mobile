@@ -1,4 +1,9 @@
 
+  process.on("uncaughtException", function(err) {
+    console.log("there whas a hitch, but we're still up");
+    return console.log(err.stack);
+  });
+
   dModule.define("mobilemin-server", function() {
     var MobileminApp, MobileminServer, MobileminTwilio, config, drews, expressRpc, _;
     expressRpc = dModule.require("express-rpc");
@@ -25,16 +30,21 @@
       self.sms = function(req, res) {
         var sms, text, _ref, _ref2;
         text = req.body;
+        res.send("ok");
         if ((_ref = self.conversations[text.To]) != null ? _ref[text.From] : void 0) {
           sms = (_ref2 = self.conversations[text.To]) != null ? _ref2[text.From] : void 0;
           sms.emit("response", text.Body, text);
         }
-        if (req.body.Body.toLowerCase() === "start") {
+        if (req.body.Body.toLowerCase() === "start" && text.To === self.mobileminNumber) {
+          console.log("i see we are on start");
+          console.logj;
           return self.handleNewCustomerWhoTextedStart(res, text.From);
         }
       };
       self.status = function(req, res) {
         var info, sid, sms, status;
+        console.log("got status");
+        console.log(req.body);
         info = req.body;
         sid = info.SmsSid;
         status = info.SmsStatus;
@@ -69,6 +79,8 @@
         from = self.addPlus1(from);
         sendSmsSuccess = function(res) {
           var sid, _base;
+          console.log("success sending sms");
+          console.log(res);
           sid = res.sid;
           self.smsSidsWaitingStatus[sid] = sms;
           _.extend(sms, res);
@@ -90,7 +102,9 @@
         send = function() {
           return twilio.twilioClient.sendSms(from, to, body, "http://mobilemin-server.drewl.us/status", sendSmsSuccess, sendSmsError);
         };
-        sendSmsError = function() {
+        sendSmsError = function(err) {
+          console.log("there was an error sending an sms");
+          console.log(err);
           return drews.wait(3000, function() {
             return sms.retry();
           });
@@ -106,19 +120,22 @@
       self.handleNewCustomerWhoTextedStart = function(res, from) {
         var areaCode, buyError, buySuccess;
         var _this = this;
+        console.log("we are handling a new start");
         areaCode = drews.s(from, 2, 3);
         buySuccess = function(justBoughtNumber) {
           var newPhone, smsConversation;
           newPhone = justBoughtNumber.phone_number;
-          smsConversation = self.sendSms(self.mobileminNumber, newPhone, "Your mobilemin text number is " + justBoughtNumber.friendly_name + ". Subscribers will receive texts from that number. What is your business name?");
+          console.log("you just bought a number which was " + newPhone);
+          smsConversation = self.sendSms(self.mobileminNumber, from, "Your mobilemin text number is " + justBoughtNumber.friendly_name + ". Subscribers will receive texts from that number. What is your business name?");
+          console.log("you tried to ask for business name");
           smsConversation.once("response", function(businessName) {
             smsConversation.createAppCallback = function() {
               return smsConversation.send("Thank you.");
             };
             return self.mobileminApp.createApp({
               name: businessName,
-              adminPhones: [newPhone],
-              firstPhone: newPhone
+              adminPhones: [from],
+              firstPhone: from
             }, smsConversation.createAppCallback);
           });
           return smsConversation;

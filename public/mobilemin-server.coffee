@@ -1,3 +1,6 @@
+process.on "uncaughtException", (err) ->
+  console.log "there whas a hitch, but we're still up"
+  console.log err.stack
 
 dModule.define "mobilemin-server", ->
   expressRpc = dModule.require "express-rpc" 
@@ -21,15 +24,20 @@ dModule.define "mobilemin-server", ->
     self.phone = ->
     self.sms =  (req, res) ->
       text = req.body 
+      res.send "ok"
       if self.conversations[text.To]?[text.From]
         sms = self.conversations[text.To]?[text.From]
         sms.emit "response", text.Body, text
       
       #todo: check they don't already have and account
-      if req.body.Body.toLowerCase() == "start"
+      if req.body.Body.toLowerCase() == "start" and text.To == self.mobileminNumber
+        console.log "i see we are on start"
+        console.logj
         self.handleNewCustomerWhoTextedStart res, text.From
 
     self.status = (req, res) ->
+      console.log "got status"
+      console.log req.body
       info = req.body
       sid = info.SmsSid
       status = info.SmsStatus
@@ -65,6 +73,8 @@ dModule.define "mobilemin-server", ->
       from = self.addPlus1 from
 
       sendSmsSuccess = (res) ->
+        console.log "success sending sms"
+        console.log res
         sid = res.sid
         self.smsSidsWaitingStatus[sid] = sms
         _.extend(sms, res)
@@ -93,7 +103,9 @@ dModule.define "mobilemin-server", ->
           sendSmsError
         )
 
-      sendSmsError = ->
+      sendSmsError = (err) ->
+        console.log "there was an error sending an sms"
+        console.log err
         drews.wait 3000, ->
           sms.retry()
           
@@ -112,13 +124,16 @@ dModule.define "mobilemin-server", ->
       return sms
 
     self.handleNewCustomerWhoTextedStart = (res, from) ->
+      console.log "we are handling a new start"
       areaCode = drews.s(from, 2, 3) #get rid of +1, and get area code 
       buySuccess = (justBoughtNumber) =>
         newPhone = justBoughtNumber.phone_number
+        console.log "you just bought a number which was #{newPhone}"
         smsConversation = self.sendSms(
-          self.mobileminNumber, newPhone,
+          self.mobileminNumber, from,
           "Your mobilemin text number is #{justBoughtNumber.friendly_name}. Subscribers will receive texts from that number. What is your business name?"
         )
+        console.log "you tried to ask for business name"
         smsConversation.once "response", (businessName) ->
           smsConversation.createAppCallback = () ->
             smsConversation.send "Thank you."
@@ -126,8 +141,8 @@ dModule.define "mobilemin-server", ->
            
           self.mobileminApp.createApp
             name: businessName
-            adminPhones: [newPhone]
-            firstPhone: newPhone
+            adminPhones: [from]
+            firstPhone: from
           , smsConversation.createAppCallback
 
         return smsConversation
