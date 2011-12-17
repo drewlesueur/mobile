@@ -1,4 +1,4 @@
-process.on "uncaughtException", (err) ->
+process?.on "uncaughtException", (err) ->
   console.log "there whas a hitch, but we're still up"
   console.log err.stack
 

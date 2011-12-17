@@ -1,8 +1,10 @@
 
-  process.on("uncaughtException", function(err) {
-    console.log("there whas a hitch, but we're still up");
-    return console.log(err.stack);
-  });
+  if (typeof process !== "undefined" && process !== null) {
+    process.on("uncaughtException", function(err) {
+      console.log("there whas a hitch, but we're still up");
+      return console.log(err.stack);
+    });
+  }
 
   dModule.define("mobilemin-server", function() {
     var MobileminApp, MobileminServer, MobileminTwilio, config, drews, expressRpc, _;

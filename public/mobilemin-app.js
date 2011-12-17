@@ -11,6 +11,7 @@
       this.findPhones = __bind(this.findPhones, this);
       this.find = __bind(this.find, this);      this.data = Severus.init();
       this.data.db = "new_mobilemin";
+      this.app = {};
     }
 
     MobileMinApp.prototype.find = function(what, callback) {
@@ -27,8 +28,11 @@
     };
 
     MobileMinApp.prototype.findPhones = function(what, callback) {
+      var cleanFirstPhone, cleanTwilioPhone;
       if (callback == null) callback = function() {};
-      return this.data.find("app_" + (this.app.firstPhone.replace(/\W/, "")) + "_phones", what, callback);
+      cleanFirstPhone = this.app.firstPhone.replace(/\W/, "");
+      cleanTwilioPhone = this.app.twilioPhone.replace(/\W/, "");
+      return this.data.find("app_" + cleanFirstPhone + "_" + cleanTwilioPhone + "_phones", what, callback);
     };
 
     MobileMinApp.prototype.createApp = function(props, cb) {

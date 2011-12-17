@@ -4,6 +4,7 @@ class MobileMinApp
   constructor: ->
     @data = Severus.init()
     @data.db = "new_mobilemin"
+    @app = {}
 
   find: (what, callback=->) =>
     mmCallback = (err, apps) =>
@@ -15,7 +16,9 @@ class MobileMinApp
     mmCallback
 
   findPhones: (what, callback=->) =>
-    @data.find "app_#{@app.firstPhone.replace(/\W/, "")}_phones", what, callback
+    cleanFirstPhone = @app.firstPhone.replace(/\W/, "")
+    cleanTwilioPhone = @app.twilioPhone.replace(/\W/, "")
+    @data.find "app_#{cleanFirstPhone}_#{cleanTwilioPhone}_phones", what, callback
 
   createApp: (props, cb) =>
     self = this

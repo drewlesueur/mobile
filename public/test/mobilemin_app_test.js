@@ -12,7 +12,7 @@
     });
     it("should find an app", function() {
       var callback, findQuery, mmCallback, myCallBackCalled;
-      spyOn(mobileminApp.severus, "find");
+      spyOn(mobileminApp.data, "find");
       myCallBackCalled = false;
       callback = function() {
         return myCallBackCalled = true;
@@ -21,7 +21,7 @@
         title: "yk"
       };
       mmCallback = mobileminApp.find(findQuery, callback);
-      expect(mobileminApp.severus.find).toHaveBeenCalledWith("apps", findQuery, mmCallback);
+      expect(mobileminApp.data.find).toHaveBeenCalledWith("apps", findQuery, mmCallback);
       expect(_.isFunction(mmCallback)).toBeTruthy();
       mmCallback(false, [
         {
@@ -37,7 +37,8 @@
     describe("after having found an app", function() {
       beforeEach(function() {
         mobileminApp.app.name = "myappy";
-        return mobileminApp.app.firstPhone = "+14808405406";
+        mobileminApp.app.firstPhone = "+14808405406";
+        return mobileminApp.app.twilioPhone = "+14805554444";
       });
       return it("should be able to get the phones", function() {
         var findPhonesCallback, mmCallback, myCallBackCalled;
@@ -47,7 +48,7 @@
           return myCallBackCalled = true;
         };
         mmCallback = mobileminApp.findPhones({}, findPhonesCallback);
-        return expect(mobileminApp.data.find).toHaveBeenCalledWith("app_14808405406_phones", {}, findPhonesCallback);
+        return expect(mobileminApp.data.find).toHaveBeenCalledWith("app_14808405406_14805554444_phones", {}, findPhonesCallback);
       });
     });
     return it("should create an app", function() {
