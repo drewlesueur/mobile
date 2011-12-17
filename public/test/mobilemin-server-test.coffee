@@ -1,3 +1,6 @@
+#TODO: only text start to mobilemin
+#
+#
 describe "MobileMinServer", ->
   drews = dModule.require "drews-mixins"
   fakeTimer = new jasmine.FakeTimer()
