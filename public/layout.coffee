@@ -4,7 +4,7 @@ server = MobileminServer.init()
 server.onText = (text) ->
   if text.to is mainMobileminNumber and text.body is "start"
     server.buyPhoneNumberFor(text.from)
-  else if hasAStatus(text.from)
+  else if hasAStatus(text.from, text.to)
     status = server.getStatus(text.from, text.to)
     twilioPhone = server.getTwilioPhoneFor(text.from)
     if status is "waiting for business name"
