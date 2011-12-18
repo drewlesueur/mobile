@@ -31,6 +31,7 @@ class MobileMinApp
     @emit "created"
     
   createApp: (props) =>
+    @app = props 
     @data.save "apps", props, @onCreate
 
   onSave: (err, app) =>

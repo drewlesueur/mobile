@@ -50,6 +50,7 @@ describe "MobileminApp", ->
     spyOn(mobileminApp.data, "save")
     rawApp = {name: "drewsapp", test: 1}
     mobileminApp.createApp(rawApp)
+    expect(app.app).toBe(rawApp)
     expect(mobileminApp.data.save).toHaveBeenCalledWith(
       "apps", rawApp, app.onCreate
     )

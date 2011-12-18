@@ -141,7 +141,7 @@
       expect(customer.convo.send).toHaveBeenCalledWith("Congratulations! Your MobileMin number is " + customer._app.prettyPhone + ". Your customers text \"join\" to subscribe. What is your business name?");
       return expect(customer.convo.once).toHaveBeenCalledWith("response", customer.onBusinessName);
     });
-    return it("should know what to do when it gets a business name", function() {
+    it("should know what to do when it gets a business name", function() {
       spyOn(customer, "set");
       spyOn(customer.app, "save");
       spyOn(customer.convo, "send");
@@ -151,6 +151,18 @@
       expect(customer.app.save).toHaveBeenCalled();
       expect(customer.convo.send).toHaveBeenCalledWith("What is your business phone number so we can forward calls?  ");
       return expect(customer.convo.once).toHaveBeenCalledWith("response", customer.onBusinessPhone);
+    });
+    return it("should know what to do once it gets a business phone", function() {
+      customer._app.prettyPhone = ":)";
+      spyOn(customer, "set");
+      spyOn(customer.app, "save");
+      spyOn(customer.convo, "send");
+      spyOn(customer.convo, "on");
+      customer.onBusinessPhone("fake phone");
+      expect(customer.set).toHaveBeenCalledWith("businessPhone", "fake phone");
+      expect(customer.app.save).toHaveBeenCalled();
+      expect(customer.convo.send).toHaveBeenCalledWith("You're live! To send out a text blast, just text a special offer to " + customer._app.prettyPhone + " and all of your subscribers will get the text! ");
+      return expect(customer.convo.on).toHaveBeenCalledWith("response", customer.onNormalText);
     });
   });
 
@@ -216,7 +228,7 @@
   });
 
   describe("MobileMinServer", function() {
-    var FakeMobileminTwilio, FakeTwilioClient, MobileminServer, RealMobileMinTwilio, apiCallSpy, config, expressPost, expressRpcAppListen, expressRpcInit, expressRpcObj, fakeTimer, getAvailableLocalNumbersSpy, provisionIncomingNumberSpy, sendSmsSpy, server, setupNumbersSpy;
+    var Customer, FakeMobileminTwilio, FakeTwilioClient, MobileminServer, RealMobileMinTwilio, apiCallSpy, config, expressPost, expressRpcAppListen, expressRpcInit, expressRpcObj, fakeTimer, getAvailableLocalNumbersSpy, provisionIncomingNumberSpy, sendSmsSpy, server, setupNumbersSpy;
     drews = dModule.require("drews-mixins");
     fakeTimer = new jasmine.FakeTimer();
     window.setTimeout = function() {
@@ -224,6 +236,7 @@
       args = 1 <= arguments.length ? __slice.call(arguments, 0) : [];
       return fakeTimer.setTimeout.apply(fakeTimer, args);
     };
+    Customer = dModule.require("mobilemin-customer");
     expressRpcAppListen = jasmine.createSpy();
     expressPost = jasmine.createSpy();
     expressRpcObj = {
@@ -340,140 +353,8 @@
       return expect(server.handleNewCustomerWhoTextedStart).not.toHaveBeenCalled();
     });
     it("should know what to do with a status url", function() {});
-    xdescribe("should be able to send a text message from mobilemin", function() {
-      var eventEmit, eventOn, eventful, responseCallback, sendSmsError, sendSmsSuccess, sentCallback, sms, triedToSendCallback;
-      triedToSendCallback = null;
-      sentCallback = null;
-      responseCallback = null;
-      sendSmsSuccess = null;
-      sendSmsError = null;
-      sms = null;
-      eventOn = null;
-      eventEmit = null;
-      eventful = null;
-      fakeSendSmsResponse = null;
-      fakeGoodStatusRequest = null;
-      fakeBadStatusRequest = null;
-      fakeIncomingTextRequest = null;
-      beforeEach(function() {
-        var fakeTriedToSendResponse, smsErrored, smsResponse, smsSent, smsTriedToSendError, smsTriedToSendSuccess;
-        smsTriedToSendSuccess = jasmine.createSpy();
-        smsTriedToSendError = jasmine.createSpy();
-        smsSent = jasmine.createSpy();
-        smsErrored = jasmine.createSpy();
-        smsResponse = jasmine.createSpy();
-        eventOn = jasmine.createSpy();
-        eventEmit = jasmine.createSpy();
-        eventful = {
-          on: eventOn,
-          emit: eventEmit
-        };
-        spyOn(drews, "makeEventful").andReturn(eventful);
-        fakeTriedToSendResponse = {
-          sid: "fake sid"
-        };
-        sms = server.createConversation(server.mobileminNumber, "4808405406");
-        sms.send("testing");
-        expect(sms).toBe(eventful);
-        sendSmsSuccess = sms.sendSmsSuccess, sendSmsError = sms.sendSmsError;
-        fakeSendSmsResponse = {
-          sid: "fake sid",
-          status: "queued"
-        };
-        fakeGoodStatusRequest = {
-          body: {
-            AccountSid: 'fake account sid',
-            SmsStatus: 'sent',
-            Body: 'testing2',
-            SmsSid: 'fake sid',
-            To: '+14808405406',
-            From: '+14804673355',
-            ApiVersion: '2010-04-01'
-          }
-        };
-        fakeBadStatusRequest = {
-          body: {
-            AccountSid: 'fake account sid',
-            SmsStatus: 'error',
-            Body: 'testing2',
-            SmsSid: 'fake sid',
-            To: '+14808405406',
-            From: '+14804673355',
-            ApiVersion: '2010-04-01'
-          }
-        };
-        return fakeIncomingTextRequest = {
-          body: fakeIncomingText
-        };
-      });
-      it("should have called the twilio client sms", function() {
-        return expect(sendSmsSpy).toHaveBeenCalledWith(server.mobileminNumber, "+14808405406", "testing", "http://mobilemin-server.drewl.us/status", sendSmsSuccess, sendSmsError);
-      });
-      it("should handle the sms response", function() {
-        sendSmsSuccess(fakeSendSmsResponse);
-        expect(sms.emit).toHaveBeenCalledWith("triedtosendsuccess");
-        expect(server.conversations[server.mobileminNumber]["+14808405406"]).toBe(sms);
-        expect(server.smsSidsWaitingStatus["fake sid"]).toBe(sms);
-        server.status(fakeGoodStatusRequest, {});
-        expect(server.smsSidsWaitingStatus["fake sid"]).toBeFalsy();
-        expect(sms.emit).toHaveBeenCalledWith("sent");
-        server.sms(fakeIncomingTextRequest, {
-          send: function() {}
-        });
-        return expect(sms.emit).toHaveBeenCalledWith("response", fakeIncomingText.Body, fakeIncomingText);
-      });
-      it("should handle the sms response", function() {
-        sendSmsSuccess(fakeSendSmsResponse);
-        spyOn(sms, "retry");
-        expect(sms.emit).toHaveBeenCalledWith("triedtosendsuccess");
-        expect(server.conversations[server.mobileminNumber]["+14808405406"]).toBe(sms);
-        expect(server.smsSidsWaitingStatus["fake sid"]).toBe(sms);
-        server.status(fakeBadStatusRequest, {});
-        expect(server.smsSidsWaitingStatus["fake sid"]).toBeFalsy();
-        expect(sms.emit).toHaveBeenCalledWith("error");
-        expect(sms.emit).not.toHaveBeenCalledWith("sent");
-        return expect(sms.retry).toHaveBeenCalled();
-      });
-      it("should resend in 3 seconds if if failed to try to send", function() {
-        spyOn(sms, "retry");
-        sendSmsError();
-        fakeTimer.tick(3000);
-        return expect(sms.retry).toHaveBeenCalled();
-      });
-      it("should know how to retry", function() {
-        var oldCallCount, retry;
-        expect(sms.maxRetries).toBe(3);
-        sms.maxRetries = 4;
-        sms.sid = "a fake sid";
-        server.smsSidsWaitingStatus[sms.sid] = sms;
-        retry = function() {
-          var oldCallCount;
-          oldCallCount = sendSmsSpy.callCount;
-          sms.retry();
-          expect(server.smsSidsWaitingStatus[sms.sid]).toBeFalsy();
-          expect(sendSmsSpy.callCount).toBe(oldCallCount + 1);
-          return expect(sendSmsSpy.mostRecentCall.args).toEqual([server.mobileminNumber, "+14808405406", "testing", "http://mobilemin-server.drewl.us/status", sms.sendSmsSuccess, sms.sendSmsError]);
-        };
-        retry();
-        retry();
-        retry();
-        retry();
-        oldCallCount = sendSmsSpy.callCount;
-        sms.retry();
-        expect(sendSmsSpy.callCount).toBe(oldCallCount);
-        return expect(sms.emit).toHaveBeenCalledWith("maxretriesreached", 4);
-      });
-      it("should try to resend if it gets a bad status", function() {});
-      return it("should have a send method", function() {
-        var oldCallCount;
-        oldCallCount = sendSmsSpy.callCount;
-        sms.send("howdy");
-        expect(sendSmsSpy.callCount).toBe(oldCallCount + 1);
-        return expect(sendSmsSpy).toHaveBeenCalledWith(server.mobileminNumber, "+14808405406", "howdy", "http://mobilemin-server.drewl.us/status", sms.sendSmsSuccess, sms.sendSmsError);
-      });
-    });
     it("should know how to handle a new customer who texted start", function() {
-      var buyCallbacks, buyError, buySuccess, fakeFrom, fakeRes, newPhone;
+      var buyCallbacks, buyError, buySuccess, createSpy, fakeCustomer, fakeFrom, fakeRes, newPhone;
       fakeRes = {
         send: function() {}
       };
@@ -489,20 +370,124 @@
           StatusUrl: "http://mobilemin-server.drewl.us/status"
         }
       }, buySuccess, buyError);
-      return;
-      spyOn(server.mobileminApp, "createApp");
-      spyOn(server.mobileminApp, "once");
+      createSpy = jasmine.createSpy();
+      fakeCustomer = {
+        createApp: createSpy
+      };
+      spyOn(Customer, "init").andReturn(fakeCustomer);
+      spyOn(server, "setUpCustomer");
       buySuccess(justBoughtNumber);
       newPhone = justBoughtNumber.phone_number;
-      expect(server.mobileminApp.createApp).toHaveBeenCalledWith({
+      expect(Customer.init).toHaveBeenCalledWith(server.mobileminNumber, fakeFrom);
+      expect(server.setUpCustomer).toHaveBeenCalledWith(fakeCustomer);
+      return expect(fakeCustomer.createApp).toHaveBeenCalledWith({
         adminPhones: [fakeFrom],
         firstPhone: fakeFrom,
-        twilioPhone: newPhone
+        twilioPhone: newPhone,
+        prettyPhone: justBoughtNumber.friendly_name
       });
-      return expect(server.mobileminApp.once).toHaveBeenCalledWith("created", server.onNewCustomerAppCreated);
     });
-    xit("should know what to do once a new customer app is created", function() {
-      return server.onNewCustomerAppCreated();
+    it("should setup a customer", function() {
+      var fakeCustomer, onSpy;
+      onSpy = jasmine.createSpy();
+      fakeCustomer = {
+        convo: {
+          on: onSpy,
+          from: "f",
+          to: "t"
+        }
+      };
+      spyOn(_, "bind").andReturn("fake bind");
+      server.setUpCustomer(fakeCustomer);
+      expect(_.bind).toHaveBeenCalledWith(server.onTriedToSendSuccess, null, fakeCustomer);
+      expect(fakeCustomer.convo.on).toHaveBeenCalledWith("triedtosendsuccess", "fake bind");
+      return expect(server.conversations["f"]["t"]).toBe(fakeCustomer);
+    });
+    it("should know what to do when a customer has a triedtosendsuccess", function() {
+      var fakeCustomer;
+      fakeCustomer = {
+        convo: {
+          sid: "fake sid"
+        }
+      };
+      server.onTriedToSendSuccess(fakeCustomer);
+      return expect(server.smsSidsWaitingStatus["fake sid"]).toBe(fakeCustomer);
+    });
+    it("should know how to handle a conversation", function() {
+      var emitSpy, fakeCustomer, fakeReq, fakeRes, fakeSend;
+      fakeReq = {
+        body: {
+          To: "t",
+          From: "f",
+          Body: "hi"
+        }
+      };
+      fakeSend = jasmine.createSpy();
+      fakeRes = {
+        send: fakeSend
+      };
+      emitSpy = jasmine.createSpy();
+      fakeCustomer = {
+        convo: {
+          emit: emitSpy
+        }
+      };
+      server.conversations["t"] = {};
+      server.conversations["t"]["f"] = fakeCustomer;
+      server.sms(fakeReq, fakeRes);
+      expect(fakeSend).toHaveBeenCalledWith("ok");
+      return expect(fakeCustomer.convo.emit).toHaveBeenCalledWith("response", fakeReq.body.Body, fakeReq.body);
+    });
+    it("should handle an sms status", function() {
+      var emitSpy, fakeCustomer, fakeReq, fakeRes, fakeSend;
+      emitSpy = jasmine.createSpy();
+      fakeCustomer = {
+        convo: {
+          emit: emitSpy
+        }
+      };
+      fakeReq = {
+        body: {
+          SmsSid: "fake sid",
+          SmsStatus: "sent"
+        }
+      };
+      fakeSend = jasmine.createSpy();
+      fakeRes = {
+        send: fakeSend
+      };
+      server.smsSidsWaitingStatus["fake sid"] = fakeCustomer;
+      server.status(fakeReq, fakeRes);
+      expect(server.smsSidsWaitingStatus["fake sid"]).toBeFalsy();
+      expect(fakeCustomer.convo.emit).toHaveBeenCalledWith("sent");
+      return expect(fakeSend).toHaveBeenCalledWith("ok");
+    });
+    it("should handle a bad sms status", function() {
+      var emitSpy, fakeCustomer, fakeReq, fakeRes, fakeSend, retrySpy;
+      emitSpy = jasmine.createSpy();
+      retrySpy = jasmine.createSpy();
+      fakeCustomer = {
+        convo: {
+          emit: emitSpy,
+          retry: retrySpy
+        }
+      };
+      fakeReq = {
+        body: {
+          SmsSid: "fake sid",
+          SmsStatus: "error"
+        }
+      };
+      fakeSend = jasmine.createSpy();
+      fakeRes = {
+        send: fakeSend
+      };
+      server.smsSidsWaitingStatus["fake sid"] = fakeCustomer;
+      server.status(fakeReq, fakeRes);
+      expect(server.smsSidsWaitingStatus["fake sid"]).toBeFalsy();
+      expect(fakeCustomer.convo.emit).toHaveBeenCalledWith("error");
+      expect(fakeSend).toHaveBeenCalledWith("ok");
+      return expect(retrySpy).toHaveBeenCalled();
     });
     return dModule.define("mobilemin-twilio", RealMobileMinTwilio);
   });

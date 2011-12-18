@@ -84,6 +84,12 @@
         customer.convo.send("What is your business phone number so we can forward calls?  ");
         return customer.convo.once("response", customer.onBusinessPhone);
       };
+      customer.onBusinessPhone = function(businessPhone) {
+        customer.set("businessPhone", businessPhone);
+        customer.app.save();
+        customer.convo.send("You're live! To send out a text blast, just text a special offer to " + customer._app.prettyPhone + " and all of your subscribers will get the text! ");
+        return customer.convo.on("response", customer.onNormalText);
+      };
       customer.get = function(key) {
         return customer.app.app[key];
       };
@@ -96,13 +102,14 @@
   });
 
   dModule.define("mobilemin-server", function() {
-    var MobileminApp, MobileminServer, MobileminTwilio, config, expressRpc, _;
+    var Customer, MobileminApp, MobileminServer, MobileminTwilio, config, expressRpc, _;
     expressRpc = dModule.require("express-rpc");
     drews = dModule.require("drews-mixins");
     config = dModule.require("config");
     _ = dModule.require("underscore");
     MobileminApp = dModule.require("mobilemin-app");
     MobileminTwilio = dModule.require("mobilemin-twilio");
+    Customer = dModule.require("mobilemin-customer");
     MobileminServer = {};
     MobileminServer.init = function() {
       var self, twilio;
@@ -110,12 +117,13 @@
       self = {};
       self.phone = function() {};
       self.sms = function(req, res) {
-        var sms, text, _ref, _ref2;
+        var customer, text, _ref, _ref2;
         text = req.body;
         res.send("ok");
         if ((_ref = self.conversations[text.To]) != null ? _ref[text.From] : void 0) {
-          sms = (_ref2 = self.conversations[text.To]) != null ? _ref2[text.From] : void 0;
-          sms.emit("response", text.Body, text);
+          customer = (_ref2 = self.conversations[text.To]) != null ? _ref2[text.From] : void 0;
+          customer.convo.emit("response", text.Body, text);
+          return;
         }
         if (req.body.Body.toLowerCase() === "start" && text.To === self.mobileminNumber) {
           console.log("i see we are on start");
@@ -124,23 +132,24 @@
         }
       };
       self.status = function(req, res) {
-        var info, sid, sms, status;
+        var customer, info, sid, status;
         console.log("got status");
         console.log(req.body);
         info = req.body;
         sid = info.SmsSid;
         status = info.SmsStatus;
         if (sid && self.smsSidsWaitingStatus[sid]) {
-          sms = self.smsSidsWaitingStatus[sid];
+          customer = self.smsSidsWaitingStatus[sid];
           delete self.smsSidsWaitingStatus[sid];
-          sms.status = status;
+          customer.convo.status = status;
           if (status === "sent") {
-            return sms.emit("sent");
+            customer.convo.emit("sent");
           } else {
-            sms.emit("error");
-            return sms.retry();
+            customer.convo.emit("error");
+            customer.convo.retry();
           }
         }
+        return res.send("ok");
       };
       self.mobileminNumber = "+14804673355";
       self.expressApp = expressRpc("/rpc", {});
@@ -173,22 +182,35 @@
         smsConversation = self.createConversation(self.mobileminNumber, from);
         return console.log("you tried to ask for business name");
       };
+      self.onTriedToSendSuccess = function(convo) {
+        var sid;
+        sid = convo.sid;
+        return self.smsSidsWaitingStatus[sid] = convo;
+      };
+      self.setUpConvo = function(convo) {
+        var _base, _name;
+        convo.on("triedtosendsuccess", _.bind(self.onTriedToSendSuccess, null, customer));
+        (_base = self.conversations)[_name = convo.from] || (_base[_name] = {});
+        return self.conversations[convo.from][convo.to] = customer;
+      };
       self.handleNewCustomerWhoTextedStart = function(res, from) {
         var actuallyBuy, areaCode, buyError, buySuccess;
         var _this = this;
         console.log("we are handling a new start");
         areaCode = drews.s(from, 2, 3);
         buySuccess = function(justBoughtNumber) {
-          var app, newPhone;
+          var customer, newPhone;
           newPhone = justBoughtNumber.phone_number;
           console.log("you just bought a number which was " + newPhone);
-          app = new MobileminApp();
-          app.createApp({
+          customer = Customer.init(self.mobileminNumber, from);
+          self.setUpCustomer(customer);
+          customer.createApp({
             adminPhones: [from],
             firstPhone: from,
-            twilioPhone: newPhone
+            twilioPhone: newPhone,
+            prettyPhone: justBoughtNumber.friendly_name
           });
-          return app.once("created", self.onNewCustomerAppCreated);
+          return customer;
         };
         buyError = function(error) {
           return console.log("There was an error");

@@ -51,6 +51,7 @@
     };
 
     MobileMinApp.prototype.createApp = function(props) {
+      this.app = props;
       return this.data.save("apps", props, this.onCreate);
     };
 

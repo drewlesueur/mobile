@@ -65,6 +65,7 @@
         test: 1
       };
       mobileminApp.createApp(rawApp);
+      expect(app.app).toBe(rawApp);
       return expect(mobileminApp.data.save).toHaveBeenCalledWith("apps", rawApp, app.onCreate);
     });
     it("should handle a create", function() {

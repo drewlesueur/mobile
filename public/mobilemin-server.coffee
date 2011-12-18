@@ -25,11 +25,7 @@ dModule.define "mobilemin-conversation", ->
       console.log res
       sid = res.sid
       _.extend(sms, res)
-      #self.smsSidsWaitingStatus[sid] = sms
-      #self.conversations[from] or= {}
-      #self.conversations[from][to] = sms
       sms.emit("triedtosendsuccess")
-      # or sms.onTriedToSendSuccess()
     
     sms.maxRetries = 3
     sms.retries = 0
@@ -89,9 +85,14 @@ dModule.define "mobilemin-customer", ->
       """
       customer.convo.once "response", customer.onBusinessPhone
 
-
+    customer.onBusinessPhone = (businessPhone) ->
+      customer.set("businessPhone", businessPhone)
+      customer.app.save()
+      customer.convo.send """
+        You're live! To send out a text blast, just text a special offer to #{customer._app.prettyPhone} and all of your subscribers will get the text! 
+      """
+      customer.convo.on "response", customer.onNormalText
       
-
 
     customer.get = (key) ->
       return customer.app.app[key]
@@ -113,6 +114,7 @@ dModule.define "mobilemin-server", ->
   MobileminApp = dModule.require "mobilemin-app"
 
   MobileminTwilio = dModule.require "mobilemin-twilio"
+  Customer = dModule.require "mobilemin-customer"
 
   MobileminServer = {}
   MobileminServer.init = ->
@@ -122,8 +124,9 @@ dModule.define "mobilemin-server", ->
       text = req.body 
       res.send "ok"
       if self.conversations[text.To]?[text.From]
-        sms = self.conversations[text.To]?[text.From]
-        sms.emit "response", text.Body, text
+        customer = self.conversations[text.To]?[text.From]
+        customer.convo.emit "response", text.Body, text
+        return
       
       #todo: check they don't already have and account
       if req.body.Body.toLowerCase() == "start" and text.To == self.mobileminNumber
@@ -138,14 +141,15 @@ dModule.define "mobilemin-server", ->
       sid = info.SmsSid
       status = info.SmsStatus
       if sid and self.smsSidsWaitingStatus[sid]
-        sms = self.smsSidsWaitingStatus[sid] 
+        customer = self.smsSidsWaitingStatus[sid] 
         delete self.smsSidsWaitingStatus[sid] 
-        sms.status = status
+        customer.convo.status = status
         if status == "sent" 
-          sms.emit("sent")
+          customer.convo.emit("sent")
         else
-          sms.emit("error")
-          sms.retry()
+          customer.convo.emit("error")
+          customer.convo.retry()
+      res.send "ok"
         
 
     self.mobileminNumber =  "+14804673355"
@@ -171,9 +175,6 @@ dModule.define "mobilemin-server", ->
       sms = self.createConversation(from, to)
       sms.send(body)
 
-
-      
-
     self.sendFirstResponse = (conversation) ->
       conversation.send """
          Congratulations! Your MobileMin number is (480) 444-1223. Your customers text "join" to subscribe. What is your business name?
@@ -189,25 +190,35 @@ dModule.define "mobilemin-server", ->
         from
       )
       console.log "you tried to ask for business name"
-
     
+    self.onTriedToSendSuccess = (convo) ->
+      sid = convo.sid
+      self.smsSidsWaitingStatus[sid] = convo
+
+    self.setUpConvo = (convo) -> 
+      convo.on "triedtosendsuccess", _.bind(
+        self.onTriedToSendSuccess,    
+        null,
+        customer
+      )
+
+      self.conversations[convo.from] or= {}
+      self.conversations[convo.from][convo.to] = customer
+
     self.handleNewCustomerWhoTextedStart = (res, from) ->
       console.log "we are handling a new start"
       areaCode = drews.s(from, 2, 3) #get rid of +1, and get area code 
       buySuccess = (justBoughtNumber) =>
         newPhone = justBoughtNumber.phone_number
         console.log "you just bought a number which was #{newPhone}"
-        app = new MobileminApp()
-        app.createApp
+        customer = Customer.init(self.mobileminNumber, from)
+        self.setUpCustomer customer
+        customer.createApp
           adminPhones: [from]
           firstPhone: from
           twilioPhone: newPhone
-        app.once "created", self.onNewCustomerAppCreated
-          
-        #smsConversation.friendly_name = justBoughtNumber.friendly_name
-        #self.sendFirstResponse(smsConversation)
-
-        #return smsConversation
+          prettyPhone: justBoughtNumber.friendly_name
+        return customer
      
       buyError = (error) =>
         console.log "There was an error"

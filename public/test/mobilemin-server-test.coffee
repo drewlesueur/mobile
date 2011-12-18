@@ -138,23 +138,43 @@ describe "Customer", ->
       "response", customer.onBusinessName
     )
 
-   it "should know what to do when it gets a business name", ->
-     spyOn(customer, "set")
-     spyOn(customer.app, "save")  
-     spyOn(customer.convo, "send")  
-     spyOn(customer.convo, "once")  
+  it "should know what to do when it gets a business name", ->
+    spyOn(customer, "set")
+    spyOn(customer.app, "save")  
+    spyOn(customer.convo, "send")  
+    spyOn(customer.convo, "once")  
 
-     customer.onBusinessName("YK")
-     expect(customer.set).toHaveBeenCalledWith("businessName", "YK")
-     expect(customer.app.save).toHaveBeenCalled()
-   
-     expect(customer.convo.send).toHaveBeenCalledWith("""
-       What is your business phone number so we can forward calls?  
-     """)
+    customer.onBusinessName("YK")
+    expect(customer.set).toHaveBeenCalledWith("businessName", "YK")
+    expect(customer.app.save).toHaveBeenCalled()
+  
+    expect(customer.convo.send).toHaveBeenCalledWith("""
+      What is your business phone number so we can forward calls?  
+    """)
 
-     expect(customer.convo.once).toHaveBeenCalledWith(
-       "response", customer.onBusinessPhone
-     )
+    expect(customer.convo.once).toHaveBeenCalledWith(
+      "response", customer.onBusinessPhone
+    )
+
+  it "should know what to do once it gets a business phone", ->
+    customer._app.prettyPhone = ":)"
+    spyOn(customer, "set")
+    spyOn(customer.app, "save")  
+    spyOn(customer.convo, "send")  
+    spyOn(customer.convo, "on")  
+
+    customer.onBusinessPhone("fake phone")
+
+    expect(customer.set).toHaveBeenCalledWith("businessPhone", "fake phone")
+    expect(customer.app.save).toHaveBeenCalled()
+    expect(customer.convo.send).toHaveBeenCalledWith("""
+      You're live! To send out a text blast, just text a special offer to #{customer._app.prettyPhone} and all of your subscribers will get the text! 
+    """)
+
+    expect(customer.convo.on).toHaveBeenCalledWith(
+      "response", customer.onNormalText
+    )
+
 
 
 
@@ -238,7 +258,7 @@ describe "MobileMinServer", ->
   window.setTimeout = (args...) ->
     fakeTimer.setTimeout args...
     
-
+  Customer = dModule.require "mobilemin-customer"
   #mock express rpc
   expressRpcAppListen = jasmine.createSpy()
   expressPost = jasmine.createSpy()
@@ -336,167 +356,6 @@ describe "MobileMinServer", ->
   it "should know what to do with a status url", ->
     #TODO: implement this
 
-  xdescribe "should be able to send a text message from mobilemin", ->
-    triedToSendCallback = null 
-    sentCallback = null
-    responseCallback = null
-    sendSmsSuccess = null
-    sendSmsError = null
-    sms = null
-    eventOn = null
-    eventEmit = null
-    eventful = null
-
-    fakeSendSmsResponse = null
-    fakeGoodStatusRequest = null
-    fakeBadStatusRequest = null
-    fakeIncomingTextRequest = null
-
-
-    beforeEach ->
-      smsTriedToSendSuccess = jasmine.createSpy()
-      smsTriedToSendError = jasmine.createSpy()
-      smsSent = jasmine.createSpy()
-      smsErrored = jasmine.createSpy()
-      smsResponse = jasmine.createSpy()
-      eventOn = jasmine.createSpy()
-      eventEmit = jasmine.createSpy()
-      eventful = 
-        on: eventOn 
-        emit: eventEmit
-      spyOn(drews, "makeEventful").andReturn eventful
-
-      fakeTriedToSendResponse = 
-        sid: "fake sid"
-
-      sms = server.createConversation server.mobileminNumber, "4808405406"
-      sms.send("testing")
-      expect(sms).toBe(eventful)
-
-      {sendSmsSuccess, sendSmsError} = sms
-
-      fakeSendSmsResponse =
-        sid: "fake sid"
-        status: "queued"
-
-      #TODO: do I need one where it tried to send but the status was bad?
-
-
-      fakeGoodStatusRequest = 
-        body:
-          AccountSid: 'fake account sid',
-          SmsStatus: 'sent',
-          Body: 'testing2',
-          SmsSid: 'fake sid',
-          To: '+14808405406',
-          From: '+14804673355',
-          ApiVersion: '2010-04-01'
-
-      fakeBadStatusRequest = 
-        body:
-          AccountSid: 'fake account sid',
-          SmsStatus: 'error',
-          Body: 'testing2',
-          SmsSid: 'fake sid',
-          To: '+14808405406',
-          From: '+14804673355',
-          ApiVersion: '2010-04-01'
-
-      fakeIncomingTextRequest =
-        body: fakeIncomingText
-
-
-    it "should have called the twilio client sms", ->
-      expect(sendSmsSpy).toHaveBeenCalledWith(
-        server.mobileminNumber,
-        "+14808405406"
-        "testing" 
-        "http://mobilemin-server.drewl.us/status",
-        sendSmsSuccess,
-        sendSmsError
-      )
-
-    it "should handle the sms response", ->
-      sendSmsSuccess fakeSendSmsResponse
-      expect(sms.emit).toHaveBeenCalledWith("triedtosendsuccess")
-      expect(server.conversations[server.mobileminNumber]["+14808405406"]).toBe(sms)
-      expect(server.smsSidsWaitingStatus["fake sid"]).toBe(sms)
-      server.status(fakeGoodStatusRequest, {})
-      expect(server.smsSidsWaitingStatus["fake sid"]).toBeFalsy();
-      expect(sms.emit).toHaveBeenCalledWith("sent")
-      server.sms(fakeIncomingTextRequest, {send: ->})
-      expect(sms.emit).toHaveBeenCalledWith("response", fakeIncomingText.Body, fakeIncomingText) 
-
-
-    it "should handle the sms response", ->
-      sendSmsSuccess fakeSendSmsResponse
-      spyOn sms, "retry"
-      expect(sms.emit).toHaveBeenCalledWith("triedtosendsuccess")
-      expect(server.conversations[server.mobileminNumber]["+14808405406"]).toBe(sms)
-      expect(server.smsSidsWaitingStatus["fake sid"]).toBe(sms)
-      server.status(fakeBadStatusRequest, {})
-      expect(server.smsSidsWaitingStatus["fake sid"]).toBeFalsy();
-      expect(sms.emit).toHaveBeenCalledWith("error")
-      expect(sms.emit).not.toHaveBeenCalledWith("sent")
-      expect(sms.retry).toHaveBeenCalled()
-      #server.sms(fakeIncomingTextRequest, {})
-      #expect(sms.emit).toHaveBeenCalledWith("response", fakeIncomingText.Body, fakeIncomingText) 
-
-    it "should resend in 3 seconds if if failed to try to send", ->
-      spyOn sms, "retry"
-      sendSmsError()
-      #TODO: log error
-      fakeTimer.tick(3000)
-      expect(sms.retry).toHaveBeenCalled()
-
-    it "should know how to retry", ->
-      expect(sms.maxRetries).toBe(3)
-      sms.maxRetries = 4
-      sms.sid = "a fake sid"
-      server.smsSidsWaitingStatus[sms.sid] = sms
-
-
-      retry = ->
-        oldCallCount = sendSmsSpy.callCount
-        sms.retry()
-        expect(server.smsSidsWaitingStatus[sms.sid]).toBeFalsy()
-        expect(sendSmsSpy.callCount).toBe(oldCallCount + 1)
-        expect(sendSmsSpy.mostRecentCall.args).toEqual [
-          server.mobileminNumber,
-          "+14808405406"
-          "testing" 
-          "http://mobilemin-server.drewl.us/status",
-          sms.sendSmsSuccess,
-          sms.sendSmsError
-        ]
-
-      retry()
-      retry()
-      retry()
-      retry()
-
-      oldCallCount = sendSmsSpy.callCount
-      sms.retry()
-      expect(sendSmsSpy.callCount).toBe(oldCallCount)
-      expect(sms.emit).toHaveBeenCalledWith("maxretriesreached", 4)
-      
-
-    it "should try to resend if it gets a bad status", ->
-
-
-    it "should have a send method", -> 
-      oldCallCount = sendSmsSpy.callCount
-      sms.send("howdy")
-      expect(sendSmsSpy.callCount).toBe(oldCallCount + 1)
-      expect(sendSmsSpy).toHaveBeenCalledWith(
-        server.mobileminNumber,
-        "+14808405406"
-        "howdy" 
-        "http://mobilemin-server.drewl.us/status",
-        sms.sendSmsSuccess,
-        sms.sendSmsError
-      )
-      #TODO sms object should be able to send smss
 
   it "should know how to handle a new customer who texted start", ->
     fakeRes =
@@ -514,23 +373,115 @@ describe "MobileMinServer", ->
       }}, buySuccess, buyError
     )
     
-    return
-    #!!!!!!!!!!!!!!1
-    spyOn server.mobileminApp, "createApp"
-    spyOn server.mobileminApp, "once"
+    createSpy = jasmine.createSpy()
+    fakeCustomer = 
+      createApp: createSpy
+    spyOn(Customer, "init").andReturn fakeCustomer
+    spyOn(server, "setUpCustomer")
     buySuccess(justBoughtNumber)
     newPhone = justBoughtNumber.phone_number
-    expect(server.mobileminApp.createApp).toHaveBeenCalledWith(
+    expect(Customer.init).toHaveBeenCalledWith(
+      server.mobileminNumber,
+      fakeFrom
+    )
+    expect(server.setUpCustomer).toHaveBeenCalledWith(
+      fakeCustomer  
+    )
+    expect(fakeCustomer.createApp).toHaveBeenCalledWith
       adminPhones: [fakeFrom]
       firstPhone: fakeFrom
       twilioPhone: newPhone
+      prettyPhone: justBoughtNumber.friendly_name
+      
+  it "should setup a customer", -> 
+    onSpy = jasmine.createSpy()
+    fakeCustomer =  
+      convo:
+        on: onSpy
+        from: "f"
+        to: "t"
+    spyOn(_, "bind").andReturn("fake bind")
+    server.setUpCustomer(fakeCustomer)
+    expect(_.bind).toHaveBeenCalledWith(
+      server.onTriedToSendSuccess,
+      null,
+      fakeCustomer
     )
-    expect(server.mobileminApp.once).toHaveBeenCalledWith(
-      "created", server.onNewCustomerAppCreated
+    expect(fakeCustomer.convo.on).toHaveBeenCalledWith(
+      "triedtosendsuccess",
+      "fake bind"
+    )
+    expect(server.conversations["f"]["t"]).toBe fakeCustomer
+
+  it "should know what to do when a customer has a triedtosendsuccess", ->
+    fakeCustomer =  
+      convo:
+        sid: "fake sid"
+    
+    server.onTriedToSendSuccess(fakeCustomer)
+    expect(server.smsSidsWaitingStatus["fake sid"]).toBe fakeCustomer
+
+  it "should know how to handle a conversation", ->
+    fakeReq =
+      body:
+        To: "t"
+        From: "f"
+        Body: "hi"
+    fakeSend = jasmine.createSpy()
+    fakeRes = 
+      send: fakeSend 
+
+    emitSpy = jasmine.createSpy() 
+    fakeCustomer = 
+      convo:
+        emit: emitSpy
+    server.conversations["t"] = {}
+    server.conversations["t"]["f"] = fakeCustomer
+    server.sms(fakeReq, fakeRes)
+    expect(fakeSend).toHaveBeenCalledWith "ok"
+    expect(fakeCustomer.convo.emit).toHaveBeenCalledWith(
+      "response", fakeReq.body.Body, fakeReq.body
     )
 
-  xit "should know what to do once a new customer app is created", ->
-    server.onNewCustomerAppCreated() 
+  it "should handle an sms status", ->
+    emitSpy = jasmine.createSpy() 
+    fakeCustomer = 
+      convo:
+        emit: emitSpy
 
+    fakeReq =
+      body:
+        SmsSid: "fake sid"
+        SmsStatus: "sent"
+    fakeSend = jasmine.createSpy()
+    fakeRes = 
+      send: fakeSend 
+    server.smsSidsWaitingStatus["fake sid"] = fakeCustomer
+    server.status(fakeReq, fakeRes)
+    expect(server.smsSidsWaitingStatus["fake sid"]).toBeFalsy()
+    expect(fakeCustomer.convo.emit).toHaveBeenCalledWith "sent"
+    expect(fakeSend).toHaveBeenCalledWith "ok"
+
+  it "should handle a bad sms status", ->
+    emitSpy = jasmine.createSpy() 
+    retrySpy = jasmine.createSpy()
+    fakeCustomer = 
+      convo:
+        emit: emitSpy
+        retry: retrySpy
+
+    fakeReq =
+      body:
+        SmsSid: "fake sid"
+        SmsStatus: "error"
+    fakeSend = jasmine.createSpy()
+    fakeRes = 
+      send: fakeSend 
+    server.smsSidsWaitingStatus["fake sid"] = fakeCustomer
+    server.status(fakeReq, fakeRes)
+    expect(server.smsSidsWaitingStatus["fake sid"]).toBeFalsy()
+    expect(fakeCustomer.convo.emit).toHaveBeenCalledWith "error"
+    expect(fakeSend).toHaveBeenCalledWith "ok"
+    expect(retrySpy).toHaveBeenCalled()
 
   dModule.define "mobilemin-twilio", RealMobileMinTwilio
