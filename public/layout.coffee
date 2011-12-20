@@ -25,7 +25,10 @@ server.askMisterAdminIfNewGuyCanBeAdmin = (twilioPhone, wannaBeAdmin, misterAdmi
   server.whenTextIsSent(server.setStatus, misterAdmin, twilioPhone, "waiting to allow admin")
   server.whenTextIsSent(server.setWannaBeAdmin, misterAdmin, twilioPhone, wannaBeAdmin)
   
-
+server.setStatus = (from, to, status) ->
+  server.status[from][to] = status
+  if status is "waiting to allow admin"
+    server.inOneHour(server.setStatus, from, to, "waiting for special")
   
 server.onJoin = (text) ->
   server.addThisNumberToTheSubscribeList(text.from, text.to)
@@ -57,7 +60,7 @@ server.actAccordingToStatus = (status, text) ->
     server.onSpecial(text)
   else if status is "waiting for special confirmation"
     server.onSpecialConfirmation(text)
-  else if status is "waiting for admin"
+  else if status is "waiting to allow admin"
     server.onDetermineAdmin(text)
     
 server.onDetermineAdmin = (text) ->
