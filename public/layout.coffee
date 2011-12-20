@@ -92,7 +92,7 @@ server.onGotBusinessPhone = (customerPhone, businessPhone, twilioPhone) ->
 server.sayThatTheyreLive = (customerPhone, twilioPhone) ->
   server.text
     from: mainMobileminNumber
-    to: to
+    to: customerPhone
     body: """
       You're live! To send out a text blast, just text a special offer to #{twilioPhone} and all of your subscribers will get the text!  
     """
