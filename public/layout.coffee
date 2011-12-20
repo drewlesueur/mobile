@@ -15,9 +15,15 @@ server.onAdmin = (text) ->
   server.getMisterAdmin(text.to)
   server.whenGotMisterAdmin(server.askMrAdminIfNewGuyCanBeAdmin, text.to, text.from)
   
-server.askMrAdminIfNewGuyCanBeAdmin = (text.to, text.from) ->
+server.askMrAdminIfNewGuyCanBeAdmin = (twilioPhone, wannaBeAdmin, misterAdmin) ->
   server.text
-    
+    to: misterAdmin
+    from: wannaBeAdmin
+    body: """
+      Can #{wannaBeAdmin} send texts to your subscribers on your behalf.
+    """
+  server.whenTextIsSent(server.setStatus, misterAdmin, twilioPhone, "waiting to allow access")
+  server.whenTextIsSent(server.setWannaBeAdmin, misterAdmin, twilioPhone, wannaBeAdmin)
   
 
   
