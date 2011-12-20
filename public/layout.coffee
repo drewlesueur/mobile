@@ -43,7 +43,7 @@ server.actAccordingToStatus = (status, text) ->
 server.onSpecialConfirmation = (text) ->
   server.setStatus(text.from, text.to, "waiting for special")
   if text.body is "yes"
-    specialText = server.getStatusInfo(text.from, text.to, "special")
+    specialText = server.getSpecialText(text.from, text.to)
     server.sendThisSpecialToAllMyFollowers(text.from, text.to, special)
   else if text.body is "no"
     server.sayThatTheSpecialWasNotSent text
@@ -58,7 +58,7 @@ server.sayThatTheSpecialWasNotSent = (text) ->
 
 server.onSpecial = (text) ->
   server.askForSpecialConfirmation(text)
-  server.setStatusInfo(text.from, text.to, "special", text.body)
+  server.setSpecialText(text.from, text.to, text.body)
 
 server.askForSpecialConfirmation = (text) ->
   server.text
@@ -77,15 +77,15 @@ server.buyPhoneNumberFor = (text.from)->
 server.onBoughtPhoneNumber = (customerPhone, twilioPhone) ->
   server.createDatabaseRecord customerPhone, twilioPhone
   server.congradulateAndAskForBuisinessName(customerPhone, twilioPhone)
-  server.setStatusInfo customerPhone, mainMobileminNumber, "twilioPhone", twilioPhone 
+  server.setTwilioPhone customerPhone, twilioPhone
   
 server.onGotBusinessName = (customerPhone, businessName) ->
-  twilioPhone = server.getStatusInfo customerPhone, mainMobileminNumber, "twilioPhone"
+  twilioPhone = server.getTwilioPhone customerPhone
   server.setBusinessName customerPhone, twilioPhone, businessName
   server.askForBusinessPhone customerPhone
 
 server.onGotBusinessPhone = (customerPhone, businessPhone, twilioPhone) ->
-  twilioPhone = server.getStatusInfo customerPhone, mainMobileminNumber, "twilioPhone"
+  twilioPhone = server.getTwilioPhone customerPhone
   server.setBusinessPhone(customerPhone, twilioPhone, businessPhone)
   server.sayThatTheyreLive(customerPhone, twilioPhone)
 
