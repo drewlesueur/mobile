@@ -106,7 +106,7 @@ server.sayThatTheyreLive = (customerPhone, twilioPhone) ->
 server.askForBusinessPhone = (customerPhone)->
   server.text
     from: mainMobileminNumber
-    to: to
+    to: customerPhone
     body: """
       What is your business phone number so we can forward calls?
     """
@@ -117,7 +117,7 @@ server.askForBusinessPhone = (customerPhone)->
 server.congradulateAndAskForBuisinessName = (customerPhone, twilioPhone) ->
   server.text
     from: mainMobileminNumber
-    to: to
+    to: customerPhone
     body: """
       Congratulations! Your MobileMin number is #{twilioPhone}. Your customers text "join" to subscribe. What is your business name?
     """
