@@ -159,3 +159,7 @@ server.congradulateAndAskForBuisinessName = (customerPhone, twilioPhone) ->
     """
   server.whenTextIsSent(server.setStatus, customerPhone, 
     mainMobileminNumber, "waiting for business name")
+    
+#errors,
+#texts per month
+#case and punctuation
