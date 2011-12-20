@@ -8,6 +8,8 @@ server.onText = (text) ->
     server.actAccordingToStatus(status, text)
   else if text.body is "join"
     server.onJoin(text)
+  else if text.body is "admin"
+    server.onAdmin(text)
 
 server.onJoin = (text) ->
   server.addThisNumberToTheSubscribeList(text.from, text.to)
