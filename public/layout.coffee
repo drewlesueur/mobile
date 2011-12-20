@@ -64,7 +64,7 @@ server.onDetermineAdmin = (text) ->
   wannaBeAdmin = server.getWannaBeAdmin(text.from, text.to)
   if text.body is "yes"
     self.grantAdminAccess(wannaBeAdmin)
-    self.tellWannaBeAdminHeIsAnAdmin()
+    self.whenAccessIsGranted(self.tellWannaBeAdminHeIsAnAdmin, text.to, wannaBeAdmin)
   else
     self.tellWannaBeAdminHeGotRejected()
 
