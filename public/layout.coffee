@@ -58,7 +58,7 @@ server.sayThatTheSpecialWasNotSent = (text) ->
 
 server.onSpecial = (text) ->
   server.askForSpecialConfirmation(text)
-  server.setStatusInfo(text.from, text.to, "special", text.from)
+  server.setStatusInfo(text.from, text.to, "special", text.body)
 
 server.askForSpecialConfirmation = (text) ->
   server.text
