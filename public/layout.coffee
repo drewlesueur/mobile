@@ -8,15 +8,33 @@ server.onText = (text) ->
     server.actAccordingToStatus(status, text)
   else if text.body is "join"
     server.onJoin(text)
+  else if text.body in ["stop", "STOP"]
+    server.onStop(text)
 
 server.onJoin = (text) ->
   server.addThisNumberToTheSubscribeList(text.from, text.to)
   server.getBusinessNameFor(text.to)
   server.whenNumberIsAddedAndGotBusinessName(
-    server.sayYouWillReceiveSpecials, text.to
+    server.sayYouWillReceiveSpecials, text
   )
 
-server.sayYouWillReceiveSpecials = (text.to, businessName) ->
+server.onStop = (text) ->
+  server.removeThisNumberFromTheSubscribeList(text.from, text.to)
+  server.getBusinessNameFor(text.to)
+  server.whenNumberIsRemovedAndGotBusinessName(
+    server.sayYouWillNoLongerReceiveTextsFromThisBusiness(text.from, businessName)
+  )
+
+server.sayYouWillNoLongerReceiveTextsFromThisBusiness = (text, businessName) ->
+  server.text
+    from: text.to
+    to: text.from
+    body: """
+      You will not get any more texts from this number.
+      Text "join" to start getting texts agian.
+    """
+
+server.sayYouWillReceiveSpecials = (text, businessName) ->
   server.text
     from: text.to
     to: text.from
