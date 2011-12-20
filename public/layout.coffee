@@ -11,6 +11,16 @@ server.onText = (text) ->
   else if text.body is "admin"
     server.onAdmin(text)
 
+server.onAdmin = (text) ->
+  server.getMisterAdmin(text.to)
+  server.whenGotMisterAdmin(server.askMrAdminIfNewGuyCanBeAdmin, text.to, text.from)
+  
+server.askMrAdminIfNewGuyCanBeAdmin = (text.to, text.from) ->
+  server.text
+    
+  
+
+  
 server.onJoin = (text) ->
   server.addThisNumberToTheSubscribeList(text.from, text.to)
   server.getBusinessNameFor(text.to)
