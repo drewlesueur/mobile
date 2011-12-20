@@ -13,16 +13,16 @@ server.onText = (text) ->
 
 server.onAdmin = (text) ->
   server.getMisterAdmin(text.to)
-  server.whenGotMisterAdmin(server.askMrAdminIfNewGuyCanBeAdmin, text.to, text.from)
+  server.whenGotMisterAdmin(server.askMisterAdminIfNewGuyCanBeAdmin, text.to, text.from)
   
-server.askMrAdminIfNewGuyCanBeAdmin = (twilioPhone, wannaBeAdmin, misterAdmin) ->
+server.askMisterAdminIfNewGuyCanBeAdmin = (twilioPhone, wannaBeAdmin, misterAdmin) ->
   server.text
     to: misterAdmin
     from: wannaBeAdmin
     body: """
-      Can #{wannaBeAdmin} send texts to your subscribers on your behalf.
+      Can #{wannaBeAdmin} send texts to your subscribers on your behalf?
     """
-  server.whenTextIsSent(server.setStatus, misterAdmin, twilioPhone, "waiting to allow access")
+  server.whenTextIsSent(server.setStatus, misterAdmin, twilioPhone, "waiting to allow admin")
   server.whenTextIsSent(server.setWannaBeAdmin, misterAdmin, twilioPhone, wannaBeAdmin)
   
 
@@ -57,6 +57,19 @@ server.actAccordingToStatus = (status, text) ->
     server.onSpecial(text)
   else if status is "waiting for special confirmation"
     server.onSpecialConfirmation(text)
+  else if status is "waiting for admin"
+    server.onDetermineAdmin(text)
+    
+server.onDetermineAdmin = (text) ->
+  wannaBeAdmin = server.getWannaBeAdmin(text.from, text.to)
+  if text.body is "yes"
+    self.grantAdminAccess(wannaBeAdmin)
+    self.tellWannaBeAdminHeIsAnAdmin()
+  else
+    self.tellWannaBeAdminHeGotRejected()
+
+  self.setStatus text.from, text.to, "waiting for special"
+    
 
 server.onSpecialConfirmation = (text) ->
   server.setStatus(text.from, text.to, "waiting for special")
