@@ -6,10 +6,10 @@ server.onText = (text) ->
   else if server.hasAStatus(text.from, text.to)
     status = server.getStatus(text.from, text.to)
     server.actAccordingToStatus(status, text)
-  else if text.body is "join"
-    server.onJoin(text)
   else if text.body is "admin"
     server.onAdmin(text)
+  else
+    server.onJoin(text)
 
 server.onAdmin = (text) ->
   server.getMisterAdmin(text.to)
