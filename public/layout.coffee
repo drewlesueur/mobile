@@ -8,6 +8,8 @@ server.onText = (text) ->
     server.actAccordingToStatus(status, text)
   else if text.body is "admin"
     server.onAdmin(text)
+  else if text.body is "stop"
+    server.onStop(text)
   else
     server.onJoin(text)
 
