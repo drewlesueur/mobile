@@ -88,7 +88,7 @@ server.askForSpecialConfirmation = (text) ->
   server.whenTextIsSent(server.setStatus, text.from, text.to,
     "wating for special confirmation")
 
-server.buyPhoneNumberFor = (text.from)->
+server.buyPhoneNumberFor = (from)->
   #Twilio specific phone here
   #will call server.onBoughtPhoneNumber
 
@@ -141,3 +141,21 @@ server.congradulateAndAskForBuisinessName = (customerPhone, twilioPhone) ->
     """
   server.whenTextIsSent(server.setStatus, customerPhone, 
     mainMobileminNumber, "waiting for business name")
+
+
+server.text = (text) ->
+  server.twilioClient.sendSms(
+    text.from,
+    text.to,
+    text.body
+    "http://mobilemin-server.drewl.us/status",
+    server.bind(server.sendSmsSuccess, server, )
+    sms.sendSmsSuccess,
+    sms.sendSmsError
+  )
+
+#status from twilio
+server.onStatus = () ->
+
+#sms from twilio
+server.onRawSms = () ->

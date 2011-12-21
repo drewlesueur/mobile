@@ -112,9 +112,11 @@ dModule.define "drews-mixins", ->
   # https://github.com/maccman/spine/blob/master/spine.js
 
 
-  exports.on = (obj, ev, callback) ->
+  exports.on = (obj, ev, callback, thethis, args...) ->
     calls = obj._callbacks || obj._callbacks = {}
     list = calls[ev] || (calls[ev] = [])
+    #if args.length
+    #  callback = _.bind(callback, thethis, args...)
     list.push callback
     obj._events = obj._callbacks
     obj
