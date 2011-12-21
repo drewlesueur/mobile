@@ -1,5 +1,5 @@
 (function() {
-  var addPlus1, drews;
+  var addPlus1, drews, _;
   var __slice = Array.prototype.slice;
 
   if (typeof process !== "undefined" && process !== null) {
@@ -8,6 +8,8 @@
       return console.log(err.stack);
     });
   }
+
+  _ = dModule.require("underscore");
 
   drews = dModule.require("drews-mixins");
 
@@ -53,8 +55,7 @@
         console.log(err);
         return drews.wait(3000, sms.retry);
       };
-      sms.send = function(body) {
-        sms.body = body;
+      sms.send = function() {
         return sms.twilioClient.sendSms(sms.from, sms.to, sms.body, "http://mobilemin-server.drewl.us/status", sms.sendSmsSuccess, sms.sendSmsError);
       };
       return sms;
@@ -63,7 +64,7 @@
   });
 
   dModule.define("mobilemin-server", function() {
-    var MobileminApp, MobileminServer, MobileminText, MobileminTwilio, config, expressRpc, _;
+    var MobileminApp, MobileminServer, MobileminText, MobileminTwilio, config, expressRpc;
     expressRpc = dModule.require("express-rpc");
     drews = dModule.require("drews-mixins");
     config = dModule.require("config");
@@ -73,8 +74,11 @@
     MobileminTwilio = dModule.require("mobilemin-twilio");
     MobileminServer = {};
     MobileminServer.init = function() {
-      var server, twilio, waitForTextResponse;
+      var server, twilio;
       server = {};
+      server.statuses = {};
+      server.info = {};
+      server.twilioPhones = {};
       server.phone = function() {};
       server.sms = function(req, res) {
         var text;
@@ -118,7 +122,9 @@
       };
       server.onText = function(text) {
         var status;
-        if (text.to === mainMobileminNumber && text.body === "start") {
+        console.log("text!");
+        if (text.to === server.mobileminNumber && text.body === "start") {
+          console.log("its a start");
           return server.buyPhoneNumberFor(text.from);
         } else if (server.hasAStatus(text.from, text.to)) {
           status = server.getStatus(text.from, text.to);
@@ -129,6 +135,22 @@
           return server.onStop(text);
         } else {
           return server.onJoin(text);
+        }
+      };
+      server.hasAStatus = function(from, to) {
+        var _ref;
+        return (_ref = server.statuses[from]) != null ? _ref[to] : void 0;
+      };
+      server.getStatus = function(from, to) {
+        var _ref;
+        return (_ref = server.statuses[from]) != null ? _ref[to] : void 0;
+      };
+      server.setStatus = function(from, to, status) {
+        var _base;
+        (_base = server.statuses)[from] || (_base[from] = {});
+        server.statuses[from][to] = status;
+        if (status === "waiting to allow admin") {
+          return server.inOneHour(server.setStatus, from, to, "waiting for special");
         }
       };
       server.onAdmin = function(text) {
@@ -156,12 +178,6 @@
         server.whenTextIsSent(server.setStatus, misterAdmin, twilioPhone, "waiting to allow admin");
         return server.whenTextIsSent(server.setWannaBeAdmin, misterAdmin, twilioPhone, wannaBeAdmin);
       };
-      server.setStatus = function(from, to, status) {
-        server.status[from][to] = status;
-        if (status === "waiting to allow admin") {
-          return server.inOneHour(server.setStatus, from, to, "waiting for special");
-        }
-      };
       server.onJoin = function(text) {
         server.addThisNumberToTheSubscribeList(text.from, text.to);
         server.getBusinessNameFor(text.to);
@@ -183,7 +199,7 @@
         return server.text({
           from: text.to,
           to: text.from,
-          body: "You just signed up for free specials from " + businessNames + ".\nText STOP at anytime to not receive any texts,\nand START at anytime to start receiveing them agian."
+          body: "You just signed up for free specials from " + businessName + ".\nText STOP at anytime to not receive any texts,\nand START at anytime to start receiveing them agian."
         });
       };
       server.onCall = function(call) {
@@ -194,7 +210,7 @@
         if (status === "waiting for business name") {
           return server.onGotBusinessName(text.from, text.body);
         } else if (status === "waiting for business phone") {
-          return server.onGotBusinessPhone(text.from, text.body, twilioPhone);
+          return server.onGotBusinessPhone(text.from, text.body);
         } else if (status === "waiting for special") {
           return server.onSpecial(text);
         } else if (status === "waiting for special confirmation") {
@@ -243,11 +259,28 @@
         });
         return server.whenTextIsSent(server.setStatus, text.from, text.to, "wating for special confirmation");
       };
-      server.buyPhoneNumberFor = function(from) {};
+      server.buyPhoneNumberFor = function(from) {
+        console.log("fake buying a number");
+        return _.defer(function() {
+          return server.onBoughtPhoneNumber(from, "480-555-5555");
+        });
+      };
       server.onBoughtPhoneNumber = function(customerPhone, twilioPhone) {
         server.createDatabaseRecord(customerPhone, twilioPhone);
         server.congradulateAndAskForBuisinessName(customerPhone, twilioPhone);
         return server.setTwilioPhone(customerPhone, twilioPhone);
+      };
+      server.setTwilioPhone = function(customerPhone, twilioPhone) {
+        return server.twilioPhones[customerPhone] = twilioPhone;
+      };
+      server.getTwilioPhone = function(customerPhone) {
+        return server.twilioPhones[customerPhone];
+      };
+      server.createDatabaseRecord = function(customerPhone, twilioPhone) {
+        server.customers || (server.customers = {});
+        return server.customers[twilioPhone] = {
+          misterAdmin: customerPhone
+        };
       };
       server.onGotBusinessName = function(customerPhone, businessName) {
         var twilioPhone;
@@ -255,41 +288,60 @@
         server.setBusinessName(customerPhone, twilioPhone, businessName);
         return server.askForBusinessPhone(customerPhone);
       };
-      server.onGotBusinessPhone = function(customerPhone, businessPhone, twilioPhone) {
+      server.setBusinessName = function(customerPhone, twilioPhone, businessName) {
+        return server.setMetaInfo(customerPhone, twilioPhone, "businessName", businessName);
+      };
+      server.setBusinessPhone = function(customerPhone, twilioPhone, businessPhone) {
+        return server.setMetaInfo(customerPhone, twilioPhone, "businessPhone", businessPhone);
+      };
+      server.setWannaBeAdmin = function(customerPhone, twilioPhone, wannaBeAdmin) {
+        return server.setMetaInfo(customerPhone, twilioPhone, "wannaBeAdmin", wannaBeAdmin);
+      };
+      server.setSpecialText = function(customerPhone, twilioPhone, specialText) {
+        return server.setMetaInfo(customerPhone, twilioPhone, "specialText", specialText);
+      };
+      server.setMetaInfo = function(from, to, key, value) {
+        var _base, _base2;
+        (_base = server.info)[from] || (_base[from] = {});
+        (_base2 = server.info[from])[to] || (_base2[to] = {});
+        return server.info[from][to][key] = value;
+      };
+      server.onGotBusinessPhone = function(customerPhone, businessPhone) {
+        var twilioPhone;
         twilioPhone = server.getTwilioPhone(customerPhone);
         server.setBusinessPhone(customerPhone, twilioPhone, businessPhone);
         return server.sayThatTheyreLive(customerPhone, twilioPhone);
       };
       server.sayThatTheyreLive = function(customerPhone, twilioPhone) {
         server.text({
-          from: mainMobileminNumber,
+          from: server.mobileminNumber,
           to: customerPhone,
           body: "You're live! To send out a text blast, just text a special offer to " + twilioPhone + " and all of your subscribers will get the text!  "
         });
-        server.whenTextIsSent(server.setStatus, customerPhone, mainMobileminNumber, "done");
+        server.whenTextIsSent(server.setStatus, customerPhone, server.mobileminNumber, "done");
         return server.whenTextIsSent(server.setStatus, customerPhone, twilioPhone, "waiting for special");
       };
       server.askForBusinessPhone = function(customerPhone) {
         server.text({
-          from: mainMobileminNumber,
+          from: server.mobileminNumber,
           to: customerPhone,
           body: "What is your business phone number so we can forward calls?"
         });
-        return server.whenTextIsSent(server.setStatus, customerPhone, mainMobileminNumber, "waiting for business phone");
+        return server.whenTextIsSent(server.setStatus, customerPhone, server.mobileminNumber, "waiting for business phone");
       };
       server.congradulateAndAskForBuisinessName = function(customerPhone, twilioPhone) {
         server.text({
-          from: mainMobileminNumber,
+          from: server.mobileminNumber,
           to: customerPhone,
           body: "Congratulations! Your MobileMin number is " + twilioPhone + ". Your customers text \"join\" to subscribe. What is your business name?"
         });
-        return server.whenTextIsSent(server.setStatus, customerPhone, mainMobileminNumber, "waiting for business name");
+        return server.whenTextIsSent(server.setStatus, customerPhone, server.mobileminNumber, "waiting for business name");
       };
       server.text = function(textInfo) {
         var sms, waitForTextResponse;
-        sms = MobileMinText.init(textInfo, server.twilio.twilioClient);
+        sms = MobileminText.init(textInfo, server.twilio.twilioClient);
         sms.send();
-        waitForTextResponse = server.waitForTextResponse.bind(null, text);
+        waitForTextResponse = server.waitForTextResponse.bind(null, sms);
         sms.once("triedtosendsuccess", waitForTextResponse);
         return server.lastSms = sms;
       };
@@ -299,7 +351,7 @@
         funcToCall = func.bind.apply(func, [null].concat(__slice.call(args)));
         return server.lastSms.once("sent", funcToCall);
       };
-      waitForTextResponse = function(text) {
+      server.waitForTextResponse = function(text) {
         return server.smsSidsWaitingStatus[text.sid] = text;
       };
       return server;

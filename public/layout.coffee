@@ -2,6 +2,7 @@ process?.on "uncaughtException", (err) ->
   console.log "there whas a hitch, but we're still up"
   console.log err.stack
 
+_ = dModule.require "underscore"
 drews = dModule.require("drews-mixins")
 
 addPlus1 = (phone) ->
@@ -45,8 +46,7 @@ dModule.define "mobilemin-text", ->
       console.log err
       drews.wait 3000, sms.retry
         
-    sms.send =  (body) ->
-      sms.body = body
+    sms.send =  () ->
       sms.twilioClient.sendSms(
         sms.from,
         sms.to,
@@ -71,6 +71,9 @@ dModule.define "mobilemin-server", ->
   MobileminServer = {}
   MobileminServer.init = ->
     server = {}
+    server.statuses = {}
+    server.info = {}
+    server.twilioPhones = {}
     server.phone = ->
     server.sms =  (req, res) ->
       text = req.body 
@@ -112,7 +115,9 @@ dModule.define "mobilemin-server", ->
 
 
     server.onText = (text) ->
-      if text.to is mainMobileminNumber and text.body is "start"
+      console.log("text!")
+      if text.to is server.mobileminNumber and text.body is "start"
+        console.log("its a start")
         server.buyPhoneNumberFor(text.from)
       else if server.hasAStatus(text.from, text.to)
         status = server.getStatus(text.from, text.to)
@@ -123,6 +128,18 @@ dModule.define "mobilemin-server", ->
         server.onStop(text)
       else
         server.onJoin(text)
+
+    server.hasAStatus = (from, to) ->
+      return server.statuses[from]?[to]
+    
+    server.getStatus = (from, to) ->
+      return server.statuses[from]?[to]
+
+    server.setStatus = (from, to, status) ->
+      server.statuses[from] or= {}
+      server.statuses[from][to] = status
+      if status is "waiting to allow admin"
+        server.inOneHour(server.setStatus, from, to, "waiting for special")
 
     server.onAdmin = (text) ->
       server.getMisterAdmin(text.to)
@@ -152,10 +169,6 @@ dModule.define "mobilemin-server", ->
       server.whenTextIsSent(server.setStatus, misterAdmin, twilioPhone, "waiting to allow admin")
       server.whenTextIsSent(server.setWannaBeAdmin, misterAdmin, twilioPhone, wannaBeAdmin)
       
-    server.setStatus = (from, to, status) ->
-      server.status[from][to] = status
-      if status is "waiting to allow admin"
-        server.inOneHour(server.setStatus, from, to, "waiting for special")
       
     server.onJoin = (text) ->
       server.addThisNumberToTheSubscribeList(text.from, text.to)
@@ -163,6 +176,8 @@ dModule.define "mobilemin-server", ->
       server.whenNumberIsAddedAndGotBusinessName(
         server.sayYouWillReceiveSpecials, text
       )
+
+
 
     server.onStop = (text) ->
       server.removeThisNumberFromTheSubscribeList(text.from, text.to)
@@ -185,7 +200,7 @@ dModule.define "mobilemin-server", ->
         from: text.to
         to: text.from
         body: """
-          You just signed up for free specials from #{businessNames}.
+          You just signed up for free specials from #{businessName}.
           Text STOP at anytime to not receive any texts,
           and START at anytime to start receiveing them agian.
         """
@@ -198,7 +213,7 @@ dModule.define "mobilemin-server", ->
       if status is "waiting for business name"
         server.onGotBusinessName(text.from, text.body)
       else if status is "waiting for business phone"
-        server.onGotBusinessPhone(text.from, text.body, twilioPhone)
+        server.onGotBusinessPhone(text.from, text.body)
       else if status is "waiting for special"
         server.onSpecial(text)
       else if status is "waiting for special confirmation"
@@ -248,33 +263,69 @@ dModule.define "mobilemin-server", ->
         "wating for special confirmation")
 
     server.buyPhoneNumberFor = (from)->
+      console.log "fake buying a number"
       #Twilio specific phone here
       #will call server.onBoughtPhoneNumber
+      _.defer ->
+        server.onBoughtPhoneNumber(from, "480-555-5555")
 
     server.onBoughtPhoneNumber = (customerPhone, twilioPhone) ->
       server.createDatabaseRecord customerPhone, twilioPhone
       server.congradulateAndAskForBuisinessName(customerPhone, twilioPhone)
       server.setTwilioPhone customerPhone, twilioPhone
-      
+
+    server.setTwilioPhone = (customerPhone, twilioPhone) ->
+      server.twilioPhones[customerPhone] = twilioPhone
+
+    server.getTwilioPhone = (customerPhone) ->
+      server.twilioPhones[customerPhone]
+    
+    server.createDatabaseRecord = (customerPhone, twilioPhone) ->
+      #TODO: implement
+      server.customers or= {}
+      server.customers[twilioPhone] = {misterAdmin: customerPhone}
+       
     server.onGotBusinessName = (customerPhone, businessName) ->
       twilioPhone = server.getTwilioPhone customerPhone
       server.setBusinessName customerPhone, twilioPhone, businessName
       server.askForBusinessPhone customerPhone
 
-    server.onGotBusinessPhone = (customerPhone, businessPhone, twilioPhone) ->
+    server.setBusinessName = (customerPhone, twilioPhone, businessName) ->
+      server.setMetaInfo(customerPhone, twilioPhone, "businessName", businessName)
+      #TODO: Add db to this
+
+    server.setBusinessPhone = (customerPhone, twilioPhone, businessPhone) ->
+      server.setMetaInfo(customerPhone, twilioPhone, "businessPhone", businessPhone)
+      #TODO: Add db to this
+      #
+    server.setWannaBeAdmin = (customerPhone, twilioPhone, wannaBeAdmin) ->
+      server.setMetaInfo(customerPhone, twilioPhone, "wannaBeAdmin", wannaBeAdmin)
+      #TODO: Add db to this
+      #
+    server.setSpecialText = (customerPhone, twilioPhone, specialText) ->
+      server.setMetaInfo(customerPhone, twilioPhone, "specialText", specialText)
+      #TODO: Add db to this
+      #
+    server.setMetaInfo = (from, to, key, value) ->
+      server.info[from] or= {}
+      server.info[from][to] or= {}
+      server.info[from][to][key] = value
+
+
+    server.onGotBusinessPhone = (customerPhone, businessPhone) ->
       twilioPhone = server.getTwilioPhone customerPhone
       server.setBusinessPhone(customerPhone, twilioPhone, businessPhone)
       server.sayThatTheyreLive(customerPhone, twilioPhone)
 
     server.sayThatTheyreLive = (customerPhone, twilioPhone) ->
       server.text
-        from: mainMobileminNumber
+        from: server.mobileminNumber
         to: customerPhone
         body: """
           You're live! To send out a text blast, just text a special offer to #{twilioPhone} and all of your subscribers will get the text!  
         """
       server.whenTextIsSent(server.setStatus, customerPhone,
-        mainMobileminNumber, "done")
+        server.mobileminNumber, "done")
 
       server.whenTextIsSent(server.setStatus, customerPhone, 
         twilioPhone, "waiting for special")
@@ -282,30 +333,30 @@ dModule.define "mobilemin-server", ->
 
     server.askForBusinessPhone = (customerPhone)->
       server.text
-        from: mainMobileminNumber
+        from: server.mobileminNumber
         to: customerPhone
         body: """
           What is your business phone number so we can forward calls?
         """
       server.whenTextIsSent(server.setStatus, customerPhone, 
-        mainMobileminNumber, "waiting for business phone")
+        server.mobileminNumber, "waiting for business phone")
 
       
     server.congradulateAndAskForBuisinessName = (customerPhone, twilioPhone) ->
       server.text
-        from: mainMobileminNumber
+        from: server.mobileminNumber
         to: customerPhone
         body: """
           Congratulations! Your MobileMin number is #{twilioPhone}. Your customers text "join" to subscribe. What is your business name?
         """
       server.whenTextIsSent(server.setStatus, customerPhone, 
-        mainMobileminNumber, "waiting for business name")
+        server.mobileminNumber, "waiting for business name")
 
 
     server.text = (textInfo) ->
-      sms = MobileMinText.init(textInfo, server.twilio.twilioClient)
+      sms = MobileminText.init(textInfo, server.twilio.twilioClient)
       sms.send()
-      waitForTextResponse = server.waitForTextResponse.bind(null, text)
+      waitForTextResponse = server.waitForTextResponse.bind(null, sms)
       sms.once("triedtosendsuccess", waitForTextResponse)
       server.lastSms = sms
 
@@ -313,7 +364,7 @@ dModule.define "mobilemin-server", ->
       funcToCall = func.bind(null, args...) 
       server.lastSms.once("sent", funcToCall) 
 
-    waitForTextResponse = (text) ->
+    server.waitForTextResponse = (text) ->
       server.smsSidsWaitingStatus[text.sid] = text
 
     return server
