@@ -6,11 +6,34 @@ server.onText = (text) ->
   else if server.hasAStatus(text.from, text.to)
     status = server.getStatus(text.from, text.to)
     server.actAccordingToStatus(status, text)
-  else if text.body is "join"
+  else if text.body is "admin"
+    server.onAdmin(text)
+  else if text.body is "stop"
+    server.onStop(text)
+  else
     server.onJoin(text)
   else if text.body in ["stop", "STOP"]
     server.onStop(text)
 
+server.onAdmin = (text) ->
+  server.getMisterAdmin(text.to)
+  server.whenGotMisterAdmin(server.askMisterAdminIfNewGuyCanBeAdmin, text.to, text.from)
+  
+server.askMisterAdminIfNewGuyCanBeAdmin = (twilioPhone, wannaBeAdmin, misterAdmin) ->
+  server.text
+    to: misterAdmin
+    from: wannaBeAdmin
+    body: """
+      Can #{wannaBeAdmin} send texts to your subscribers on your behalf?
+    """
+  server.whenTextIsSent(server.setStatus, misterAdmin, twilioPhone, "waiting to allow admin")
+  server.whenTextIsSent(server.setWannaBeAdmin, misterAdmin, twilioPhone, wannaBeAdmin)
+  
+server.setStatus = (from, to, status) ->
+  server.status[from][to] = status
+  if status is "waiting to allow admin"
+    server.inOneHour(server.setStatus, from, to, "waiting for special")
+  
 server.onJoin = (text) ->
   server.addThisNumberToTheSubscribeList(text.from, text.to)
   server.getBusinessNameFor(text.to)
@@ -57,11 +80,24 @@ server.actAccordingToStatus = (status, text) ->
     server.onSpecial(text)
   else if status is "waiting for special confirmation"
     server.onSpecialConfirmation(text)
+  else if status is "waiting to allow admin"
+    server.onDetermineAdmin(text)
+    
+server.onDetermineAdmin = (text) ->
+  wannaBeAdmin = server.getWannaBeAdmin(text.from, text.to)
+  if text.body is "yes"
+    self.grantAdminAccess(wannaBeAdmin)
+    self.whenAccessIsGranted(self.tellWannaBeAdminHeIsAnAdmin, text.to, wannaBeAdmin)
+  else
+    self.tellWannaBeAdminHeGotRejected()
+
+  self.setStatus text.from, text.to, "waiting for special"
+    
 
 server.onSpecialConfirmation = (text) ->
   server.setStatus(text.from, text.to, "waiting for special")
   if text.body is "yes"
-    specialText = server.getStatusInfo(text.from, text.to, "special")
+    specialText = server.getSpecialText(text.from, text.to)
     server.sendThisSpecialToAllMyFollowers(text.from, text.to, special)
   else if text.body is "no"
     server.sayThatTheSpecialWasNotSent text
@@ -76,7 +112,7 @@ server.sayThatTheSpecialWasNotSent = (text) ->
 
 server.onSpecial = (text) ->
   server.askForSpecialConfirmation(text)
-  server.setStatusInfo(text.from, text.to, "special", text.from)
+  server.setSpecialText(text.from, text.to, text.body)
 
 server.askForSpecialConfirmation = (text) ->
   server.text
@@ -95,22 +131,22 @@ server.buyPhoneNumberFor = (from)->
 server.onBoughtPhoneNumber = (customerPhone, twilioPhone) ->
   server.createDatabaseRecord customerPhone, twilioPhone
   server.congradulateAndAskForBuisinessName(customerPhone, twilioPhone)
-  server.setStatusInfo customerPhone, mainMobileminNumber, "twilioPhone", twilioPhone 
+  server.setTwilioPhone customerPhone, twilioPhone
   
 server.onGotBusinessName = (customerPhone, businessName) ->
-  twilioPhone = server.getStatusInfo customerPhone, mainMobileminNumber, "twilioPhone"
+  twilioPhone = server.getTwilioPhone customerPhone
   server.setBusinessName customerPhone, twilioPhone, businessName
   server.askForBusinessPhone customerPhone
 
 server.onGotBusinessPhone = (customerPhone, businessPhone, twilioPhone) ->
-  twilioPhone = server.getStatusInfo customerPhone, mainMobileminNumber, "twilioPhone"
+  twilioPhone = server.getTwilioPhone customerPhone
   server.setBusinessPhone(customerPhone, twilioPhone, businessPhone)
   server.sayThatTheyreLive(customerPhone, twilioPhone)
 
 server.sayThatTheyreLive = (customerPhone, twilioPhone) ->
   server.text
     from: mainMobileminNumber
-    to: to
+    to: customerPhone
     body: """
       You're live! To send out a text blast, just text a special offer to #{twilioPhone} and all of your subscribers will get the text!  
     """
@@ -124,7 +160,7 @@ server.sayThatTheyreLive = (customerPhone, twilioPhone) ->
 server.askForBusinessPhone = (customerPhone)->
   server.text
     from: mainMobileminNumber
-    to: to
+    to: customerPhone
     body: """
       What is your business phone number so we can forward calls?
     """
@@ -135,7 +171,7 @@ server.askForBusinessPhone = (customerPhone)->
 server.congradulateAndAskForBuisinessName = (customerPhone, twilioPhone) ->
   server.text
     from: mainMobileminNumber
-    to: to
+    to: customerPhone
     body: """
       Congratulations! Your MobileMin number is #{twilioPhone}. Your customers text "join" to subscribe. What is your business name?
     """
@@ -159,3 +195,7 @@ server.onStatus = () ->
 
 #sms from twilio
 server.onRawSms = () ->
+    
+#errors,
+#texts per month
+#case and punctuation
