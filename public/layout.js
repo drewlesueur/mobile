@@ -1,5 +1,5 @@
 (function() {
-  var addPlus1, drews, _;
+  var addPlus1, drews, prettyPhone, _;
   var __slice = Array.prototype.slice;
 
   if (typeof process !== "undefined" && process !== null) {
@@ -20,6 +20,15 @@
       phone = "+" + phone;
     }
     return phone;
+  };
+
+  prettyPhone = function(phone) {
+    var areacode, prefix, suffix;
+    if (phone.length === 12) phone = drews.s(phone, 2);
+    areacode = drews.s(phone, 0, 3);
+    prefix = drews.s(phone, 3, 3);
+    suffix = drews.s(phone, 6);
+    return "" + areacode + "-" + prefix + "-" + suffix;
   };
 
   dModule.define("mobilemin-text", function() {
@@ -235,10 +244,14 @@
         server.setStatus(text.from, text.to, "waiting for special");
         if (text.body === "yes") {
           specialText = server.getSpecialText(text.from, text.to);
-          return server.sendThisSpecialToAllMyFollowers(text.from, text.to, special);
+          return server.sendThisSpecialToAllMySubscribers(text.from, text.to, special);
         } else if (text.body === "no") {
           return server.sayThatTheSpecialWasNotSent(text);
         }
+      };
+      server.sendThisSpecialToAllMySubscribers = function(customerPhone, twilioPhone, special) {
+        server.getAllSubscribers(twilioPhone);
+        return server.whenIGotAllMySubscribers(server.sendToAll, twilioPhone, special);
       };
       server.sayThatTheSpecialWasNotSent = function(text) {
         return server.text({
@@ -257,17 +270,17 @@
           to: text.from,
           body: "You are about to send \"" + text.body + "\" to all your subscribers. Reply with \"yes\" to confirm."
         });
-        return server.whenTextIsSent(server.setStatus, text.from, text.to, "wating for special confirmation");
+        return server.whenTextIsSent(server.setStatus, text.from, text.to, "waiting for special confirmation");
       };
       server.buyPhoneNumberFor = function(from) {
         console.log("fake buying a number");
         return _.defer(function() {
-          return server.onBoughtPhoneNumber(from, "480-555-5555");
+          return server.onBoughtPhoneNumber(from, "+14804282578");
         });
       };
       server.onBoughtPhoneNumber = function(customerPhone, twilioPhone) {
         server.createDatabaseRecord(customerPhone, twilioPhone);
-        server.congradulateAndAskForBuisinessName(customerPhone, twilioPhone);
+        server.sayThatTheyreLive(customerPhone, twilioPhone);
         return server.setTwilioPhone(customerPhone, twilioPhone);
       };
       server.setTwilioPhone = function(customerPhone, twilioPhone) {
@@ -313,10 +326,12 @@
         return server.sayThatTheyreLive(customerPhone, twilioPhone);
       };
       server.sayThatTheyreLive = function(customerPhone, twilioPhone) {
+        var prettyTwilioPhone;
+        prettyTwilioPhone = prettyPhone(twilioPhone);
         server.text({
           from: server.mobileminNumber,
           to: customerPhone,
-          body: "You're live! To send out a text blast, just text a special offer to " + twilioPhone + " and all of your subscribers will get the text!  "
+          body: "You're live! To send out a text blast, just text a special offer to " + prettyTwilioPhone + " and all of your subscribers will get the text!  "
         });
         server.whenTextIsSent(server.setStatus, customerPhone, server.mobileminNumber, "done");
         return server.whenTextIsSent(server.setStatus, customerPhone, twilioPhone, "waiting for special");

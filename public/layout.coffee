@@ -12,6 +12,15 @@ addPlus1 = (phone) ->
     phone = "+" + phone
   return phone
 
+prettyPhone = (phone) ->
+  if phone.length == 12
+    phone = drews.s phone, 2
+  areacode = drews.s(phone, 0, 3)
+  prefix = drews.s phone, 3, 3
+  suffix = drews.s phone, 6
+  return "#{areacode}-#{prefix}-#{suffix}"
+
+
 dModule.define "mobilemin-text", ->
   #TODO. should only be able to send one at a time
   # because of the retires
@@ -236,9 +245,13 @@ dModule.define "mobilemin-server", ->
       server.setStatus(text.from, text.to, "waiting for special")
       if text.body is "yes"
         specialText = server.getSpecialText(text.from, text.to)
-        server.sendThisSpecialToAllMyFollowers(text.from, text.to, special)
+        server.sendThisSpecialToAllMySubscribers(text.from, text.to, special)
       else if text.body is "no"
         server.sayThatTheSpecialWasNotSent text
+
+    server.sendThisSpecialToAllMySubscribers = (customerPhone, twilioPhone, special) ->
+      server.getAllSubscribers(twilioPhone)
+      server.whenIGotAllMySubscribers(server.sendToAll, twilioPhone, special)
 
     server.sayThatTheSpecialWasNotSent = (text) ->
       server.text
@@ -260,18 +273,19 @@ dModule.define "mobilemin-server", ->
           You are about to send "#{text.body}" to all your subscribers. Reply with "yes" to confirm.
         """
       server.whenTextIsSent(server.setStatus, text.from, text.to,
-        "wating for special confirmation")
+        "waiting for special confirmation")
 
     server.buyPhoneNumberFor = (from)->
       console.log "fake buying a number"
       #Twilio specific phone here
       #will call server.onBoughtPhoneNumber
       _.defer ->
-        server.onBoughtPhoneNumber(from, "480-555-5555")
+        server.onBoughtPhoneNumber(from, "+14804282578")
 
     server.onBoughtPhoneNumber = (customerPhone, twilioPhone) ->
       server.createDatabaseRecord customerPhone, twilioPhone
-      server.congradulateAndAskForBuisinessName(customerPhone, twilioPhone)
+      #server.congradulateAndAskForBuisinessName(customerPhone, twilioPhone)
+      server.sayThatTheyreLive customerPhone, twilioPhone
       server.setTwilioPhone customerPhone, twilioPhone
 
     server.setTwilioPhone = (customerPhone, twilioPhone) ->
@@ -318,11 +332,12 @@ dModule.define "mobilemin-server", ->
       server.sayThatTheyreLive(customerPhone, twilioPhone)
 
     server.sayThatTheyreLive = (customerPhone, twilioPhone) ->
+      prettyTwilioPhone = prettyPhone twilioPhone
       server.text
         from: server.mobileminNumber
         to: customerPhone
         body: """
-          You're live! To send out a text blast, just text a special offer to #{twilioPhone} and all of your subscribers will get the text!  
+          You're live! To send out a text blast, just text a special offer to #{prettyTwilioPhone} and all of your subscribers will get the text!  
         """
       server.whenTextIsSent(server.setStatus, customerPhone,
         server.mobileminNumber, "done")
