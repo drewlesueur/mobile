@@ -1,5 +1,5 @@
 (function() {
-  var addPlus1, drews, prettyPhone, _;
+  var addPlus1, drews, like, prettyPhone, _;
   var __slice = Array.prototype.slice;
 
   if (typeof process !== "undefined" && process !== null) {
@@ -20,6 +20,11 @@
       phone = "+" + phone;
     }
     return phone;
+  };
+
+  like = function(input, text) {
+    input = input.replace(/\W/g, "");
+    return input.toLowerCase() === text.toLowerCase();
   };
 
   prettyPhone = function(phone) {
@@ -53,6 +58,7 @@
       sms.retries = 0;
       sms.retry = function() {
         if (sms.maxRetries === sms.retries) {
+          sms.emit("error");
           return sms.emit("maxretriesreached", sms.maxRetries);
         }
         sms.retries += 1;
@@ -111,7 +117,6 @@
           if (status === "sent") {
             text.emit("sent");
           } else {
-            text.emit("error");
             text.retry();
           }
         }
@@ -132,15 +137,15 @@
       server.onText = function(text) {
         var status;
         console.log("text!");
-        if (text.to === server.mobileminNumber && text.body === "start") {
+        if (text.to === server.mobileminNumber && like(text.body, "start")) {
           console.log("its a start");
           return server.buyPhoneNumberFor(text.from);
         } else if (server.hasAStatus(text.from, text.to)) {
           status = server.getStatus(text.from, text.to);
           return server.actAccordingToStatus(status, text);
-        } else if (text.body === "admin") {
+        } else if (like(text.body, "admin")) {
           return server.onAdmin(text);
-        } else if (text.body === "stop") {
+        } else if (like(text.body, "stop")) {
           return server.onStop(text);
         } else {
           return server.onJoin(text);
@@ -189,13 +194,23 @@
       };
       server.onJoin = function(text) {
         server.addThisNumberToTheSubscribeList(text.from, text.to);
-        server.getBusinessNameFor(text.to);
-        return server.whenNumberIsAddedAndGotBusinessName(server.sayYouWillReceiveSpecials, text);
+        return server.whenNumberIsAdded(server.sayYouWillReceiveSpecials, text);
+      };
+      server.whenNumberIsAdded = function() {
+        var args, fn, whatToDo;
+        fn = arguments[0], args = 2 <= arguments.length ? __slice.call(arguments, 1) : [];
+        whatToDo = fn.bind.apply(fn, [null].concat(__slice.call(args)));
+        return server.add.once("done", whatToDo);
+      };
+      server.whenNumberIsRemoved = function() {
+        var args, fn, whatToDo;
+        fn = arguments[0], args = 2 <= arguments.length ? __slice.call(arguments, 1) : [];
+        whatToDo = fn.bind.apply(fn, [null].concat(__slice.call(args)));
+        return sadderver.remove.once("done", whatToDo);
       };
       server.onStop = function(text) {
         server.removeThisNumberFromTheSubscribeList(text.from, text.to);
-        server.getBusinessNameFor(text.to);
-        return server.whenNumberIsRemovedAndGotBusinessName(server.sayYouWillNoLongerReceiveTextsFromThisBusiness(text.from, businessName));
+        return server.whenNumberIsRemoved(server.sayYouWillNoLongerReceiveTextsFromThisBusiness(text.from, businessName));
       };
       server.sayYouWillNoLongerReceiveTextsFromThisBusiness = function(text, businessName) {
         return server.text({
@@ -231,7 +246,7 @@
       server.onDetermineAdmin = function(text) {
         var wannaBeAdmin;
         wannaBeAdmin = server.getWannaBeAdmin(text.from, text.to);
-        if (text.body === "yes") {
+        if (like(text.body, "yes")) {
           self.grantAdminAccess(wannaBeAdmin);
           self.whenAccessIsGranted(self.tellWannaBeAdminHeIsAnAdmin, text.to, wannaBeAdmin);
         } else {
@@ -242,16 +257,103 @@
       server.onSpecialConfirmation = function(text) {
         var specialText;
         server.setStatus(text.from, text.to, "waiting for special");
-        if (text.body === "yes") {
+        if (like(text.body, "yes")) {
           specialText = server.getSpecialText(text.from, text.to);
-          return server.sendThisSpecialToAllMySubscribers(text.from, text.to, special);
+          return server.sendThisSpecialToAllMySubscribers(text.from, text.to, specialText);
         } else if (text.body === "no") {
           return server.sayThatTheSpecialWasNotSent(text);
         }
       };
       server.sendThisSpecialToAllMySubscribers = function(customerPhone, twilioPhone, special) {
+        var sendInfo;
         server.getAllSubscribers(twilioPhone);
-        return server.whenIGotAllMySubscribers(server.sendToAll, twilioPhone, special);
+        sendInfo = {
+          sent: 0,
+          tried: 0,
+          gotStatusFor: 0,
+          erroredPhones: []
+        };
+        server.whenIGotASubscriber(server.sendToThisPerson, sendInfo, twilioPhone, special);
+        return server.whenIGotAllSubscribers(server.sendResultsOfSpecial, customerPhone, twilioPhone, sendInfo);
+      };
+      server.sendResultsOfSpecial = function(customerPhone, twilioPhone, sendInfo) {
+        var body;
+        body = "Your special was sent to " + sendInfo.tried + " People.";
+        return server.text({
+          from: twilioPhone,
+          to: customerPhone,
+          body: body
+        });
+      };
+      server.sendToThisPerson = function(sendInfo, twilioPhone, special, person) {
+        var text;
+        text = server.text({
+          from: twilioPhone,
+          to: person,
+          body: special
+        });
+        sendInfo.tried += 1;
+        server.whenTextErrors(server.acumulateError, sendInfo, text);
+        return server.whenTextIsSent(server.acumulateSent, sendInfo, text);
+      };
+      server.whenTextErrors = function() {
+        var args, func, funcToCall;
+        func = arguments[0], args = 2 <= arguments.length ? __slice.call(arguments, 1) : [];
+        funcToCall = func.bind.apply(func, [null].concat(__slice.call(args)));
+        return server.lastSms.once("error", funcToCall);
+      };
+      server.acumulateSent = function(sendInfo, text) {
+        return sendInfo.sent += 1;
+      };
+      server.acumulateError = function(sendInfo, text) {
+        return sendInfo.erroredPhones.push(text.to);
+      };
+      server.whenIGotASubscriber = function() {
+        var args, fn, mySubscriberGet, whatToDo;
+        fn = arguments[0], args = 2 <= arguments.length ? __slice.call(arguments, 1) : [];
+        whatToDo = fn.bind.apply(fn, [null].concat(__slice.call(args)));
+        mySubscriberGet = server.subscriberGet;
+        return mySubscriberGet.on("one", whatToDo);
+      };
+      server.whenIGotAllSubscribers = function() {
+        var args, fn, mySubscriberGet, whatToDo;
+        fn = arguments[0], args = 2 <= arguments.length ? __slice.call(arguments, 1) : [];
+        whatToDo = fn.bind.apply(fn, [null].concat(__slice.call(args)));
+        mySubscriberGet = server.subscriberGet;
+        return mySubscriberGet.once("done", whatToDo);
+      };
+      server.getAllSubscribers = function(twilioPhone) {
+        var mySubscriberGet;
+        server.subscriberGet = drews.makeEventful({});
+        mySubscriberGet = server.subscriberGet;
+        _.defer(function() {
+          return mySubscriberGet.emit("one", "480-840-5406");
+        });
+        drews.wait(1000, function() {
+          return mySubscriberGet.emit("one", "480-381-3855");
+        });
+        drews.wait(3000, function() {
+          return mySubscriberGet.emit("one", "480-840-5406");
+        });
+        return drews.wait(4000, function() {
+          return mySubscriberGet.emit("done");
+        });
+      };
+      server.addThisNumberToTheSubscribeList = function(from, to, number) {
+        var add;
+        add = drews.makeEventful({});
+        server.add = add;
+        return _.defer(function() {
+          return add.emit("done");
+        });
+      };
+      server.removeThisNumberFromTheSubscribeList = function(from, to) {
+        var remove;
+        remove = drews.makeEventful({});
+        server.remove = remove;
+        return _.defer(function() {
+          return remove.emit("done");
+        });
       };
       server.sayThatTheSpecialWasNotSent = function(text) {
         return server.text({
@@ -279,9 +381,12 @@
         });
       };
       server.onBoughtPhoneNumber = function(customerPhone, twilioPhone) {
+        var askForName;
         server.createDatabaseRecord(customerPhone, twilioPhone);
         server.sayThatTheyreLive(customerPhone, twilioPhone);
-        return server.setTwilioPhone(customerPhone, twilioPhone);
+        server.setTwilioPhone(customerPhone, twilioPhone);
+        askForName = server.askForBusinessName.bind(null, customerPhone, twilioPhone);
+        return drews.wait(1000, askForName);
       };
       server.setTwilioPhone = function(customerPhone, twilioPhone) {
         return server.twilioPhones[customerPhone] = twilioPhone;
@@ -304,14 +409,26 @@
       server.setBusinessName = function(customerPhone, twilioPhone, businessName) {
         return server.setMetaInfo(customerPhone, twilioPhone, "businessName", businessName);
       };
+      server.getBusinessName = function(customerPhone, twilioPhone) {
+        return server.setMetaInfo(customerPhone, twilioPhone, "businessName");
+      };
       server.setBusinessPhone = function(customerPhone, twilioPhone, businessPhone) {
         return server.setMetaInfo(customerPhone, twilioPhone, "businessPhone", businessPhone);
+      };
+      server.getBusinessPhone = function(customerPhone, twilioPhone) {
+        return server.setMetaInfo(customerPhone, twilioPhone, "businessPhone");
       };
       server.setWannaBeAdmin = function(customerPhone, twilioPhone, wannaBeAdmin) {
         return server.setMetaInfo(customerPhone, twilioPhone, "wannaBeAdmin", wannaBeAdmin);
       };
+      server.getWannaBeAdmin = function(customerPhone, twilioPhone) {
+        return server.setMetaInfo(customerPhone, twilioPhone, "wannaBeAdmin");
+      };
       server.setSpecialText = function(customerPhone, twilioPhone, specialText) {
         return server.setMetaInfo(customerPhone, twilioPhone, "specialText", specialText);
+      };
+      server.getSpecialText = function(customerPhone, twilioPhone) {
+        return server.getMetaInfo(customerPhone, twilioPhone, "specialText");
       };
       server.setMetaInfo = function(from, to, key, value) {
         var _base, _base2;
@@ -319,11 +436,15 @@
         (_base2 = server.info[from])[to] || (_base2[to] = {});
         return server.info[from][to][key] = value;
       };
+      server.getMetaInfo = function(from, to, key) {
+        var _ref, _ref2;
+        return (_ref = server.info[from]) != null ? (_ref2 = _ref[to]) != null ? _ref2[key] : void 0 : void 0;
+      };
       server.onGotBusinessPhone = function(customerPhone, businessPhone) {
         var twilioPhone;
         twilioPhone = server.getTwilioPhone(customerPhone);
         server.setBusinessPhone(customerPhone, twilioPhone, businessPhone);
-        return server.sayThatTheyreLive(customerPhone, twilioPhone);
+        return server.sayThatTheyreLiveAgain(customerPhone, twilioPhone);
       };
       server.sayThatTheyreLive = function(customerPhone, twilioPhone) {
         var prettyTwilioPhone;
@@ -333,8 +454,17 @@
           to: customerPhone,
           body: "You're live! To send out a text blast, just text a special offer to " + prettyTwilioPhone + " and all of your subscribers will get the text!  "
         });
-        server.whenTextIsSent(server.setStatus, customerPhone, server.mobileminNumber, "done");
         return server.whenTextIsSent(server.setStatus, customerPhone, twilioPhone, "waiting for special");
+      };
+      server.sayThatTheyreLiveAgain = function(customerPhone, twilioPhone) {
+        var prettyTwilioPhone;
+        prettyTwilioPhone = prettyPhone(twilioPhone);
+        server.text({
+          from: server.mobileminNumber,
+          to: customerPhone,
+          body: "Thanks. Now send out a special to " + (prettyPhone(twilioPhone)) + "."
+        });
+        return server.whenTextIsSent(server.setStatus, customerPhone, server.mobileminNumber, "done");
       };
       server.askForBusinessPhone = function(customerPhone) {
         server.text({
@@ -344,11 +474,11 @@
         });
         return server.whenTextIsSent(server.setStatus, customerPhone, server.mobileminNumber, "waiting for business phone");
       };
-      server.congradulateAndAskForBuisinessName = function(customerPhone, twilioPhone) {
+      server.askForBusinessName = function(customerPhone, twilioPhone) {
         server.text({
           from: server.mobileminNumber,
           to: customerPhone,
-          body: "Congratulations! Your MobileMin number is " + twilioPhone + ". Your customers text \"join\" to subscribe. What is your business name?"
+          body: "What is your business name?"
         });
         return server.whenTextIsSent(server.setStatus, customerPhone, server.mobileminNumber, "waiting for business name");
       };
@@ -358,7 +488,8 @@
         sms.send();
         waitForTextResponse = server.waitForTextResponse.bind(null, sms);
         sms.once("triedtosendsuccess", waitForTextResponse);
-        return server.lastSms = sms;
+        server.lastSms = sms;
+        return sms;
       };
       server.whenTextIsSent = function() {
         var args, func, funcToCall;
