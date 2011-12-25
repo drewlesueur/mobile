@@ -187,13 +187,13 @@ dModule.define "mobilemin-server", ->
         body: """
           Can #{wannaBeAdmin} send texts to your subscribers on your behalf?
         """
-      server.whenTextIsSent(server.setStatus, misterAdmin, twilioPhone, "waiting to allow admin")
-      server.whenTextIsSent(server.setWannaBeAdmin, misterAdmin, twilioPhone, wannaBeAdmin)
+      then(server.setStatus, misterAdmin, twilioPhone, "waiting to allow admin")
+      then(server.setWannaBeAdmin, misterAdmin, twilioPhone, wannaBeAdmin)
       
       
     server.onJoin = (text) ->
       server.addThisNumberToTheSubscribeList(text.from, text.to)
-      server.whenNumberIsAdded(
+      then(
         server.sayYouWillReceiveSpecials, text
       )
 
