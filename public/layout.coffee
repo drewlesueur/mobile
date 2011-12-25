@@ -30,6 +30,11 @@ then = (fn, args...) ->
   whatToDo = fn.bind null, args...
   last.once "done", whatToDo
 
+every = (fn, args...) ->
+  whatToDo = fn.bind null, args...
+  last.on "one", whatToDo
+ 
+
 dModule.define "mobilemin-text", ->
   #TODO. should only be able to send one at a time
   # because of the retires
