@@ -22,8 +22,13 @@ prettyPhone = (phone) ->
   areacode = drews.s(phone, 0, 3)
   prefix = drews.s phone, 3, 3
   suffix = drews.s phone, 6
-  return "#{areacode}-#{prefix}-#{suffix}"
+  return "#{areacode}-#{prefix}-#{suffix}
 
+last = null
+
+then = (fn, args...) ->
+  whatToDo = fn.bind null, args...
+  last.once "done", whatToDo
 
 dModule.define "mobilemin-text", ->
   #TODO. should only be able to send one at a time
@@ -168,8 +173,6 @@ dModule.define "mobilemin-server", ->
       #TODO: implement this correctly
       funcToCall = func.bind(null, args...)
       server.misterAdminRequest.once("done", funcToCall)
-      
-
       
       
     server.askMisterAdminIfNewGuyCanBeAdmin = (twilioPhone, wannaBeAdmin, misterAdmin) ->
