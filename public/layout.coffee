@@ -22,7 +22,7 @@ prettyPhone = (phone) ->
   areacode = drews.s(phone, 0, 3)
   prefix = drews.s phone, 3, 3
   suffix = drews.s phone, 6
-  return "#{areacode}-#{prefix}-#{suffix}
+  return "#{areacode}-#{prefix}-#{suffix}"
 
 last = null
 
