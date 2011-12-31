@@ -2,6 +2,8 @@ process?.on "uncaughtException", (err) ->
   console.log "there whas a hitch, but we're still up"
   console.log err.stack
 
+
+
 _ = dModule.require "underscore"
 drews = dModule.require("drews-mixins")
 
@@ -24,9 +26,9 @@ prettyPhone = (phone) ->
   suffix = drews.s phone, 6
   return "#{areacode}-#{prefix}-#{suffix}"
 
-last = null
+last = drews.eventMaker {}
 
-then = (fn, args...) ->
+andThen = (fn, args...) ->
   whatToDo = fn.bind null, args...
   last.once "done", whatToDo
 
@@ -90,6 +92,14 @@ dModule.define "mobilemin-server", ->
   expressRpc = dModule.require "express-rpc" 
   drews = dModule.require "drews-mixins"
   config = dModule.require "config"
+
+  mysql = require "mysql"
+  mysqlClient = mysql.createClient
+    user: config.mysql_user
+    passsword: config.mysql_password
+
+  mysqlClient.query("USE mobilemin");
+
   _ = dModule.require "underscore"
   MobileminApp = dModule.require "mobilemin-app"
   MobileminText = dModule.require "mobilemin-text"
@@ -159,22 +169,61 @@ dModule.define "mobilemin-server", ->
         server.buyPhoneNumberFor(text.from)
       else
         getStatus() 
-        then handleStatus
+        andThen handleStatus
+    
+    metaMap =
+      status: "status"
+      businessPhone: "business_phone"
+      businessName: "business_name"
+      special: "special"
 
-    getStatus = (from, to) ->
+    setMetaInfo = (from, to, key, value) ->
+      field = metaMap[key]
+      query = mysqlClient.query """
+        update customers set `#{field}` = ? where
+          customer_phone = ?
+          and mobilemin_phone = ?
+      """, [value, from, to]
+      somethingNewToWaitFor()
+      query.on "end", waitingIsOver
+
+    getMetaInfo = (from, to, key) ->
+      field = metaMap[key]
+      query = mysqlClient.query """
+        select `#{field}` from customers where 
+          customer_phone = ?
+          and mobilemin_phone = ?
+      """, [from, to]
+      somethingNewToWaitFor()
+      query.on("field", waitingIsOver)
+
+    server.addThisNumberToTheSubscribeList = (from, to) ->
+      query = mysqlClient.query """
+        insert into subscribers (phone_number, customer_phone) values
+        (from, to)
+      """
+      somethingNewToWaitFor()
+      query.on "end", waitingIsOver
+
+
+    server.removeThisNumberFromTheSubscribeList = (from, to) ->
+      remove = drews.makeEventful {}
+      server.remove = remove
       _.defer ->
-       status = "get from DB!!"
-       
+        remove.emit("done")
 
-    setStatus = (from, to, status) ->
-      server.statuses[from] or= {}
-      server.statuses[from][to] = status
-      if status is "waiting to allow admin"
-        server.inOneHour(setStatus, from, to, "waiting for special")
+    
+    somethingNewToWaitFor = () ->
+      last = drews.eventMaker {}
+
+    waitingIsOver = (value) ->
+      last.emit "done", value
+      console.log value
+
 
     server.onAdmin = (text) ->
       server.getMisterAdmin(text.to)
-      then(server.askMisterAdminIfNewGuyCanBeAdmin, text.to, text.from)
+      andThen(server.askMisterAdminIfNewGuyCanBeAdmin, text.to, text.from)
 
     server.getMisterAdmin = () ->
       last = ""
@@ -186,21 +235,19 @@ dModule.define "mobilemin-server", ->
         body: """
           Can #{wannaBeAdmin} send texts to your subscribers on your behalf?
         """
-      then(setStatus, misterAdmin, twilioPhone, "waiting to allow admin")
-      then(server.setWannaBeAdmin, misterAdmin, twilioPhone, wannaBeAdmin)
+      andThen(setStatus, misterAdmin, twilioPhone, "waiting to allow admin")
+      andThen(server.setWannaBeAdmin, misterAdmin, twilioPhone, wannaBeAdmin)
       
       
     server.onJoin = (text) ->
       server.addThisNumberToTheSubscribeList(text.from, text.to)
-      then(
-        server.sayYouWillReceiveSpecials, text
-      )
+      andThen server.sayYouWillReceiveSpecials, text
 
 
 
     server.onStop = (text) ->
       server.removeThisNumberFromTheSubscribeList(text.from, text.to)
-      then(
+      andThen(
         server.sayYouWillNoLongerReceiveTextsFromThisBusiness(text.from, businessName)
       )
 
@@ -225,7 +272,7 @@ dModule.define "mobilemin-server", ->
 
     server.onCall = (call) ->
       server.findBusinessPhoneFor(call.to) 
-      then(server.forwardCall)
+      andThen(server.forwardCall)
 
     server.actAccordingToStatus = (status, text) ->
       if status is "waiting for business name"
@@ -243,7 +290,7 @@ dModule.define "mobilemin-server", ->
       wannaBeAdmin = server.getWannaBeAdmin(text.from, text.to)
       if like text.body, "yes"
         self.grantAdminAccess(wannaBeAdmin)
-        then(self.tellWannaBeAdminHeIsAnAdmin, text.to, wannaBeAdmin)
+        andThen(self.tellWannaBeAdminHeIsAnAdmin, text.to, wannaBeAdmin)
       else
         self.tellWannaBeAdminHeGotRejected()
 
@@ -253,8 +300,8 @@ dModule.define "mobilemin-server", ->
     server.onSpecialConfirmation = (text) ->
       setStatus(text.from, text.to, "waiting for special")
       if like text.body, "yes"
-        specialText = server.getSpecialText(text.from, text.to)
-        server.sendThisSpecialToAllMySubscribers(text.from, text.to, specialText)
+        special = server.getSpecial(text.from, text.to)
+        server.sendThisSpecialToAllMySubscribers(text.from, text.to, special)
       else if text.body is "no"
         server.sayThatTheSpecialWasNotSent text
 
@@ -262,7 +309,7 @@ dModule.define "mobilemin-server", ->
       server.getAllSubscribers(twilioPhone)
       sendInfo = sent: 0, tried: 0, gotStatusFor: 0, erroredPhones: []
       onEach(server.sendToThisPerson, sendInfo, twilioPhone, special)
-      then server.sendResultsOfSpecial, customerPhone, twilioPhone, sendInfo
+      andThen server.sendResultsOfSpecial, customerPhone, twilioPhone, sendInfo
 
     server.sendResultsOfSpecial = (customerPhone, twilioPhone, sendInfo) ->
       body =  """
@@ -280,7 +327,7 @@ dModule.define "mobilemin-server", ->
         body: special 
       
       sendInfo.tried += 1
-      then server.acumulateSent, sendInfo, text
+      andThen server.acumulateSent, sendInfo, text
       onError server.acumulateError, sendInfo, text
     
 
@@ -291,34 +338,18 @@ dModule.define "mobilemin-server", ->
       sendInfo.erroredPhones.push text.to
 
     server.getAllSubscribers = (twilioPhone) ->
-      server.subscriberGet = drews.makeEventful {}
-      mySubscriberGet = server.subscriberGet
-      _.defer ->
-        mySubscriberGet.emit("one", "480-840-5406")
+      query = mysqlClient.query """
+        select phone_number from subscribers where 
+          and mobilemin_phone = ?
+      """, [twilioPhone]
+      somethingNewToWaitFor()
+      query.on "field", oneDone
+      query.on "end", waitingIsOver
 
-      drews.wait 1000, ->
-        mySubscriberGet.emit "one", "480-381-3855"
-
-      drews.wait 3000, ->
-        mySubscriberGet.emit "one", "480-840-5406"
-
-      drews.wait 4000, ->
-        mySubscriberGet.emit "done"
+    oneDone = (value) ->
+      last.emit "one", value
 
     
-    server.addThisNumberToTheSubscribeList = (from, to, number) ->
-      add = drews.makeEventful {}
-      server.add = add
-      _.defer ->
-        add.emit("done")
-      #todo: add to db
-
-
-    server.removeThisNumberFromTheSubscribeList = (from, to) ->
-      remove = drews.makeEventful {}
-      server.remove = remove
-      _.defer ->
-        remove.emit("done")
 
     server.sayThatTheSpecialWasNotSent = (text) ->
       server.text
@@ -330,7 +361,7 @@ dModule.define "mobilemin-server", ->
 
     server.onSpecial = (text) ->
       server.askForSpecialConfirmation(text)
-      server.setSpecialText(text.from, text.to, text.body)
+      server.setSpecial(text.from, text.to, text.body)
 
     server.askForSpecialConfirmation = (text) ->
       server.text
@@ -339,7 +370,7 @@ dModule.define "mobilemin-server", ->
         body: """
           You are about to send "#{text.body}" to all your subscribers. Reply with "yes" to confirm.
         """
-      then(setStatus, text.from, text.to,
+      andThen(setStatus, text.from, text.to,
         "waiting for special confirmation")
 
     server.buyPhoneNumberFor = (from)->
@@ -366,11 +397,20 @@ dModule.define "mobilemin-server", ->
       #TODO: implement
       server.customers or= {}
       server.customers[twilioPhone] = {misterAdmin: customerPhone}
+
        
     server.onGotBusinessName = (customerPhone, businessName) ->
       twilioPhone = server.getTwilioPhone customerPhone
       server.setBusinessName customerPhone, twilioPhone, businessName
-      then server.askForBusinessPhone, customerPhone
+      andThen server.askForBusinessPhone, customerPhone
+
+    getStatus = (from, to) ->
+      getMetaInfo from, to, status
+
+    setStatus = (from, to, status) ->
+      setMetaInfo from, to, "status", status
+      if status is "waiting to allow admin"
+        server.inOneHour(setStatus, from, to, "waiting for special")
 
     server.setBusinessName = (customerPhone, twilioPhone, businessName) ->
       setMetaInfo(customerPhone, twilioPhone, "businessName", businessName)
@@ -390,26 +430,16 @@ dModule.define "mobilemin-server", ->
     server.getWannaBeAdmin = (customerPhone, twilioPhone) ->
       setMetaInfo(customerPhone, twilioPhone, "wannaBeAdmin")
 
-    server.setSpecialText = (customerPhone, twilioPhone, specialText) ->
-      setMetaInfo(customerPhone, twilioPhone, "specialText", specialText)
+    server.setSpecial = (customerPhone, twilioPhone, special) ->
+      setMetaInfo(customerPhone, twilioPhone, "special", special)
 
-    server.getSpecialText = (customerPhone, twilioPhone) ->
-      getMetaInfo(customerPhone, twilioPhone, "specialText")
-
-    setMetaInfo = (from, to, key, value) ->
-      server.info[from] or= {}
-      server.info[from][to] or= {}
-      server.info[from][to][key] = value
-
-    getMetaInfo = (from, to, key) ->
-      return server.info[from]?[to]?[key]
-
-
+    server.getSpecial = (customerPhone, twilioPhone) ->
+      getMetaInfo(customerPhone, twilioPhone, "special")
 
     server.onGotBusinessPhone = (customerPhone, businessPhone) ->
       twilioPhone = server.getTwilioPhone customerPhone
       server.setBusinessPhone(customerPhone, twilioPhone, businessPhone)
-      then server.sayThatTheyreLiveAgain(customerPhone, twilioPhone)
+      andThen server.sayThatTheyreLiveAgain(customerPhone, twilioPhone)
 
     server.sayThatTheyreLive = (customerPhone, twilioPhone) ->
       prettyTwilioPhone = prettyPhone twilioPhone
@@ -420,8 +450,7 @@ dModule.define "mobilemin-server", ->
           You're live! To send out a text blast, just text a special offer to #{prettyTwilioPhone} and all of your subscribers will get the text!  
         """
 
-      then setStatus, customerPhone, 
-        twilioPhone, "waiting for special")
+      andThen setStatus, customerPhone, twilioPhone, "waiting for special"
 
      
     server.sayThatTheyreLiveAgain = (customerPhone, twilioPhone) ->
@@ -432,7 +461,7 @@ dModule.define "mobilemin-server", ->
         body: """
           Thanks. Now send out a special to #{prettyPhone twilioPhone}.
         """
-      then(setStatus, customerPhone,
+      andThen(setStatus, customerPhone,
         server.mobileminNumber, "done")
 
     server.askForBusinessPhone = (customerPhone)->
@@ -442,7 +471,7 @@ dModule.define "mobilemin-server", ->
         body: """
           What is your business phone number so we can forward calls?
         """
-      then(setStatus, customerPhone, 
+      andThen(setStatus, customerPhone, 
         server.mobileminNumber, "waiting for business phone")
 
       
@@ -454,7 +483,7 @@ dModule.define "mobilemin-server", ->
           What is your business name?
         """
       #TODO: should I wait till text is sent
-      then(setStatus, customerPhone, 
+      andThen(setStatus, customerPhone, 
         server.mobileminNumber, "waiting for business name")
 
 
@@ -464,7 +493,7 @@ dModule.define "mobilemin-server", ->
       waitForTextResponse = server.waitForTextResponse.bind(null, sms)
       sms.once("triedtosendsuccess", waitForTextResponse)
       server.lastSms = sms
-      last = sms #for use with "then"
+      last = sms #for use with "andThen"
       return sms
 
 
