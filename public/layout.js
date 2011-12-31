@@ -118,7 +118,7 @@
     MobileminTwilio = dModule.require("mobilemin-twilio");
     MobileminServer = {};
     MobileminServer.init = function() {
-      var getMetaInfo, getStatus, handleStatus, metaMap, oneDone, server, setMetaInfo, setStatus, somethingNewToWaitFor, status, twilio, waitingIsOver;
+      var afterDbRecordCreated, getMetaInfo, getStatus, handleStatus, metaMap, oneDone, server, setMetaInfo, setStatus, somethingNewToWaitFor, status, twilio, waitAndAskForBusinessName, waitingIsOver;
       server = {};
       status = null;
       server.statuses = {};
@@ -207,9 +207,15 @@
         somethingNewToWaitFor();
         return query.on("field", waitingIsOver);
       };
+      server.createDatabaseRecord = function(customerPhone, twilioPhone) {
+        var query;
+        query = mysqlClient.query("insert into customers (customer_phone, mobilemin_phone) values\n(?, ?)", [customer_phone, mobilemin_phone]);
+        somethingNewToWaitFor();
+        return query.on("end", waitingIsOver);
+      };
       server.addThisNumberToTheSubscribeList = function(from, to) {
         var query;
-        query = mysqlClient.query("insert into subscribers (phone_number, customer_phone) values\n(from, to)");
+        query = mysqlClient.query("insert into subscribers (phone_number, customer_phone) values\n(?, ?)", [from, to]);
         somethingNewToWaitFor();
         return query.on("end", waitingIsOver);
       };
@@ -378,10 +384,16 @@
         });
       };
       server.onBoughtPhoneNumber = function(customerPhone, twilioPhone) {
-        var askForName;
         server.createDatabaseRecord(customerPhone, twilioPhone);
+        return andThen(afterDbRecordCreated);
+      };
+      afterDbRecordCreated = function() {
         server.sayThatTheyreLive(customerPhone, twilioPhone);
         server.setTwilioPhone(customerPhone, twilioPhone);
+        return andThen(waitAndAskForBusinessName);
+      };
+      waitAndAskForBusinessName = function() {
+        var askForName;
         askForName = server.askForBusinessName.bind(null, customerPhone, twilioPhone);
         return drews.wait(1000, askForName);
       };
@@ -390,12 +402,6 @@
       };
       server.getTwilioPhone = function(customerPhone) {
         return server.twilioPhones[customerPhone];
-      };
-      server.createDatabaseRecord = function(customerPhone, twilioPhone) {
-        server.customers || (server.customers = {});
-        return server.customers[twilioPhone] = {
-          misterAdmin: customerPhone
-        };
       };
       server.onGotBusinessName = function(customerPhone, businessName) {
         var twilioPhone;

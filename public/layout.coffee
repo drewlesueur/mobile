@@ -197,11 +197,19 @@ dModule.define "mobilemin-server", ->
       somethingNewToWaitFor()
       query.on("field", waitingIsOver)
 
+    server.createDatabaseRecord = (customerPhone, twilioPhone) ->
+      query = mysqlClient.query """
+        insert into customers (customer_phone, mobilemin_phone) values
+        (?, ?)
+      """, [customer_phone, mobilemin_phone]
+      somethingNewToWaitFor()
+      query.on "end", waitingIsOver
+
     server.addThisNumberToTheSubscribeList = (from, to) ->
       query = mysqlClient.query """
         insert into subscribers (phone_number, customer_phone) values
-        (from, to)
-      """
+        (?, ?)
+      """, [from, to]
       somethingNewToWaitFor()
       query.on "end", waitingIsOver
 
@@ -382,8 +390,14 @@ dModule.define "mobilemin-server", ->
 
     server.onBoughtPhoneNumber = (customerPhone, twilioPhone) ->
       server.createDatabaseRecord customerPhone, twilioPhone
+      andThen afterDbRecordCreated
+
+    afterDbRecordCreated = ->
       server.sayThatTheyreLive customerPhone, twilioPhone
       server.setTwilioPhone customerPhone, twilioPhone
+      andThen waitAndAskForBusinessName
+
+    waitAndAskForBusinessName = ->
       askForName = server.askForBusinessName.bind null, customerPhone, twilioPhone
       drews.wait 1000, askForName
 
@@ -393,10 +407,6 @@ dModule.define "mobilemin-server", ->
     server.getTwilioPhone = (customerPhone) ->
       server.twilioPhones[customerPhone]
     
-    server.createDatabaseRecord = (customerPhone, twilioPhone) ->
-      #TODO: implement
-      server.customers or= {}
-      server.customers[twilioPhone] = {misterAdmin: customerPhone}
 
        
     server.onGotBusinessName = (customerPhone, businessName) ->
