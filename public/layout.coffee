@@ -299,6 +299,12 @@ dModule.define "mobilemin-server", ->
       last
 
     server.addThisNumberToTheSubscribeList = (from, to) ->
+      exists = checkIfSubscriberExists.bind null, from, to
+      addIfExists = addSubscriberIfNotExists.bind null, from, to
+      doInOrder 
+
+    
+    addSubscriberIfNotExists from, to, exists ->
       somethingNewToWaitFor()
       toDo = waitingIsOver.bind null, last
       _last = last
@@ -308,6 +314,20 @@ dModule.define "mobilemin-server", ->
       """, [from, to], (err, results) ->
         console.log "WOOOOOAAAAA added this number"
         _last.emit "done", results
+      last
+
+        
+    checkIfSubscriberExists = (from, to) ->
+      #TODO: subscribers table field names need to change
+      somethingNewToWaitFor()
+      _last = last
+      query = mysqlClient.query """
+        select exists(select * from subscribers where
+          phone_number = ?
+          and customer_phone = ?
+        ) as `exists`
+      """, [from, to], (err, result) ->
+        _last.emit "done", result[0]["exists"] == 0
       last
 
     mysqlClient.on "error", (e) ->
@@ -353,37 +373,60 @@ dModule.define "mobilemin-server", ->
       andThen(setStatus, misterAdmin, twilioPhone, "waiting to allow admin")
       andThen(server.setWannaBeAdmin, misterAdmin, twilioPhone, wannaBeAdmin)
       
-    whenAllDone  = (waiters, fn, args...) ->
+
+
+    doAll  = (waiters...) ->
       console.log "when all done"
       console.log waiters[0] == waiters[1]
       console.log waiters
-      toDo = fn.bind null, args...
       length = waiters.length
       count = 0
       results = []
+      last = drews.makeEventful {}
+      _last = last
       _.each waiters, (waiter, index) ->
-        waiter.once "done", (val) ->
+        waiter = waiter()
+        waiter.once "done", (vals...) ->
           count += 1
           console.log "#{count} out of #{length} (the #{index}th one)"
-          results[index] = val
+          results = results.concat vals
           if count is length
-            toDo results...
+            _last.emit "done", results...
           console.log "the results are "
           console.log results
-
-      return waiters
-
-
+      return _last
       
       
+    doInOrder  = (waiters...) ->
+      console.log "do in order"
+      console.log waiters[0] == waiters[1]
+      console.log waiters
+      length = waiters.length
+      count = 0
+      results = []
+      last = drews.makeEventful {}
+      _last = last
+
+      execWaiter = ->
+        waiter = waiters[count]
+        waiter = waiter results...
+        waiter.once "done", (vals...) ->
+          results = results.concat vals
+          count += 1
+          if count is length
+            _last.emit "done", results...
+          else
+            execWaiter()
+      return _last
       
 
     server.onJoin = (text) ->
       {from, to} = text
-      gettingBN = server.getBusinessName to
-      adding = server.addThisNumberToTheSubscribeList(from, to)
+      gettingBN = -> server.getBusinessName to
+      adding = -> server.addThisNumberToTheSubscribeList(from, to)
 
-      [g, a ] = whenAllDone [gettingBN, adding], server.sayYouWillReceiveSpecials, text
+      doAll gettingBN, adding
+      andThen server.sayYouWillReceiveSpecials, text
 
 
 
@@ -524,9 +567,10 @@ dModule.define "mobilemin-server", ->
         server.onBoughtPhoneNumber(from, "+14804282578")
 
     server.onBoughtPhoneNumber = (customerPhone, twilioPhone) ->
-      customers =  server.createDatabaseRecord customerPhone, twilioPhone
-      statuses = server.createStatusRecord customerPhone, twilioPhone
-      whenAllDone [customers, statuses], afterDbRecordCreated, customerPhone, twilioPhone
+      customers = -> server.createDatabaseRecord customerPhone, twilioPhone
+      statuses = -> server.createStatusRecord customerPhone, twilioPhone
+      doAll customers, statuses
+      andThen afterDbRecordCreated, customerPhone, twilioPhone
 
     afterDbRecordCreated = (customerPhone, twilioPhone)->
       server.sayThatTheyreLive customerPhone, twilioPhone

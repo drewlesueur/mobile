@@ -117,7 +117,7 @@
     MobileminTwilio = dModule.require("mobilemin-twilio");
     MobileminServer = {};
     MobileminServer.init = function() {
-      var afterDbRecordCreated, customerPhone, getCustomerInfo, getMetaInfo, getStatus, handleBusinessName, handleBusinessPhone, handleStatus, metaMap, oneSubscriberDone, server, setCustomerInfo, setMetaInfo, setStatus, somethingNewToWaitFor, status, text, twilio, twilioPhone, waitAndAskForBusinessName, waitingIsOver, waitingIsOverWithKey, whenAllDone;
+      var afterDbRecordCreated, checkIfSubscriberExists, customerPhone, doAll, doInOrder, getCustomerInfo, getMetaInfo, getStatus, handleBusinessName, handleBusinessPhone, handleStatus, metaMap, oneSubscriberDone, server, setCustomerInfo, setMetaInfo, setStatus, somethingNewToWaitFor, status, text, twilio, twilioPhone, waitAndAskForBusinessName, waitingIsOver, waitingIsOverWithKey;
       server = {};
       status = null;
       server.statuses = {};
@@ -285,6 +285,12 @@
         return last;
       };
       server.addThisNumberToTheSubscribeList = function(from, to) {
+        var addIfExists, exists;
+        exists = checkIfSubscriberExists.bind(null, from, to);
+        addIfExists = addSubscriberIfNotExists.bind(null, from, to);
+        return doInOrder;
+      };
+      addSubscriberIfNotExists(from, to, exists(function() {
         var query, toDo, _last;
         somethingNewToWaitFor();
         toDo = waitingIsOver.bind(null, last);
@@ -292,6 +298,15 @@
         query = mysqlClient.query("insert into subscribers (phone_number, customer_phone) values\n(?, ?)", [from, to], function(err, results) {
           console.log("WOOOOOAAAAA added this number");
           return _last.emit("done", results);
+        });
+        return last;
+      }));
+      checkIfSubscriberExists = function(from, to) {
+        var query, _last;
+        somethingNewToWaitFor();
+        _last = last;
+        query = mysqlClient.query("select exists(select * from subscribers where\n  phone_number = ?\n  and customer_phone = ?\n) as `exists`", [from, to], function(err, result) {
+          return _last.emit("done", result[0]["exists"] === 0);
         });
         return last;
       };
@@ -337,34 +352,74 @@
         andThen(setStatus, misterAdmin, twilioPhone, "waiting to allow admin");
         return andThen(server.setWannaBeAdmin, misterAdmin, twilioPhone, wannaBeAdmin);
       };
-      whenAllDone = function() {
-        var args, count, fn, length, results, toDo, waiters;
-        waiters = arguments[0], fn = arguments[1], args = 3 <= arguments.length ? __slice.call(arguments, 2) : [];
+      doAll = function() {
+        var count, length, results, waiters, _last;
+        waiters = 1 <= arguments.length ? __slice.call(arguments, 0) : [];
         console.log("when all done");
         console.log(waiters[0] === waiters[1]);
         console.log(waiters);
-        toDo = fn.bind.apply(fn, [null].concat(__slice.call(args)));
         length = waiters.length;
         count = 0;
         results = [];
+        last = drews.makeEventful({});
+        _last = last;
         _.each(waiters, function(waiter, index) {
-          return waiter.once("done", function(val) {
+          waiter = waiter();
+          return waiter.once("done", function() {
+            var vals;
+            vals = 1 <= arguments.length ? __slice.call(arguments, 0) : [];
             count += 1;
             console.log("" + count + " out of " + length + " (the " + index + "th one)");
-            results[index] = val;
-            if (count === length) toDo.apply(null, results);
+            results = results.concat(vals);
+            if (count === length) {
+              _last.emit.apply(_last, ["done"].concat(__slice.call(results)));
+            }
             console.log("the results are ");
             return console.log(results);
           });
         });
-        return waiters;
+        return _last;
+      };
+      doInOrder = function() {
+        var count, execWaiter, length, results, waiters, _last;
+        waiters = 1 <= arguments.length ? __slice.call(arguments, 0) : [];
+        console.log("do in order");
+        console.log(waiters[0] === waiters[1]);
+        console.log(waiters);
+        length = waiters.length;
+        count = 0;
+        results = [];
+        last = drews.makeEventful({});
+        _last = last;
+        execWaiter = function() {
+          var waiter;
+          waiter = waiters[count];
+          waiter = waiter.apply(null, results);
+          return waiter.once("done", function() {
+            var vals;
+            vals = 1 <= arguments.length ? __slice.call(arguments, 0) : [];
+            results = results.concat(vals);
+            count += 1;
+            if (count === length) {
+              return _last.emit.apply(_last, ["done"].concat(__slice.call(results)));
+            } else {
+              return execWaiter();
+            }
+          });
+        };
+        return _last;
       };
       server.onJoin = function(text) {
-        var a, adding, from, g, gettingBN, to, _ref;
+        var adding, from, gettingBN, to;
         from = text.from, to = text.to;
-        gettingBN = server.getBusinessName(to);
-        adding = server.addThisNumberToTheSubscribeList(from, to);
-        return _ref = whenAllDone([gettingBN, adding], server.sayYouWillReceiveSpecials, text), g = _ref[0], a = _ref[1], _ref;
+        gettingBN = function() {
+          return server.getBusinessName(to);
+        };
+        adding = function() {
+          return server.addThisNumberToTheSubscribeList(from, to);
+        };
+        doAll(gettingBN, adding);
+        return andThen(server.sayYouWillReceiveSpecials, text);
       };
       server.onStop = function(text) {
         server.removeThisNumberFromTheSubscribeList(text.from, text.to);
@@ -497,9 +552,14 @@
       };
       server.onBoughtPhoneNumber = function(customerPhone, twilioPhone) {
         var customers, statuses;
-        customers = server.createDatabaseRecord(customerPhone, twilioPhone);
-        statuses = server.createStatusRecord(customerPhone, twilioPhone);
-        return whenAllDone([customers, statuses], afterDbRecordCreated, customerPhone, twilioPhone);
+        customers = function() {
+          return server.createDatabaseRecord(customerPhone, twilioPhone);
+        };
+        statuses = function() {
+          return server.createStatusRecord(customerPhone, twilioPhone);
+        };
+        doAll(customers, statuses);
+        return andThen(afterDbRecordCreated, customerPhone, twilioPhone);
       };
       afterDbRecordCreated = function(customerPhone, twilioPhone) {
         server.sayThatTheyreLive(customerPhone, twilioPhone);
