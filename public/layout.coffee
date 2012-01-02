@@ -26,7 +26,7 @@ prettyPhone = (phone) ->
   suffix = drews.s phone, 6
   return "#{areacode}-#{prefix}-#{suffix}"
 
-last = drews.eventMaker {}
+last = drews.makeEventful {}
 
 andThen = (fn, args...) ->
   whatToDo = fn.bind null, args...
@@ -53,8 +53,6 @@ dModule.define "mobilemin-text", ->
     sms.body = textInfo.body
 
     sms.sendSmsSuccess = (res) ->
-      console.log "success sending sms"
-      console.log res
       sid = res.sid
       _.extend(sms, res)
       sms.emit("triedtosendsuccess")
@@ -94,9 +92,11 @@ dModule.define "mobilemin-server", ->
   config = dModule.require "config"
 
   mysql = require "mysql"
+
   mysqlClient = mysql.createClient
     user: config.mysql_user
-    passsword: config.mysql_password
+    password: config.mysql_password
+    host: "173.45.232.218"
 
   mysqlClient.query("USE mobilemin");
 
@@ -123,8 +123,6 @@ dModule.define "mobilemin-server", ->
       res.send "ok"
 
     server.status = (req, res) ->
-      console.log "got status"
-      console.log req.body
       info = req.body
       sid = info.SmsSid
       status = info.SmsStatus
@@ -147,12 +145,19 @@ dModule.define "mobilemin-server", ->
     server.conversations = {}
     twilio = server.twilio
 
+    customerPhone = ""
+    twilioPhone = ""
+    text = null
+    status = null
+
     server.start =  ->
       server.expressApp.listen 8010 #TODO: use config
       #self.twilio.setupNumbers()
 
-    handleStatus = ->
+    handleStatus = (status) ->
+      console.log "status is : #{status}"
       if status
+        console.log "going to act according to status of #{status}"
         server.actAccordingToStatus(status, text)
       else if like text.body, "admin"
         server.onAdmin(text)
@@ -166,9 +171,10 @@ dModule.define "mobilemin-server", ->
       console.log("text!")
       if text.to is server.mobileminNumber and like(text.body, "start")
         console.log("its a start")
-        server.buyPhoneNumberFor(text.from)
+        server.onNewCustomer text.from
       else
-        getStatus() 
+        console.log "going to get the status"
+        getStatus(text.from, text.to) 
         andThen handleStatus
     
     metaMap =
@@ -176,42 +182,137 @@ dModule.define "mobilemin-server", ->
       businessPhone: "business_phone"
       businessName: "business_name"
       special: "special"
+      twilioPhone: "customer_phone"
 
-    setMetaInfo = (from, to, key, value) ->
+    setCustomerInfo = (to, key, value) ->
+      console.log ""
       field = metaMap[key]
+      somethingNewToWaitFor()
+      toDo =  waitingIsOver.bind null, last
       query = mysqlClient.query """
         update customers set `#{field}` = ? where
+          mobilemin_phone = ?
+      """, [value, to], (err, results) ->
+        toDo results
+      last
+
+    server.getTwilioPhone = (customerPhone) ->
+      console.log "getting twilio phone"
+      somethingNewToWaitFor()
+      toDo = waitingIsOverWithKey.bind null, last, "mobilemin_phone"
+      query = mysqlClient.query """
+        select mobilemin_phone from customers where 
+          customer_phone = ?
+        order by id desc
+        limit 1
+      """, [customerPhone], (err, results) ->
+        toDo results
+      last
+
+
+   
+    getCustomerInfo = (to, key) ->
+      field = metaMap[key]
+      theQuery = """
+        select `#{field}` from customers where mobilemin_phone = '#{to}' order by id desc limit 1
+      """
+      console.log theQuery
+      somethingNewToWaitFor()
+      toDo = waitingIsOverWithKey.bind null, last, field
+
+      query = mysqlClient.query """
+        select `#{field}` from customers where 
+          mobilemin_phone = ?
+        order by id desc
+        limit 1
+      """, [to], (err, results) ->
+        console.log "NOT MAAAJOOOR"
+        console.log results
+        toDo results
+      false and query.on "end", (err, results) ->
+        #TODO seriously why doesn't this work?!!!!!
+        console.log "MAAAAJJJJOOORRRR"
+        console.log err
+        console.log results
+      last
+
+    setMetaInfo = (from, to, key, value) ->
+      console.log ""
+      field = metaMap[key]
+      somethingNewToWaitFor()
+      toDo = waitingIsOver.bind null, last
+      query = mysqlClient.query """
+        update statuses set `#{field}` = ? where
           customer_phone = ?
           and mobilemin_phone = ?
-      """, [value, from, to]
-      somethingNewToWaitFor()
-      query.on "end", waitingIsOver
+      """, [value, from, to], (err, results) ->
+        toDo results
+      last
 
     getMetaInfo = (from, to, key) ->
       field = metaMap[key]
+      theQuery = """ select `#{field}` from statuses where customer_phone = #{from} and mobilemin_phone = #{to} order by id desc limit 1 """
+      console.log theQuery
+
+      somethingNewToWaitFor()
+      toDo = waitingIsOverWithKey.bind null, last, field
       query = mysqlClient.query """
-        select `#{field}` from customers where 
+        select `#{field}` from statuses where 
           customer_phone = ?
           and mobilemin_phone = ?
-      """, [from, to]
+        order by id desc
+        limit 1
+      """, [from, to], (err, result) ->
+        toDo(result)
+      last
+   
+    server.onNewCustomer = (customerPhone) ->
+      server.createInitialDbRecord customerPhone
+      andThen server.buyPhoneNumberFor, customerPhone
+      
+    server.createInitialDbRecord = (customerPhone) ->
+      query = mysqlClient.query """
+        insert into statuses (customer_phone, mobilemin_phone) values
+        (?, ?)
+      """, [customerPhone, server.mobileminNumber]
       somethingNewToWaitFor()
-      query.on("field", waitingIsOver)
+      query.on "end", waitingIsOver.bind null, last
 
     server.createDatabaseRecord = (customerPhone, twilioPhone) ->
       query = mysqlClient.query """
         insert into customers (customer_phone, mobilemin_phone) values
         (?, ?)
-      """, [customer_phone, mobilemin_phone]
+      """, [customerPhone, twilioPhone]
       somethingNewToWaitFor()
-      query.on "end", waitingIsOver
+      query.on "end", waitingIsOver.bind null, last
+      last
+
+    #todo create a funciton that return the correct waitingisover #refactor
+
+    server.createStatusRecord = (customerPhone, twilioPhone) ->
+      query = mysqlClient.query """
+        insert into statuses (customer_phone, mobilemin_phone) values
+        (?, ?)
+      """, [customerPhone, twilioPhone]
+      somethingNewToWaitFor()
+      query.on "end", waitingIsOver.bind null, last
+      last
 
     server.addThisNumberToTheSubscribeList = (from, to) ->
+      somethingNewToWaitFor()
+      toDo = waitingIsOver.bind null, last
+      _last = last
       query = mysqlClient.query """
         insert into subscribers (phone_number, customer_phone) values
         (?, ?)
-      """, [from, to]
-      somethingNewToWaitFor()
-      query.on "end", waitingIsOver
+      """, [from, to], (err, results) ->
+        console.log "WOOOOOAAAAA added this number"
+        _last.emit "done", results
+      last
+
+    mysqlClient.on "error", (e) ->
+      console.log "mysql error"
+      console.log e
 
 
     server.removeThisNumberFromTheSubscribeList = (from, to) ->
@@ -222,11 +323,17 @@ dModule.define "mobilemin-server", ->
 
     
     somethingNewToWaitFor = () ->
-      last = drews.eventMaker {}
+      last = drews.makeEventful {}
 
-    waitingIsOver = (value) ->
+    waitingIsOver = (last, value) ->
       last.emit "done", value
+
+    waitingIsOverWithKey = (last, key, value) ->
+      console.log "the value is "
       console.log value
+      ret = value?[0]?[key]
+      last.emit "done", ret
+      console.log "got a value for #{key}, #{ret}"
 
 
     server.onAdmin = (text) ->
@@ -246,10 +353,37 @@ dModule.define "mobilemin-server", ->
       andThen(setStatus, misterAdmin, twilioPhone, "waiting to allow admin")
       andThen(server.setWannaBeAdmin, misterAdmin, twilioPhone, wannaBeAdmin)
       
+    whenAllDone  = (waiters, fn, args...) ->
+      console.log "when all done"
+      console.log waiters[0] == waiters[1]
+      console.log waiters
+      toDo = fn.bind null, args...
+      length = waiters.length
+      count = 0
+      results = []
+      _.each waiters, (waiter, index) ->
+        waiter.once "done", (val) ->
+          count += 1
+          console.log "#{count} out of #{length} (the #{index}th one)"
+          results[index] = val
+          if count is length
+            toDo results...
+          console.log "the results are "
+          console.log results
+
+      return waiters
+
+
       
+      
+      
+
     server.onJoin = (text) ->
-      server.addThisNumberToTheSubscribeList(text.from, text.to)
-      andThen server.sayYouWillReceiveSpecials, text
+      {from, to} = text
+      gettingBN = server.getBusinessName to
+      adding = server.addThisNumberToTheSubscribeList(from, to)
+
+      [g, a ] = whenAllDone [gettingBN, adding], server.sayYouWillReceiveSpecials, text
 
 
 
@@ -269,13 +403,14 @@ dModule.define "mobilemin-server", ->
         """
 
     server.sayYouWillReceiveSpecials = (text, businessName) ->
+      console.log "saying you will recieve specials"
+      console.log businessName
       server.text
         from: text.to
         to: text.from
         body: """
-          You just signed up for free specials from #{businessName}.
-          Text STOP at anytime to not receive any texts,
-          and START at anytime to start receiveing them agian.
+          You signed up for #{businessName} text specials.
+          Text STOP anyime to cancel.
         """
 
     server.onCall = (call) ->
@@ -308,8 +443,8 @@ dModule.define "mobilemin-server", ->
     server.onSpecialConfirmation = (text) ->
       setStatus(text.from, text.to, "waiting for special")
       if like text.body, "yes"
-        special = server.getSpecial(text.from, text.to)
-        server.sendThisSpecialToAllMySubscribers(text.from, text.to, special)
+        server.getSpecial(text.from, text.to)
+        andThen server.sendThisSpecialToAllMySubscribers, text.from, text.to
       else if text.body is "no"
         server.sayThatTheSpecialWasNotSent text
 
@@ -348,14 +483,14 @@ dModule.define "mobilemin-server", ->
     server.getAllSubscribers = (twilioPhone) ->
       query = mysqlClient.query """
         select phone_number from subscribers where 
-          and mobilemin_phone = ?
-      """, [twilioPhone]
+          customer_phone = ?
+      """, [twilioPhone] #TODO customer phone should be mobilemin phone
       somethingNewToWaitFor()
-      query.on "field", oneDone
-      query.on "end", waitingIsOver
+      query.on "row", oneSubscriberDone.bind null, last
+      query.on "end", waitingIsOver.bind null, last
 
-    oneDone = (value) ->
-      last.emit "one", value
+    oneSubscriberDone = (last, value) ->
+      last.emit "one", value["phone_number"]
 
     
 
@@ -389,56 +524,43 @@ dModule.define "mobilemin-server", ->
         server.onBoughtPhoneNumber(from, "+14804282578")
 
     server.onBoughtPhoneNumber = (customerPhone, twilioPhone) ->
-      server.createDatabaseRecord customerPhone, twilioPhone
-      andThen afterDbRecordCreated
+      customers =  server.createDatabaseRecord customerPhone, twilioPhone
+      statuses = server.createStatusRecord customerPhone, twilioPhone
+      whenAllDone [customers, statuses], afterDbRecordCreated, customerPhone, twilioPhone
 
-    afterDbRecordCreated = ->
+    afterDbRecordCreated = (customerPhone, twilioPhone)->
       server.sayThatTheyreLive customerPhone, twilioPhone
-      server.setTwilioPhone customerPhone, twilioPhone
-      andThen waitAndAskForBusinessName
+      andThen waitAndAskForBusinessName, customerPhone, twilioPhone
 
-    waitAndAskForBusinessName = ->
+
+    waitAndAskForBusinessName = (customerPhone, twilioPhone)->
+      console.log "waiting and then asking for business name"
       askForName = server.askForBusinessName.bind null, customerPhone, twilioPhone
       drews.wait 1000, askForName
 
-    server.setTwilioPhone = (customerPhone, twilioPhone) ->
-      server.twilioPhones[customerPhone] = twilioPhone
 
-    server.getTwilioPhone = (customerPhone) ->
-      server.twilioPhones[customerPhone]
     
 
        
     server.onGotBusinessName = (customerPhone, businessName) ->
-      twilioPhone = server.getTwilioPhone customerPhone
-      server.setBusinessName customerPhone, twilioPhone, businessName
+      console.log "got business name!!!"
+      server.getTwilioPhone customerPhone
+      andThen handleBusinessName, customerPhone, businessName
+
+
+    handleBusinessName = (customerPhone, businessName, twilioPhone) ->
+      console.log "handling business name"
+      server.setBusinessName twilioPhone, businessName
       andThen server.askForBusinessPhone, customerPhone
 
     getStatus = (from, to) ->
-      getMetaInfo from, to, status
+      console.log "getting status"
+      getMetaInfo from, to, "status"
 
     setStatus = (from, to, status) ->
       setMetaInfo from, to, "status", status
       if status is "waiting to allow admin"
         server.inOneHour(setStatus, from, to, "waiting for special")
-
-    server.setBusinessName = (customerPhone, twilioPhone, businessName) ->
-      setMetaInfo(customerPhone, twilioPhone, "businessName", businessName)
-
-    server.getBusinessName = (customerPhone, twilioPhone) ->
-      setMetaInfo(customerPhone, twilioPhone, "businessName")
-
-    server.setBusinessPhone = (customerPhone, twilioPhone, businessPhone) ->
-      setMetaInfo(customerPhone, twilioPhone, "businessPhone", businessPhone)
-
-    server.getBusinessPhone = (customerPhone, twilioPhone) ->
-      setMetaInfo(customerPhone, twilioPhone, "businessPhone")
-
-    server.setWannaBeAdmin = (customerPhone, twilioPhone, wannaBeAdmin) ->
-      setMetaInfo(customerPhone, twilioPhone, "wannaBeAdmin", wannaBeAdmin)
-
-    server.getWannaBeAdmin = (customerPhone, twilioPhone) ->
-      setMetaInfo(customerPhone, twilioPhone, "wannaBeAdmin")
 
     server.setSpecial = (customerPhone, twilioPhone, special) ->
       setMetaInfo(customerPhone, twilioPhone, "special", special)
@@ -446,14 +568,42 @@ dModule.define "mobilemin-server", ->
     server.getSpecial = (customerPhone, twilioPhone) ->
       getMetaInfo(customerPhone, twilioPhone, "special")
 
+    server.setBusinessName = (twilioPhone, businessName) ->
+      console.log "setting business name #{twilioPhone}: #{businessName}"
+      setCustomerInfo(twilioPhone, "businessName", businessName)
+
+    server.getBusinessName = (twilioPhone) ->
+      getCustomerInfo(twilioPhone, "businessName")
+
+    server.setBusinessPhone = (twilioPhone, businessPhone) ->
+      setCustomerInfo(twilioPhone, "businessPhone", businessPhone)
+
+    server.getBusinessPhone = (twilioPhone) ->
+      getCustomerInfo(twilioPhone, "businessPhone")
+
+    server.setWannaBeAdmin = (twilioPhone, wannaBeAdmin) ->
+      setCustomerInfo(twilioPhone, "wannaBeAdmin", wannaBeAdmin)
+
+    server.getWannaBeAdmin = (twilioPhone) ->
+      getCustomerInfo(twilioPhone, "wannaBeAdmin")
+
+
+
     server.onGotBusinessPhone = (customerPhone, businessPhone) ->
-      twilioPhone = server.getTwilioPhone customerPhone
-      server.setBusinessPhone(customerPhone, twilioPhone, businessPhone)
-      andThen server.sayThatTheyreLiveAgain(customerPhone, twilioPhone)
+      console.log "ON GOT BUSINESS PHONE"
+      console.log businessPhone
+      console.log "end business phone"
+      server.getTwilioPhone customerPhone
+      andThen handleBusinessPhone, customerPhone, businessPhone
+    
+    handleBusinessPhone  = (customerPhone, businessPhone, twilioPhone) ->
+      console.log "handling business PHONE!!!! #{twilioPhone}"
+      server.setBusinessPhone(twilioPhone, businessPhone)
+      andThen server.sayThatTheyreLiveAgain, customerPhone, twilioPhone
 
     server.sayThatTheyreLive = (customerPhone, twilioPhone) ->
       prettyTwilioPhone = prettyPhone twilioPhone
-      server.text
+      text = server.text
         from: server.mobileminNumber
         to: customerPhone
         body: """
@@ -461,6 +611,7 @@ dModule.define "mobilemin-server", ->
         """
 
       andThen setStatus, customerPhone, twilioPhone, "waiting for special"
+      return text
 
      
     server.sayThatTheyreLiveAgain = (customerPhone, twilioPhone) ->
@@ -504,6 +655,8 @@ dModule.define "mobilemin-server", ->
       sms.once("triedtosendsuccess", waitForTextResponse)
       server.lastSms = sms
       last = sms #for use with "andThen"
+      itsDone = sms.emit.bind sms, "done"
+      sms.once "sent", itsDone
       return sms
 
 
