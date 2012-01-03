@@ -117,13 +117,22 @@
     MobileminTwilio = dModule.require("mobilemin-twilio");
     MobileminServer = {};
     MobileminServer.init = function() {
-      var afterDbRecordCreated, checkIfSubscriberExists, customerPhone, doAll, doInOrder, getCustomerInfo, getMetaInfo, getStatus, handleBusinessName, handleBusinessPhone, handleStatus, metaMap, oneSubscriberDone, server, setCustomerInfo, setMetaInfo, setStatus, somethingNewToWaitFor, status, text, twilio, twilioPhone, waitAndAskForBusinessName, waitingIsOver, waitingIsOverWithKey;
+      var Twiml, afterDbRecordCreated, checkIfSubscriberExists, continueSpecialProcess, customerPhone, doAll, doInOrder, forwardCall, getCustomerInfo, getMetaInfo, getStatus, handleBusinessName, handleBusinessPhone, handleStatus, metaMap, oneSubscriberDone, server, setCustomerInfo, setMetaInfo, setStatus, somethingNewToWaitFor, status, text, twilio, twilioPhone, waitAndAskForBusinessName, waitingIsOver, waitingIsOverWithKey;
       server = {};
       status = null;
       server.statuses = {};
       server.info = {};
       server.twilioPhones = {};
-      server.phone = function() {};
+      server.phone = function(req, res) {
+        var twilioResponse;
+        twilioResponse = new Twiml.Response(res);
+        server.getBusinessPhone(req.phone_number);
+        return andThen(forwardCall.bind(null, twilioResponse));
+      };
+      forwardCall = function(twilioResponse, phoneNumber) {
+        twilioResponse.append(new Twiml.Dial(phoneNumber));
+        return twilioResponse.send();
+      };
       server.sms = function(req, res) {
         var text;
         text = req.body;
@@ -158,6 +167,7 @@
       server.smsSidsWaitingStatus = {};
       server.conversations = {};
       twilio = server.twilio;
+      Twiml = require("twilio").Twiml;
       customerPhone = "";
       twilioPhone = "";
       text = null;
@@ -288,7 +298,17 @@
         var addIfExists, exists;
         exists = checkIfSubscriberExists.bind(null, from, to);
         addIfExists = addSubscriberIfNotExists.bind(null, from, to);
-        return doInOrder;
+        return doInOrder(exists, addIfExists);
+      };
+      server.removeThisNumberFromTheSubscribeList = function(from, to) {
+        var query, _last;
+        somethingNewToWaitFor();
+        _last = last;
+        query = mysqlClient.query("delete from subscribers where \nphone_number = ? and \ncustomer_phone = ?", [from, to], function(err, results) {
+          console.log("WOOOOOAAAAA deleted this number");
+          return _last.emit("done", results);
+        });
+        return last;
       };
       addSubscriberIfNotExists(from, to, exists(function() {
         var query, toDo, _last;
@@ -314,14 +334,6 @@
         console.log("mysql error");
         return console.log(e);
       });
-      server.removeThisNumberFromTheSubscribeList = function(from, to) {
-        var remove;
-        remove = drews.makeEventful({});
-        server.remove = remove;
-        return _.defer(function() {
-          return remove.emit("done");
-        });
-      };
       somethingNewToWaitFor = function() {
         return last = drews.makeEventful({});
       };
@@ -533,6 +545,11 @@
         });
       };
       server.onSpecial = function(text) {
+        server.getBusinessName();
+        return andThen(continueSpecialProcess.bind(null, text));
+      };
+      continueSpecialProcess = function(text, businessName) {
+        text.body += "-" + businessName;
         server.askForSpecialConfirmation(text);
         return server.setSpecial(text.from, text.to, text.body);
       };

@@ -3,7 +3,6 @@ process?.on "uncaughtException", (err) ->
   console.log err.stack
 
 
-
 _ = dModule.require "underscore"
 drews = dModule.require("drews-mixins")
 
@@ -113,7 +112,18 @@ dModule.define "mobilemin-server", ->
     server.statuses = {}
     server.info = {}
     server.twilioPhones = {}
-    server.phone = ->
+    server.phone = (req, res)->
+      twilioResponse = new Twiml.Response(res)
+      #TODO: find out what the actual phone numer called was
+      server.getBusinessPhone req.phone_number #is this right?
+      andThen forwardCall.bind null, twilioResponse
+
+    forwardCall = (twilioResponse, phoneNumber) ->
+      twilioResponse.append(new Twiml.Dial(phoneNumber))
+      twilioResponse.send()
+
+
+
     server.sms =  (req, res) ->
       text = req.body 
       text.to = text.To
@@ -144,6 +154,7 @@ dModule.define "mobilemin-server", ->
     server.smsSidsWaitingStatus =  {}
     server.conversations = {}
     twilio = server.twilio
+    Twiml = require("twilio").Twiml
 
     customerPhone = ""
     twilioPhone = ""
@@ -231,6 +242,7 @@ dModule.define "mobilemin-server", ->
         toDo results
       false and query.on "end", (err, results) ->
         #TODO seriously why doesn't this work?!!!!!
+        # figure this out!!
         console.log "MAAAAJJJJOOORRRR"
         console.log err
         console.log results
@@ -301,7 +313,19 @@ dModule.define "mobilemin-server", ->
     server.addThisNumberToTheSubscribeList = (from, to) ->
       exists = checkIfSubscriberExists.bind null, from, to
       addIfExists = addSubscriberIfNotExists.bind null, from, to
-      doInOrder 
+      doInOrder exists, addIfExists
+      
+    server.removeThisNumberFromTheSubscribeList = (from, to) ->
+      somethingNewToWaitFor()
+      _last = last
+      query = mysqlClient.query """
+        delete from subscribers where 
+        phone_number = ? and 
+        customer_phone = ?
+      """, [from, to], (err, results) ->
+        console.log "WOOOOOAAAAA deleted this number"
+        _last.emit "done", results
+      last
 
     
     addSubscriberIfNotExists from, to, exists ->
@@ -335,11 +359,6 @@ dModule.define "mobilemin-server", ->
       console.log e
 
 
-    server.removeThisNumberFromTheSubscribeList = (from, to) ->
-      remove = drews.makeEventful {}
-      server.remove = remove
-      _.defer ->
-        remove.emit("done")
 
     
     somethingNewToWaitFor = () ->
@@ -546,6 +565,11 @@ dModule.define "mobilemin-server", ->
         """
 
     server.onSpecial = (text) ->
+      server.getBusinessName() 
+      andThen continueSpecialProcess.bind null, text
+
+    continueSpecialProcess = (text, businessName) ->
+      text.body += "-#{businessName}"
       server.askForSpecialConfirmation(text)
       server.setSpecial(text.from, text.to, text.body)
 
