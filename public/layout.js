@@ -119,7 +119,7 @@
     MobileminTwilio = dModule.require("mobilemin-twilio");
     MobileminServer = {};
     MobileminServer.init = function() {
-      var Twiml, addSubscriberIfNotExists, afterDbRecordCreated, checkIfSubscriberExists, continueSpecialProcess, customerPhone, doAll, doInOrder, forwardCall, getCustomerInfo, getMetaInfo, getStatus, handleBusinessName, handleBusinessPhone, handleStatus, metaMap, oneSubscriberDone, ramStati, sayYourMessageIsTooLong, server, setCustomerInfo, setMetaInfo, setStatus, somethingNewToWaitFor, status, text, twilio, twilioPhone, waitAndAskForBusinessName, waitingIsOver, waitingIsOverWithKey;
+      var Twiml, addSubscriberIfNotExists, afterDbRecordCreated, checkIfSubscriberExists, continueSpecialProcess, customerPhone, doAll, doInOrder, forwardCall, getCustomerInfo, getMetaInfo, getStatus, handleBusinessName, handleBusinessPhone, handleStatus, metaMap, oneSubscriberDone, ramStati, sayYourMessageIsTooLong, server, setCustomerInfo, setMetaInfo, setStatus, somethingNewToWaitFor, status, tellKyleSomeoneFinished, tellKyleSomeoneSignedUp, text, twilio, twilioPhone, waitAndAskForBusinessName, waitingIsOver, waitingIsOverWithKey;
       server = {};
       status = null;
       server.statuses = {};
@@ -127,11 +127,17 @@
       server.twilioPhones = {};
       server.phone = function(req, res) {
         var twilioResponse;
+        console.log("got a phone call");
         twilioResponse = new Twiml.Response(res);
-        server.getBusinessPhone(req.phone_number);
-        return andThen(forwardCall.bind(null, twilioResponse));
+        if (req.body.To === "+14804673355") {
+          return forwardCall(twilioResponse, "+14803813855");
+        } else {
+          server.getBusinessPhone(req.body.To);
+          return andThen(forwardCall.bind(null, twilioResponse));
+        }
       };
       forwardCall = function(twilioResponse, phoneNumber) {
+        console.log("it got a phone number for forwarding " + phoneNumber);
         twilioResponse.append(new Twiml.Dial(phoneNumber));
         return twilioResponse.send();
       };
@@ -631,10 +637,27 @@
         return andThen(setStatus, text.from, text.to, "waiting for special confirmation");
       };
       server.buyPhoneNumberFor = function(from) {
-        console.log("fake buying a number");
-        return _.defer(function() {
-          return server.onBoughtPhoneNumber(from, "+14804282578");
-        });
+        var actuallyBuy, areaCode, buyError, buySuccess;
+        var _this = this;
+        areaCode = drews.s(from, 2, 3);
+        buySuccess = function(justBoughtNumber) {
+          var newPhone;
+          newPhone = justBoughtNumber.phone_number;
+          server.onBoughtPhoneNumber(from, newPhone);
+          return console.log("you just bought a number which was " + newPhone);
+        };
+        buyError = function(error) {
+          return console.log("There was an error");
+        };
+        actuallyBuy = true;
+        return actuallyBuy && twilio.twilioClient.apiCall('POST', '/IncomingPhoneNumbers', {
+          params: {
+            VoiceUrl: "http://mobilemin-server.drewl.us/phone",
+            SmsUrl: "http://mobilemin-server.drewl.us/sms",
+            AreaCode: areaCode,
+            StatusUrl: "http://mobilemin-server.drewl.us/status"
+          }
+        }, buySuccess, buyError);
       };
       server.onBoughtPhoneNumber = function(customerPhone, twilioPhone) {
         var customers, statuses;
@@ -645,7 +668,23 @@
           return server.createStatusRecord(customerPhone, twilioPhone);
         };
         doAll(customers, statuses);
-        return andThen(afterDbRecordCreated, customerPhone, twilioPhone);
+        andThen(afterDbRecordCreated, customerPhone, twilioPhone);
+        return tellKyleSomeoneSignedUp(customerPhone, twilioPhone);
+      };
+      tellKyleSomeoneSignedUp = function(customerPhone, twilioPhone) {
+        text = {
+          from: server.mobileminNumber,
+          to: "4803813855",
+          body: "Someone new signed up. Their Text Marketing Number is " + (prettyPhone(twilioPhone)) + ".\nTheir cell phone is " + (prettyPhone(customerPhone)) + "."
+        };
+        return server.text(text);
+      };
+      tellKyleSomeoneFinished = function(customerPhone, twilioPhone, businessPhone, businessName) {
+        return server.text({
+          from: server.mobileminNumber,
+          to: "4803813855",
+          body: "" + businessName + " finished signing up.\nTheir Text Marketing number is " + (prettyPhone(twilioPhone)) + ".\nTheir business phone is " + (prettyPhone(businessPhone)) + ".\nTheir cell phone is " + (prettyPhone(customerPhone)) + ".\n"
+        });
       };
       afterDbRecordCreated = function(customerPhone, twilioPhone) {
         server.sayThatTheyreLive(customerPhone, twilioPhone);
@@ -713,7 +752,7 @@
       handleBusinessPhone = function(customerPhone, businessPhone, twilioPhone) {
         console.log("handling business PHONE!!!! " + twilioPhone);
         server.setBusinessPhone(twilioPhone, businessPhone);
-        return andThen(server.sayThatTheyreLiveAgain, customerPhone, twilioPhone);
+        return andThen(server.sayThatTheyreLiveAgain, customerPhone, twilioPhone, businessPhone);
       };
       server.sayThatTheyreLive = function(customerPhone, twilioPhone) {
         var prettyTwilioPhone;
@@ -726,15 +765,17 @@
         andThen(setStatus, customerPhone, twilioPhone, "waiting for special");
         return text;
       };
-      server.sayThatTheyreLiveAgain = function(customerPhone, twilioPhone) {
+      server.sayThatTheyreLiveAgain = function(customerPhone, twilioPhone, businessPhone) {
         var prettyTwilioPhone;
         prettyTwilioPhone = prettyPhone(twilioPhone);
         server.text({
           from: server.mobileminNumber,
           to: customerPhone,
-          body: "Thanks. Now send out a special to " + (prettyPhone(twilioPhone)) + "."
+          body: "All set. Invite your customers to receive text specials by having them text \"Join\" to " + (prettyPhone(twilioPhone)) + ".\nNow, save that number in your phone."
         });
-        return andThen(setStatus, customerPhone, server.mobileminNumber, "done");
+        andThen(setStatus, customerPhone, server.mobileminNumber, "done");
+        server.getBusinessName(twilioPhone);
+        return andThen(tellKyleSomeoneFinished.bind(null, customerPhone, twilioPhone, businessPhone));
       };
       server.askForBusinessPhone = function(customerPhone) {
         server.text({

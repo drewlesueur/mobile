@@ -115,12 +115,17 @@ dModule.define "mobilemin-server", ->
     server.info = {}
     server.twilioPhones = {}
     server.phone = (req, res)->
+      console.log "got a phone call"
       twilioResponse = new Twiml.Response(res)
       #TODO: find out what the actual phone numer called was
-      server.getBusinessPhone req.phone_number #is this right?
-      andThen forwardCall.bind null, twilioResponse
+      if req.body.To == "+14804673355" 
+        forwardCall twilioResponse, "+14803813855"
+      else
+        server.getBusinessPhone req.body.To
+        andThen forwardCall.bind null, twilioResponse
 
     forwardCall = (twilioResponse, phoneNumber) ->
+      console.log "it got a phone number for forwarding " + phoneNumber
       twilioResponse.append(new Twiml.Dial(phoneNumber))
       twilioResponse.send()
 
@@ -639,17 +644,54 @@ dModule.define "mobilemin-server", ->
         "waiting for special confirmation")
 
     server.buyPhoneNumberFor = (from)->
-      console.log "fake buying a number"
-      #Twilio specific phone here
-      #will call server.onBoughtPhoneNumber
-      _.defer ->
-        server.onBoughtPhoneNumber(from, "+14804282578")
+      areaCode = drews.s(from, 2, 3) #get rid of +1, and get area code 
+      buySuccess = (justBoughtNumber) =>
+        newPhone = justBoughtNumber.phone_number
+        server.onBoughtPhoneNumber(from, newPhone)
+        console.log "you just bought a number which was #{newPhone}"
+     
+      buyError = (error) =>
+        console.log "There was an error"
+      actuallyBuy = true
+      actuallyBuy and twilio.twilioClient.apiCall('POST', '/IncomingPhoneNumbers', {params: {
+        VoiceUrl: "http://mobilemin-server.drewl.us/phone"
+        SmsUrl: "http://mobilemin-server.drewl.us/sms"
+        AreaCode: areaCode
+        StatusUrl: "http://mobilemin-server.drewl.us/status"
+
+      }}, buySuccess, buyError)
+
+
 
     server.onBoughtPhoneNumber = (customerPhone, twilioPhone) ->
       customers = -> server.createDatabaseRecord customerPhone, twilioPhone
       statuses = -> server.createStatusRecord customerPhone, twilioPhone
       doAll customers, statuses
       andThen afterDbRecordCreated, customerPhone, twilioPhone
+
+      tellKyleSomeoneSignedUp(customerPhone, twilioPhone)
+
+    tellKyleSomeoneSignedUp = (customerPhone, twilioPhone) ->
+      text = 
+        from: server.mobileminNumber
+        to: "4803813855"
+        body: """
+          Someone new signed up. Their Text Marketing Number is #{prettyPhone twilioPhone}.
+          Their cell phone is #{prettyPhone customerPhone}.
+        """
+      server.text text
+
+    tellKyleSomeoneFinished = (customerPhone, twilioPhone, businessPhone, businessName) ->
+      server.text
+        from: server.mobileminNumber
+        to: "4803813855"
+        body: """
+          #{businessName} finished signing up.
+          Their Text Marketing number is #{prettyPhone twilioPhone}.
+          Their business phone is #{prettyPhone businessPhone}.
+          Their cell phone is #{prettyPhone customerPhone}.
+
+        """
 
     afterDbRecordCreated = (customerPhone, twilioPhone)->
       server.sayThatTheyreLive customerPhone, twilioPhone
@@ -723,7 +765,7 @@ dModule.define "mobilemin-server", ->
     handleBusinessPhone  = (customerPhone, businessPhone, twilioPhone) ->
       console.log "handling business PHONE!!!! #{twilioPhone}"
       server.setBusinessPhone(twilioPhone, businessPhone)
-      andThen server.sayThatTheyreLiveAgain, customerPhone, twilioPhone
+      andThen server.sayThatTheyreLiveAgain, customerPhone, twilioPhone, businessPhone
 
     server.sayThatTheyreLive = (customerPhone, twilioPhone) ->
       prettyTwilioPhone = prettyPhone twilioPhone
@@ -738,16 +780,20 @@ dModule.define "mobilemin-server", ->
       return text
 
      
-    server.sayThatTheyreLiveAgain = (customerPhone, twilioPhone) ->
+    server.sayThatTheyreLiveAgain = (customerPhone, twilioPhone, businessPhone) ->
       prettyTwilioPhone = prettyPhone twilioPhone
       server.text
         from: server.mobileminNumber
         to: customerPhone
         body: """
-          Thanks. Now send out a special to #{prettyPhone twilioPhone}.
+          All set. Invite your customers to receive text specials by having them text "Join" to #{prettyPhone twilioPhone}.
+          Now, save that number in your phone.
         """
       andThen(setStatus, customerPhone,
         server.mobileminNumber, "done")
+
+      server.getBusinessName twilioPhone
+      andThen tellKyleSomeoneFinished.bind null, customerPhone, twilioPhone, businessPhone
 
     server.askForBusinessPhone = (customerPhone)->
       server.text
