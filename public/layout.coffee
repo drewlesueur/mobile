@@ -609,7 +609,7 @@ dModule.define "mobilemin-server", ->
         from: text.to
         to: text.from
         body: """
-          Ok. that special was *not* sent. 
+          Ok. That special was *not* sent. 
         """
 
     server.onSpecial = (text) ->
@@ -800,7 +800,7 @@ dModule.define "mobilemin-server", ->
         from: server.mobileminNumber
         to: customerPhone
         body: """
-          What is your business phone number so we can forward calls?
+          What is your business phone number?
         """
       andThen(setStatus, customerPhone, 
         server.mobileminNumber, "waiting for business phone")

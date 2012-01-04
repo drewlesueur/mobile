@@ -603,7 +603,7 @@
         return server.text({
           from: text.to,
           to: text.from,
-          body: "Ok. that special was *not* sent. "
+          body: "Ok. That special was *not* sent. "
         });
       };
       server.onSpecial = function(text) {
@@ -781,7 +781,7 @@
         server.text({
           from: server.mobileminNumber,
           to: customerPhone,
-          body: "What is your business phone number so we can forward calls?"
+          body: "What is your business phone number?"
         });
         return andThen(setStatus, customerPhone, server.mobileminNumber, "waiting for business phone");
       };
