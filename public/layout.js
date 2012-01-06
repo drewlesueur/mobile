@@ -1,6 +1,8 @@
 (function() {
-  var addPlus1, andThen, drews, last, like, onEach, onError, prettyPhone, _;
-  var __slice = Array.prototype.slice;
+  var addPlus1, andThen, config, drews, last, like, onEach, onError, prettyPhone, _,
+    __slice = Array.prototype.slice;
+
+  config = dModule.require("config");
 
   if (typeof process !== "undefined" && process !== null) {
     process.on("uncaughtException", function(err) {
@@ -94,7 +96,7 @@
         return drews.wait(3000, sms.retry);
       };
       sms.send = function() {
-        return sms.twilioClient.sendSms(sms.from, sms.to, sms.body, "http://mobilemin-server.drewl.us/status", sms.sendSmsSuccess, sms.sendSmsError);
+        return sms.twilioClient.sendSms(sms.from, sms.to, sms.body, "http://" + config.server.hostName + ":" + config.server.port + "/status", sms.sendSmsSuccess, sms.sendSmsError);
       };
       return sms;
     };
@@ -102,7 +104,7 @@
   });
 
   dModule.define("mobilemin-server", function() {
-    var MobileminApp, MobileminServer, MobileminText, MobileminTwilio, config, expressRpc, mysql, mysqlClient;
+    var MobileminApp, MobileminServer, MobileminText, MobileminTwilio, expressRpc, mysql, mysqlClient;
     expressRpc = dModule.require("express-rpc");
     drews = dModule.require("drews-mixins");
     config = dModule.require("config");
@@ -110,16 +112,20 @@
     mysqlClient = mysql.createClient({
       user: config.mysql_user,
       password: config.mysql_password,
-      host: "173.45.232.218"
+      host: config.server.hostName
     });
     mysqlClient.query("USE mobilemin");
+    mysqlClient.query("select `customer_phone` from statuses where customer_phone like '%4%'", function(err, results) {
+      console.log("done showing tables");
+      return console.log(results);
+    });
     _ = dModule.require("underscore");
     MobileminApp = dModule.require("mobilemin-app");
     MobileminText = dModule.require("mobilemin-text");
     MobileminTwilio = dModule.require("mobilemin-twilio");
     MobileminServer = {};
     MobileminServer.init = function() {
-      var Twiml, addSubscriberIfNotExists, afterDbRecordCreated, checkIfSubscriberExists, continueSpecialProcess, customerPhone, doAll, doInOrder, forwardCall, getCustomerInfo, getMetaInfo, getStatus, handleBusinessName, handleBusinessPhone, handleStatus, metaMap, oneSubscriberDone, ramStati, sayYourMessageIsTooLong, server, setCustomerInfo, setMetaInfo, setStatus, somethingNewToWaitFor, status, tellKyleSomeoneFinished, tellKyleSomeoneSignedUp, text, twilio, twilioPhone, waitAndAskForBusinessName, waitingIsOver, waitingIsOverWithKey;
+      var Twiml, addSubscriberIfNotExists, afterDbRecordCreated, checkIfSubscriberExists, continueSpecialProcess, customerPhone, doAll, doInOrder, forwardCall, getCustomerInfo, getMetaInfo, getStatus, getTotalSubscribers, giveStats, handleBusinessName, handleBusinessPhone, handleStatus, metaMap, oneSubscriberDone, ramStati, sayYourMessageIsTooLong, server, setCustomerInfo, setMetaInfo, setStatus, somethingNewToWaitFor, status, tellKyleSomeoneFinished, tellKyleSomeoneSignedUp, text, twilio, twilioPhone, waitAndAskForBusinessName, waitingIsOver, waitingIsOverWithKey;
       server = {};
       status = null;
       server.statuses = {};
@@ -212,6 +218,8 @@
           return server.onAdmin(text);
         } else if (like(text.body, "stop")) {
           return server.onStop(text);
+        } else if (like(text.body, "stats")) {
+          return server.onStats(text);
         } else {
           return server.onJoin(text);
         }
@@ -285,11 +293,16 @@
         return last;
       };
       getMetaInfo = function(from, to, key) {
-        var field, query, toDo;
+        var field, query, theQuery, toDo;
         field = metaMap[key];
         somethingNewToWaitFor();
         toDo = waitingIsOverWithKey.bind(null, last, field);
+        theQuery = " select `" + field + "` from statuses where customer_phone = " + from + " and mobilemin_phone = " + to + " order by id desc limit 1 ";
+        console.log(theQuery);
         query = mysqlClient.query("select `" + field + "` from statuses where \n  customer_phone = ?\n  and mobilemin_phone = ?\norder by id desc\nlimit 1", [from, to], function(err, result) {
+          console.log("the err is");
+          console.log(err);
+          console.log("the result is " + result);
           return toDo(result);
         });
         return last;
@@ -488,6 +501,39 @@
         });
         return andThen(server.sayYouWillReceiveSpecials, text);
       };
+      server.onStats = function(text) {
+        getTotalSubscribers(text);
+        last.once("done", function(total) {
+          console.log(total);
+          return console.log("hellow wooroasdflahsdfkahdf");
+        });
+        console.log("hello world");
+        console.log(last.offer);
+        return andThen(giveStats, text);
+      };
+      giveStats = function(text, numberOfSubscribers) {
+        console.log("giving stats");
+        return server.text({
+          to: text.from,
+          from: text.to,
+          body: "You have " + numberOfSubscribers + " subscribers."
+        });
+      };
+      getTotalSubscribers = function(text) {
+        var query, _last;
+        console.log("getting total");
+        somethingNewToWaitFor();
+        _last = last;
+        _last.offer = "200";
+        return query = mysqlClient.query("select count(*) as `count` from subscribers s join customers c on (c.mobilemin_phone = s.customer_phone) where \n  s.customer_phone = ?\n  and c.customer_phone = ?", [text.to, text.from], function(err, results) {
+          var _ref;
+          console.log("WOOOOOOOOOOOOO");
+          console.log(query);
+          console.log("done");
+          console.log(results);
+          return _last.emit("done", results != null ? (_ref = results[0]) != null ? _ref.count : void 0 : void 0);
+        });
+      };
       server.onStop = function(text) {
         var bn, remove;
         bn = function() {
@@ -607,6 +653,7 @@
         });
       };
       server.onSpecial = function(text) {
+        if (text.body === "stats") return server.onStats(text);
         server.getBusinessName(text.to);
         return andThen(continueSpecialProcess.bind(null, text));
       };
@@ -637,8 +684,8 @@
         return andThen(setStatus, text.from, text.to, "waiting for special confirmation");
       };
       server.buyPhoneNumberFor = function(from) {
-        var actuallyBuy, areaCode, buyError, buySuccess;
-        var _this = this;
+        var actuallyBuy, areaCode, buyError, buySuccess,
+          _this = this;
         areaCode = drews.s(from, 2, 3);
         buySuccess = function(justBoughtNumber) {
           var newPhone;
@@ -652,10 +699,10 @@
         actuallyBuy = true;
         return actuallyBuy && twilio.twilioClient.apiCall('POST', '/IncomingPhoneNumbers', {
           params: {
-            VoiceUrl: "http://mobilemin-server.drewl.us/phone",
-            SmsUrl: "http://mobilemin-server.drewl.us/sms",
+            VoiceUrl: "http://" + config.server.hostName + ":" + config.server.port + "/phone",
+            SmsUrl: "http://" + config.server.hostName + ":" + config.server.port + "/sms",
             AreaCode: areaCode,
-            StatusUrl: "http://mobilemin-server.drewl.us/status"
+            StatusUrl: "http://" + config.server.hostName + ":" + config.server.port + "/status"
           }
         }, buySuccess, buyError);
       };

@@ -2,6 +2,7 @@
 // this way is kind of like how you use it in a browser
 
 require("./public/dmodule.js")
+require("./config.js")
 var _ = require("./public/underscore.js")
 dModule.define("underscore", function () { return _ });
 require("./public/drews-mixins.js")
@@ -18,7 +19,6 @@ require("./public/mobilemin-app.js")
 require("./public/mobilemin-twilio.js")
 //require("./public/mobilemin-server.js")
 require("./public/layout.js")
-require("./config.js")
 
 var config = dModule.require("config")
 var _ = dModule.require("underscore")

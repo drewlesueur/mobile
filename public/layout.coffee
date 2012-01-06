@@ -1,3 +1,5 @@
+config = dModule.require "config"
+
 process?.on "uncaughtException", (err) ->
   console.log "there whas a hitch, but we're still up"
   console.log err.stack
@@ -80,7 +82,7 @@ dModule.define "mobilemin-text", ->
         sms.from,
         sms.to,
         sms.body
-        "http://mobilemin-server.drewl.us/status",
+        "http://#{config.server.hostName}:#{config.server.port}/status",
         sms.sendSmsSuccess,
         sms.sendSmsError
       )
@@ -97,9 +99,12 @@ dModule.define "mobilemin-server", ->
   mysqlClient = mysql.createClient
     user: config.mysql_user
     password: config.mysql_password
-    host: "173.45.232.218"
+    host: config.server.hostName
 
   mysqlClient.query("USE mobilemin");
+  mysqlClient.query "select `customer_phone` from statuses where customer_phone like '%4%'", (err, results) ->
+    console.log "done showing tables"
+    console.log results
 
   _ = dModule.require "underscore"
   MobileminApp = dModule.require "mobilemin-app"
@@ -203,6 +208,8 @@ dModule.define "mobilemin-server", ->
         server.onAdmin(text)
       else if like text.body, "stop"
         server.onStop(text)
+      else if like text.body, "stats"
+        server.onStats text
       else
         server.onJoin(text)
       
@@ -291,6 +298,8 @@ dModule.define "mobilemin-server", ->
 
       somethingNewToWaitFor()
       toDo = waitingIsOverWithKey.bind null, last, field
+      theQuery = """ select `#{field}` from statuses where customer_phone = #{from} and mobilemin_phone = #{to} order by id desc limit 1 """
+      console.log theQuery
       query = mysqlClient.query """
         select `#{field}` from statuses where 
           customer_phone = ?
@@ -298,6 +307,9 @@ dModule.define "mobilemin-server", ->
         order by id desc
         limit 1
       """, [from, to], (err, result) ->
+        console.log("the err is")
+        console.log(err)
+        console.log("the result is #{result}")
         toDo(result)
       last
    
@@ -493,6 +505,39 @@ dModule.define "mobilemin-server", ->
         console.log "DDOOOOONNNNEEEE"
       andThen server.sayYouWillReceiveSpecials, text
 
+    server.onStats = (text) ->
+      getTotalSubscribers text
+      last.once "done", (total) ->
+        console.log(total)
+        console.log("hellow wooroasdflahsdfkahdf")
+      console.log "hello world"
+      console.log last.offer
+      andThen giveStats, text
+
+    giveStats = (text, numberOfSubscribers) ->
+      console.log "giving stats"
+      server.text
+        to: text.from
+        from: text.to
+        body: "You have #{numberOfSubscribers} subscribers."
+
+    getTotalSubscribers = (text) ->
+      console.log "getting total"
+      somethingNewToWaitFor()
+      _last = last
+      _last.offer = "200"
+      query = mysqlClient.query """
+        select count(*) as `count` from subscribers s join customers c on (c.mobilemin_phone = s.customer_phone) where 
+          s.customer_phone = ?
+          and c.customer_phone = ?
+      """, [text.to, text.from], (err, results) ->
+         console.log "WOOOOOOOOOOOOO"
+         console.log query
+         console.log "done"
+         console.log results
+
+         _last.emit "done", results?[0]?.count
+
       
 
 
@@ -613,6 +658,8 @@ dModule.define "mobilemin-server", ->
         """
 
     server.onSpecial = (text) ->
+      if text.body == "stats"
+        return server.onStats text 
       server.getBusinessName text.to
       andThen continueSpecialProcess.bind null, text
 
@@ -654,10 +701,10 @@ dModule.define "mobilemin-server", ->
         console.log "There was an error"
       actuallyBuy = true
       actuallyBuy and twilio.twilioClient.apiCall('POST', '/IncomingPhoneNumbers', {params: {
-        VoiceUrl: "http://mobilemin-server.drewl.us/phone"
-        SmsUrl: "http://mobilemin-server.drewl.us/sms"
+        VoiceUrl: "http://#{config.server.hostName}:#{config.server.port}/phone"
+        SmsUrl: "http://#{config.server.hostName}:#{config.server.port}/sms"
         AreaCode: areaCode
-        StatusUrl: "http://mobilemin-server.drewl.us/status"
+        StatusUrl: "http://#{config.server.hostName}:#{config.server.port}/status"
 
       }}, buySuccess, buyError)
 
