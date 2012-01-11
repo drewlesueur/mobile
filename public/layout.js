@@ -74,7 +74,6 @@
       sms.sendSmsSuccess = function(res) {
         var sid;
         console.log("tried to send!!");
-        console.log(res);
         sid = res.sid;
         _.extend(sms, res);
         return sms.emit("triedtosendsuccess");
@@ -104,15 +103,50 @@
   });
 
   dModule.define("mobilemin-server", function() {
-    var MobileminApp, MobileminServer, MobileminText, MobileminTwilio, expressRpc, mysql, mysqlClient;
+    var MobileminApp, MobileminServer, MobileminText, MobileminTwilio, checkConnection, clientCredentials, expressRpc, mysql, mysqlClient, onReconnect, tryToReconnect;
     expressRpc = dModule.require("express-rpc");
     drews = dModule.require("drews-mixins");
     config = dModule.require("config");
     mysql = require("mysql");
-    mysqlClient = mysql.createClient({
+    clientCredentials = {
       user: config.mysql_user,
       password: config.mysql_password,
       host: config.server.hostName
+    };
+    mysqlClient = mysql.createClient(clientCredentials);
+    onReconnect = function(err) {
+      console.log("trying got reconnect status");
+      if (err && err.errno === 'ECONNREFUSED') {
+        console.log("trying to reconnect in 1 sec");
+        return drews.wait(1000, tryToReconnect);
+      }
+    };
+    tryToReconnect = function() {
+      console.log("trying to reconnect now");
+      mysqlClient = mysql.createClient(clientCredentials);
+      return mysqlClient.query("use mobilemin", function(err) {
+        console.log("first query after");
+        return console.log(err);
+      });
+    };
+    checkConnection = function() {
+      console.log("checking connection");
+      if (!mysqlClient.connected) {
+        return tryToReconnect();
+      } else {
+        return console.log("good");
+      }
+    };
+    drews.wait(1000, function() {
+      return setInterval(checkConnection, 5000);
+    });
+    mysqlClient.on("error", function(err) {
+      console.log("mysql error");
+      return console.log(err);
+    });
+    mysqlClient.on("end", function(e) {
+      console.log("it ended");
+      return console.log(e);
     });
     mysqlClient.query("USE mobilemin");
     mysqlClient.query("select `customer_phone` from statuses where customer_phone like '%4%'", function(err, results) {
@@ -125,7 +159,7 @@
     MobileminTwilio = dModule.require("mobilemin-twilio");
     MobileminServer = {};
     MobileminServer.init = function() {
-      var Twiml, addSubscriberIfNotExists, afterDbRecordCreated, checkIfSubscriberExists, continueSpecialProcess, customerPhone, doAll, doInOrder, forwardCall, getCustomerInfo, getMetaInfo, getStatus, getTotalSubscribers, giveStats, handleBusinessName, handleBusinessPhone, handleStatus, metaMap, oneSubscriberDone, ramStati, sayYourMessageIsTooLong, server, setCustomerInfo, setMetaInfo, setStatus, somethingNewToWaitFor, status, tellKyleSomeoneFinished, tellKyleSomeoneSignedUp, text, twilio, twilioPhone, waitAndAskForBusinessName, waitingIsOver, waitingIsOverWithKey;
+      var Twiml, addSubscriberIfNotExists, afterDbRecordCreated, checkIfSubscriberExists, continueSpecialProcess, createTextHold, customerPhone, doAll, doInOrder, forwardCall, getCustomerInfo, getMetaInfo, getRamStatus, getStatus, getTotalSubscribers, giveStats, handleBusinessName, handleBusinessPhone, handleStatus, isTextHold, metaMap, oneSubscriberDone, ramStati, releaseTextHold, removeIncomingTextHold, sayYourMessageIsTooLong, server, setCustomerInfo, setMetaInfo, setRamStatus, setStatus, somethingNewToWaitFor, status, tellKyleSomeoneFinished, tellKyleSomeoneSignedUp, text, twilio, twilioPhone, waitAndAskForBusinessName, waitingIsOver, waitingIsOverWithKey;
       server = {};
       status = null;
       server.statuses = {};
@@ -149,32 +183,21 @@
       };
       ramStati = {};
       server.sms = function(req, res) {
-        var info, key, release, text;
+        var text;
         console.log("Got a text");
         text = req.body;
         text.to = text.To;
         text.from = text.From;
         text.body = text.Body;
-        key = text.from + text.to;
-        release = function() {
-          console.log("going to release");
-          console.log(text);
-          text = ramStati[key].text;
+        if ((!isTextHold(text.from, text.to)) || like(text.body, "yes") || like(text.body, "no")) {
+          console.log("not on hold, releasing");
+          createTextHold(text.from, text.to);
+          drews.wait(4000, releaseTextHold.bind(null, text.from, text.to));
           server.onText(text);
-          return delete ramStati[key];
-        };
-        if (ramStati[key]) {
-          info = ramStati[key];
-          clearTimeout(info.timer);
-          info.text.body += text.body;
-          info.timer = setTimeout(release, 2000);
         } else {
-          ramStati[key] = {
-            text: text,
-            timer: setTimeout(release, 2000)
-          };
+          console.log(" \n\n  on hold, not releasing\n  the text that is on hold is\n  " + (text.body.substring(0, 10)) + "...\n");
         }
-        return res.send("ok");
+        return res.send("");
       };
       server.status = function(req, res) {
         var info, sid, text;
@@ -190,7 +213,7 @@
             text.retry();
           }
         }
-        return res.send("ok");
+        return res.send("");
       };
       server.mobileminNumber = "+14804673355";
       server.expressApp = expressRpc("/rpc", {});
@@ -210,9 +233,7 @@
         return server.expressApp.listen(8010);
       };
       handleStatus = function(status) {
-        console.log("status is : " + status);
         if (status) {
-          console.log("going to act according to status of " + status);
           return server.actAccordingToStatus(status, text);
         } else if (like(text.body, "admin")) {
           return server.onAdmin(text);
@@ -224,12 +245,9 @@
       };
       server.onText = function(_text) {
         text = _text;
-        console.log("text!");
         if (text.to === server.mobileminNumber && like(text.body, "start")) {
-          console.log("its a start");
           return server.onNewCustomer(text.from);
         } else {
-          console.log("going to get the status");
           getStatus(text.from, text.to);
           return andThen(handleStatus);
         }
@@ -243,7 +261,6 @@
       };
       setCustomerInfo = function(to, key, value) {
         var field, query, toDo;
-        console.log("");
         field = metaMap[key];
         somethingNewToWaitFor();
         toDo = waitingIsOver.bind(null, last);
@@ -254,7 +271,6 @@
       };
       server.getTwilioPhone = function(customerPhone) {
         var query, toDo;
-        console.log("getting twilio phone");
         somethingNewToWaitFor();
         toDo = waitingIsOverWithKey.bind(null, last, "mobilemin_phone");
         query = mysqlClient.query("select mobilemin_phone from customers where \n  customer_phone = ?\norder by id desc\nlimit 1", [customerPhone], function(err, results) {
@@ -268,8 +284,6 @@
         somethingNewToWaitFor();
         toDo = waitingIsOverWithKey.bind(null, last, field);
         query = mysqlClient.query("select `" + field + "` from customers where \n  mobilemin_phone = ?\norder by id desc\nlimit 1", [to], function(err, results) {
-          console.log("NOT MAAAJOOOR");
-          console.log(results);
           return toDo(results);
         });
         false && query.on("end", function(err, results) {
@@ -328,10 +342,8 @@
         var addIfExists, exists, _last;
         somethingNewToWaitFor();
         _last = last;
-        console.log("going to add this number if it exists");
         exists = checkIfSubscriberExists.bind(null, from, to);
         addIfExists = addSubscriberIfNotExists.bind(null, from, to);
-        console.log;
         doInOrder(exists, addIfExists);
         andThen(function() {
           return _last.emit("done", null);
@@ -358,13 +370,11 @@
         var query, toDo, _last;
         somethingNewToWaitFor();
         if (!exists) {
-          console.log("already exists.");
           _.defer(function() {
             return last.emit("done", null);
           });
           return last;
         }
-        console.log("now really going to add this nubmer");
         toDo = waitingIsOver.bind(null, last);
         _last = last;
         query = mysqlClient.query("insert into subscribers (phone_number, customer_phone) values\n(?, ?)", [from, to], function(err, results) {
@@ -374,7 +384,6 @@
       };
       checkIfSubscriberExists = function(from, to) {
         var query, _last;
-        console.log("checking if subscriber exists");
         somethingNewToWaitFor();
         _last = last;
         query = mysqlClient.query("select exists(select * from subscribers where\n  phone_number = ?\n  and customer_phone = ?\n) as `exists`", [from, to], function(err, result) {
@@ -382,10 +391,6 @@
         });
         return last;
       };
-      mysqlClient.on("error", function(e) {
-        console.log("mysql error");
-        return console.log(e);
-      });
       somethingNewToWaitFor = function() {
         return last = drews.makeEventful({});
       };
@@ -416,7 +421,6 @@
       doAll = function() {
         var count, length, results, waiters, _last;
         waiters = 1 <= arguments.length ? __slice.call(arguments, 0) : [];
-        console.log("doing all");
         length = waiters.length;
         count = 0;
         results = [];
@@ -426,17 +430,12 @@
         _.each(waiters, function(waiter, index) {
           return _.defer(function() {
             waiter = waiter();
-            console.log("doAll called  " + (index + 1) + "/" + length);
             return waiter.once("done", function() {
               var vals;
               vals = 1 <= arguments.length ? __slice.call(arguments, 0) : [];
               count += 1;
-              console.log("doAll done  " + count + "/" + length);
               results = results.concat(vals);
               if (count === length) {
-                console.log("EMITTING");
-                console.log(results);
-                console.log(_last.test);
                 return _last.emit.apply(_last, ["done"].concat(__slice.call(results)));
               }
             });
@@ -447,9 +446,6 @@
       doInOrder = function() {
         var count, execWaiter, length, results, waiters, _last;
         waiters = 1 <= arguments.length ? __slice.call(arguments, 0) : [];
-        console.log("do in order");
-        console.log(waiters[0] === waiters[1]);
-        console.log(waiters);
         length = waiters.length;
         count = 0;
         results = [];
@@ -459,12 +455,10 @@
           var waiter;
           waiter = waiters[count];
           waiter = waiter.apply(null, results);
-          console.log("called doInOrder " + (count + 1) + "/" + length);
           return waiter.once("done", function() {
             var vals;
             vals = 1 <= arguments.length ? __slice.call(arguments, 0) : [];
             results = results.concat(vals);
-            console.log("done with a  doInOrder " + (count + 1) + "/" + length);
             count += 1;
             if (count === length) {
               return _last.emit.apply(_last, ["done"].concat(__slice.call(results)));
@@ -478,7 +472,6 @@
       };
       server.onJoin = function(text) {
         var adding, from, gettingBN, to;
-        console.log("going to join");
         from = text.from, to = text.to;
         gettingBN = function() {
           return server.getBusinessName(to);
@@ -490,22 +483,15 @@
         last.once("done", function() {
           var args;
           args = 1 <= arguments.length ? __slice.call(arguments, 0) : [];
-          return console.log("DDOOOOONNNNEEEE");
         });
         return andThen(server.sayYouWillReceiveSpecials, text);
       };
       server.onStats = function(text) {
         getTotalSubscribers(text);
-        last.once("done", function(total) {
-          console.log(total);
-          return console.log("hellow wooroasdflahsdfkahdf");
-        });
-        console.log("hello world");
-        console.log(last.offer);
+        last.once("done", function(total) {});
         return andThen(giveStats, text);
       };
       giveStats = function(text, numberOfSubscribers) {
-        console.log("giving stats");
         return server.text({
           to: text.from,
           from: text.to,
@@ -514,16 +500,11 @@
       };
       getTotalSubscribers = function(text) {
         var query, _last;
-        console.log("getting total");
         somethingNewToWaitFor();
         _last = last;
         _last.offer = "200";
         return query = mysqlClient.query("select count(*) as `count` from subscribers s join customers c on (c.mobilemin_phone = s.customer_phone) where \n  s.customer_phone = ?\n  and c.customer_phone = ?", [text.to, text.from], function(err, results) {
           var _ref;
-          console.log("WOOOOOOOOOOOOO");
-          console.log(query);
-          console.log("done");
-          console.log(results);
           return _last.emit("done", results != null ? (_ref = results[0]) != null ? _ref.count : void 0 : void 0);
         });
       };
@@ -546,8 +527,6 @@
         });
       };
       server.sayYouWillReceiveSpecials = function(text, businessName) {
-        console.log("business name is " + businessName);
-        console.log("saying you will recieve specials from " + businessName);
         return server.text({
           from: text.to,
           to: text.from,
@@ -645,6 +624,30 @@
           body: "Ok. That special was *not* sent. "
         });
       };
+      setRamStatus = function(from, to, prop, value) {
+        var key;
+        key = from + to;
+        ramStati[key] || (ramStati[key] = {});
+        return ramStati[key][prop] = value;
+      };
+      getRamStatus = function(from, to, prop) {
+        var key;
+        key = from + to;
+        ramStati[key] || (ramStati[key] = {});
+        return ramStati[key][prop];
+      };
+      removeIncomingTextHold = function(from, to) {
+        return setRamStatus(from, to, "hold", false);
+      };
+      createTextHold = function(from, to) {
+        return setRamStatus(from, to, "hold", true);
+      };
+      releaseTextHold = function(from, to) {
+        return setRamStatus(from, to, "hold", false);
+      };
+      isTextHold = function(from, to) {
+        return getRamStatus(from, to, "hold");
+      };
       server.onSpecial = function(text) {
         if (text.body === "#") return server.onStats(text);
         server.getBusinessName(text.to);
@@ -652,6 +655,7 @@
       };
       continueSpecialProcess = function(text, businessName) {
         text.body += "\n-" + businessName;
+        console.log("\nthe text body to send is\n" + text.body + "\n\n");
         if (text.body.length > 160) {
           return sayYourMessageIsTooLong(text);
         } else {
@@ -668,7 +672,19 @@
           body: "Your message is " + over + " characters too long. Trim it down and send it again."
         });
       };
+      _.defer(function() {
+        return server.text({
+          from: "+14804282578",
+          to: "+14804644744",
+          body: "test landline"
+        });
+      });
       server.askForSpecialConfirmation = function(text) {
+        server.text({
+          from: text.to,
+          to: text.from,
+          body: text.body
+        });
         server.text({
           from: text.to,
           to: text.from,
@@ -732,22 +748,18 @@
       };
       waitAndAskForBusinessName = function(customerPhone, twilioPhone) {
         var askForName;
-        console.log("waiting and then asking for business name");
         askForName = server.askForBusinessName.bind(null, customerPhone, twilioPhone);
         return drews.wait(1000, askForName);
       };
       server.onGotBusinessName = function(customerPhone, businessName) {
-        console.log("got business name!!!");
         server.getTwilioPhone(customerPhone);
         return andThen(handleBusinessName, customerPhone, businessName);
       };
       handleBusinessName = function(customerPhone, businessName, twilioPhone) {
-        console.log("handling business name");
         server.setBusinessName(twilioPhone, businessName);
         return andThen(server.askForBusinessPhone, customerPhone);
       };
       getStatus = function(from, to) {
-        console.log("getting status");
         return getMetaInfo(from, to, "status");
       };
       setStatus = function(from, to, status) {
@@ -763,11 +775,9 @@
         return getMetaInfo(customerPhone, twilioPhone, "special");
       };
       server.setBusinessName = function(twilioPhone, businessName) {
-        console.log("setting business name " + twilioPhone + ": " + businessName);
         return setCustomerInfo(twilioPhone, "businessName", businessName);
       };
       server.getBusinessName = function(twilioPhone) {
-        console.log("getting business name for " + twilioPhone);
         return getCustomerInfo(twilioPhone, "businessName");
       };
       _.defer(function() {
@@ -786,14 +796,10 @@
         return getCustomerInfo(twilioPhone, "wannaBeAdmin");
       };
       server.onGotBusinessPhone = function(customerPhone, businessPhone) {
-        console.log("ON GOT BUSINESS PHONE");
-        console.log(businessPhone);
-        console.log("end business phone");
         server.getTwilioPhone(customerPhone);
         return andThen(handleBusinessPhone, customerPhone, businessPhone);
       };
       handleBusinessPhone = function(customerPhone, businessPhone, twilioPhone) {
-        console.log("handling business PHONE!!!! " + twilioPhone);
         server.setBusinessPhone(twilioPhone, businessPhone);
         return andThen(server.sayThatTheyreLiveAgain, customerPhone, twilioPhone, businessPhone);
       };

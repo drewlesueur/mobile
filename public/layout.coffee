@@ -55,7 +55,6 @@ dModule.define "mobilemin-text", ->
 
     sms.sendSmsSuccess = (res) ->
       console.log "tried to send!!"
-      console.log res
       sid = res.sid
       _.extend(sms, res)
       sms.emit("triedtosendsuccess")
@@ -96,15 +95,53 @@ dModule.define "mobilemin-server", ->
 
   mysql = require "mysql"
 
-  mysqlClient = mysql.createClient
+  clientCredentials = 
     user: config.mysql_user
     password: config.mysql_password
     host: config.server.hostName
 
+  mysqlClient = mysql.createClient clientCredentials
+
+  onReconnect = (err) ->
+    console.log "trying got reconnect status"
+    if err and err.errno is 'ECONNREFUSED'
+      console.log "trying to reconnect in 1 sec"
+      drews.wait 1000, tryToReconnect
+
+
+  tryToReconnect = () ->
+    console.log "trying to reconnect now"
+    mysqlClient = mysql.createClient clientCredentials
+    mysqlClient.query "use mobilemin", (err) ->
+      console.log "first query after"
+      console.log err
+
+  checkConnection = () ->
+    console.log "checking connection"
+    if not mysqlClient.connected
+      tryToReconnect()
+    else
+      console.log "good"
+      
+
+  drews.wait 1000, ->
+    setInterval checkConnection, 5000
+
+  mysqlClient.on "error", (err) ->
+    console.log "mysql error"
+    console.log err
+
+  mysqlClient.on "end", (e) ->
+    console.log "it ended"
+    console.log e
+  
   mysqlClient.query("USE mobilemin");
   mysqlClient.query "select `customer_phone` from statuses where customer_phone like '%4%'", (err, results) ->
     console.log "done showing tables"
     console.log results
+    #mysqlClient.end ->
+    #  mysqlClient.query "select count(*) from statuses", ->
+    #    console.log "got done with second one!"
 
   _ = dModule.require "underscore"
   MobileminApp = dModule.require "mobilemin-app"
@@ -138,35 +175,28 @@ dModule.define "mobilemin-server", ->
     ramStati = {}
 
     server.sms =  (req, res) ->
-      
       console.log "Got a text"
       text = req.body 
       text.to = text.To
       text.from = text.From
       text.body = text.Body
-      
-      key = text.from + text.to
-      release = () ->
-        console.log "going to release"
-        console.log text
-        text = ramStati[key].text 
+      if (not isTextHold text.from, text.to) or like(text.body, "yes") or like(text.body, "no")
+        console.log "not on hold, releasing"
+        createTextHold(text.from, text.to) #holding for long messages
+        drews.wait 4000, releaseTextHold.bind(null, text.from, text.to)
         server.onText text
-        delete ramStati[key]
-
-      if ramStati[key]
-        info = ramStati[key]
-        clearTimeout info.timer
-        info.text.body += text.body
-        info.timer = setTimeout release, 2000
       else
-        ramStati[key] =
-          text: text
-          timer: setTimeout release, 2000
-      #server.onText(text)
-      res.send "ok"
+        console.log """ 
+        
+          on hold, not releasing
+          the text that is on hold is
+          #{text.body.substring(0, 10)}...
+
+        """
+
+      res.send ""
 
     server.status = (req, res) ->
-      #console.log req.body
       info = req.body
       sid = info.SmsSid
       status = info.SmsStatus
@@ -177,7 +207,7 @@ dModule.define "mobilemin-server", ->
           text.emit("sent")
         else
           text.retry()
-      res.send "ok"
+      res.send ""
         
     server.mobileminNumber =  "+14804673355"
     server.expressApp = expressRpc("/rpc", {})
@@ -200,9 +230,7 @@ dModule.define "mobilemin-server", ->
       #self.twilio.setupNumbers()
 
     handleStatus = (status) ->
-      console.log "status is : #{status}"
       if status
-        console.log "going to act according to status of #{status}"
         server.actAccordingToStatus(status, text)
       else if like text.body, "admin"
         server.onAdmin(text)
@@ -213,12 +241,9 @@ dModule.define "mobilemin-server", ->
       
     server.onText = (_text) ->
       text = _text
-      console.log("text!")
       if text.to is server.mobileminNumber and like(text.body, "start")
-        console.log("its a start")
         server.onNewCustomer text.from
       else
-        console.log "going to get the status"
         getStatus(text.from, text.to) 
         andThen handleStatus
     
@@ -230,7 +255,6 @@ dModule.define "mobilemin-server", ->
       twilioPhone: "customer_phone"
 
     setCustomerInfo = (to, key, value) ->
-      console.log ""
       field = metaMap[key]
       somethingNewToWaitFor()
       toDo =  waitingIsOver.bind null, last
@@ -242,7 +266,6 @@ dModule.define "mobilemin-server", ->
       last
 
     server.getTwilioPhone = (customerPhone) ->
-      console.log "getting twilio phone"
       somethingNewToWaitFor()
       toDo = waitingIsOverWithKey.bind null, last, "mobilemin_phone"
       query = mysqlClient.query """
@@ -266,8 +289,6 @@ dModule.define "mobilemin-server", ->
         order by id desc
         limit 1
       """, [to], (err, results) ->
-        console.log "NOT MAAAJOOOR"
-        console.log results
         toDo results
       false and query.on "end", (err, results) ->
         #TODO seriously why doesn't this work?!!!!!
@@ -340,10 +361,8 @@ dModule.define "mobilemin-server", ->
     server.addThisNumberToTheSubscribeList = (from, to) ->
       somethingNewToWaitFor()
       _last = last
-      console.log "going to add this number if it exists"
       exists = checkIfSubscriberExists.bind null, from, to
       addIfExists = addSubscriberIfNotExists.bind null, from, to
-      console.log 
       doInOrder exists, addIfExists
       andThen ->
         _last.emit "done", null
@@ -370,11 +389,9 @@ dModule.define "mobilemin-server", ->
     addSubscriberIfNotExists = (from, to, exists) ->
       somethingNewToWaitFor()
       if not exists
-        console.log "already exists." 
         _.defer -> last.emit "done", null
         return last
 
-      console.log "now really going to add this nubmer"
       toDo = waitingIsOver.bind null, last
       _last = last
       query = mysqlClient.query """
@@ -386,7 +403,6 @@ dModule.define "mobilemin-server", ->
 
         
     checkIfSubscriberExists = (from, to) ->
-      console.log "checking if subscriber exists"
       #TODO: subscribers table field names need to change
       somethingNewToWaitFor()
       _last = last
@@ -398,10 +414,6 @@ dModule.define "mobilemin-server", ->
       """, [from, to], (err, result) ->
         _last.emit "done", result[0]["exists"] == 0
       last
-
-    mysqlClient.on "error", (e) ->
-      console.log "mysql error"
-      console.log e
 
 
 
@@ -437,7 +449,6 @@ dModule.define "mobilemin-server", ->
 
 
     doAll  = (waiters...) ->
-      console.log "doing all"
       length = waiters.length
       count = 0
       results = []
@@ -447,23 +458,15 @@ dModule.define "mobilemin-server", ->
       _.each waiters, (waiter, index) ->
         _.defer -> #this is important
           waiter = waiter()
-          console.log "doAll called  #{index + 1}/#{length}"
           waiter.once "done", (vals...) ->
             count += 1
-            console.log "doAll done  #{count}/#{length}"
             results = results.concat vals
             if count is length
-              console.log "EMITTING"
-              console.log results
-              console.log _last.test
               _last.emit "done", results...
       return _last
       
       
     doInOrder  = (waiters...) ->
-      console.log "do in order"
-      console.log waiters[0] == waiters[1]
-      console.log waiters
       length = waiters.length
       count = 0
       results = []
@@ -473,10 +476,8 @@ dModule.define "mobilemin-server", ->
       execWaiter = ->
         waiter = waiters[count]
         waiter = waiter results...
-        console.log "called doInOrder #{count+1}/#{length}"
         waiter.once "done", (vals...) ->
           results = results.concat vals
-          console.log "done with a  doInOrder #{count+1}/#{length}"
           count += 1
           if count is length
             _last.emit "done", results...
@@ -487,34 +488,26 @@ dModule.define "mobilemin-server", ->
       
 
     server.onJoin = (text) ->
-      console.log "going to join"
       {from, to} = text
       gettingBN = -> server.getBusinessName to
       adding = -> server.addThisNumberToTheSubscribeList(from, to)
 
       doAll gettingBN, adding
       last.once "done", (args...) ->
-        console.log "DDOOOOONNNNEEEE"
       andThen server.sayYouWillReceiveSpecials, text
 
     server.onStats = (text) ->
       getTotalSubscribers text
       last.once "done", (total) ->
-        console.log(total)
-        console.log("hellow wooroasdflahsdfkahdf")
-      console.log "hello world"
-      console.log last.offer
       andThen giveStats, text
 
     giveStats = (text, numberOfSubscribers) ->
-      console.log "giving stats"
       server.text
         to: text.from
         from: text.to
         body: "You have #{numberOfSubscribers} subscribers."
 
     getTotalSubscribers = (text) ->
-      console.log "getting total"
       somethingNewToWaitFor()
       _last = last
       _last.offer = "200"
@@ -523,11 +516,6 @@ dModule.define "mobilemin-server", ->
           s.customer_phone = ?
           and c.customer_phone = ?
       """, [text.to, text.from], (err, results) ->
-         console.log "WOOOOOOOOOOOOO"
-         console.log query
-         console.log "done"
-         console.log results
-
          _last.emit "done", results?[0]?.count
 
 
@@ -547,8 +535,6 @@ dModule.define "mobilemin-server", ->
         """
 
     server.sayYouWillReceiveSpecials = (text, businessName) ->
-      console.log "business name is #{businessName}"
-      console.log "saying you will recieve specials from #{businessName}"
       server.text
         from: text.to
         to: text.from
@@ -645,6 +631,28 @@ dModule.define "mobilemin-server", ->
         body: """
           Ok. That special was *not* sent. 
         """
+    
+    setRamStatus = (from, to, prop, value) ->
+      key = from + to
+      ramStati[key] ||= {}
+      ramStati[key][prop] = value
+
+    getRamStatus = (from, to, prop) ->
+      key = from + to
+      ramStati[key] ||= {}
+      ramStati[key][prop]
+
+    removeIncomingTextHold = (from, to) ->
+      setRamStatus(from, to, "hold", false) 
+
+    createTextHold = (from, to) ->
+      setRamStatus from, to, "hold", true
+
+    releaseTextHold = (from, to) ->
+      setRamStatus from, to, "hold", false
+
+    isTextHold = (from, to) ->
+      getRamStatus from, to, "hold"
 
     server.onSpecial = (text) ->
       if text.body == "#"
@@ -654,6 +662,13 @@ dModule.define "mobilemin-server", ->
 
     continueSpecialProcess = (text, businessName) ->
       text.body += "\n-#{businessName}"
+      console.log """
+
+        the text body to send is
+        #{text.body}
+
+
+      """
       if text.body.length > 160
         sayYourMessageIsTooLong(text)
       else
@@ -668,8 +683,18 @@ dModule.define "mobilemin-server", ->
         body: """
           Your message is #{over} characters too long. Trim it down and send it again.
         """
+    _.defer ->
+      server.text
+        from: "+14804282578"
+        to: "+14804644744"
+        body: "test landline"
 
     server.askForSpecialConfirmation = (text) ->
+      server.text
+        from: text.to
+        to: text.from
+        body: text.body
+
       server.text
         from: text.to
         to: text.from
@@ -735,7 +760,6 @@ dModule.define "mobilemin-server", ->
 
 
     waitAndAskForBusinessName = (customerPhone, twilioPhone)->
-      console.log "waiting and then asking for business name"
       askForName = server.askForBusinessName.bind null, customerPhone, twilioPhone
       drews.wait 1000, askForName
 
@@ -744,18 +768,15 @@ dModule.define "mobilemin-server", ->
 
        
     server.onGotBusinessName = (customerPhone, businessName) ->
-      console.log "got business name!!!"
       server.getTwilioPhone customerPhone
       andThen handleBusinessName, customerPhone, businessName
 
 
     handleBusinessName = (customerPhone, businessName, twilioPhone) ->
-      console.log "handling business name"
       server.setBusinessName twilioPhone, businessName
       andThen server.askForBusinessPhone, customerPhone
 
     getStatus = (from, to) ->
-      console.log "getting status"
       getMetaInfo from, to, "status"
 
     setStatus = (from, to, status) ->
@@ -770,11 +791,9 @@ dModule.define "mobilemin-server", ->
       getMetaInfo(customerPhone, twilioPhone, "special")
 
     server.setBusinessName = (twilioPhone, businessName) ->
-      console.log "setting business name #{twilioPhone}: #{businessName}"
       setCustomerInfo(twilioPhone, "businessName", businessName)
 
     server.getBusinessName = (twilioPhone) ->
-      console.log "getting business name for #{twilioPhone}"
       getCustomerInfo(twilioPhone, "businessName")
 
     _.defer ->
@@ -795,14 +814,10 @@ dModule.define "mobilemin-server", ->
 
 
     server.onGotBusinessPhone = (customerPhone, businessPhone) ->
-      console.log "ON GOT BUSINESS PHONE"
-      console.log businessPhone
-      console.log "end business phone"
       server.getTwilioPhone customerPhone
       andThen handleBusinessPhone, customerPhone, businessPhone
     
     handleBusinessPhone  = (customerPhone, businessPhone, twilioPhone) ->
-      console.log "handling business PHONE!!!! #{twilioPhone}"
       server.setBusinessPhone(twilioPhone, businessPhone)
       andThen server.sayThatTheyreLiveAgain, customerPhone, twilioPhone, businessPhone
 
