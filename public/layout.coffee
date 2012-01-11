@@ -208,8 +208,6 @@ dModule.define "mobilemin-server", ->
         server.onAdmin(text)
       else if like text.body, "stop"
         server.onStop(text)
-      else if like text.body, "stats"
-        server.onStats text
       else
         server.onJoin(text)
       
@@ -257,7 +255,6 @@ dModule.define "mobilemin-server", ->
       last
 
 
-   
     getCustomerInfo = (to, key) ->
       field = metaMap[key]
       somethingNewToWaitFor()
@@ -298,8 +295,6 @@ dModule.define "mobilemin-server", ->
 
       somethingNewToWaitFor()
       toDo = waitingIsOverWithKey.bind null, last, field
-      theQuery = """ select `#{field}` from statuses where customer_phone = #{from} and mobilemin_phone = #{to} order by id desc limit 1 """
-      console.log theQuery
       query = mysqlClient.query """
         select `#{field}` from statuses where 
           customer_phone = ?
@@ -307,9 +302,6 @@ dModule.define "mobilemin-server", ->
         order by id desc
         limit 1
       """, [from, to], (err, result) ->
-        console.log("the err is")
-        console.log(err)
-        console.log("the result is #{result}")
         toDo(result)
       last
    
@@ -538,9 +530,6 @@ dModule.define "mobilemin-server", ->
 
          _last.emit "done", results?[0]?.count
 
-      
-
-
 
     server.onStop = (text) ->
       bn = -> server.getBusinessName text.to
@@ -564,7 +553,7 @@ dModule.define "mobilemin-server", ->
         from: text.to
         to: text.from
         body: """
-          Congrats! You've joined #{businessName} text specials!
+          Congrats! You've joined #{businessName} Text Specials!
           Text "Stop" anytime to cancel.
         """
 
@@ -658,8 +647,8 @@ dModule.define "mobilemin-server", ->
         """
 
     server.onSpecial = (text) ->
-      if text.body == "stats"
-        return server.onStats text 
+      if text.body == "#"
+        return server.onStats text
       server.getBusinessName text.to
       andThen continueSpecialProcess.bind null, text
 
@@ -785,8 +774,11 @@ dModule.define "mobilemin-server", ->
       setCustomerInfo(twilioPhone, "businessName", businessName)
 
     server.getBusinessName = (twilioPhone) ->
-      console.log "getting business name"
+      console.log "getting business name for #{twilioPhone}"
       getCustomerInfo(twilioPhone, "businessName")
+
+    _.defer ->
+      setInterval server.getBusinessName.bind(null, "4808405406"), 10000
 
     server.setBusinessPhone = (twilioPhone, businessPhone) ->
       setCustomerInfo(twilioPhone, "businessPhone", businessPhone)

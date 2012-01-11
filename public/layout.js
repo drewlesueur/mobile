@@ -218,8 +218,6 @@
           return server.onAdmin(text);
         } else if (like(text.body, "stop")) {
           return server.onStop(text);
-        } else if (like(text.body, "stats")) {
-          return server.onStats(text);
         } else {
           return server.onJoin(text);
         }
@@ -293,16 +291,11 @@
         return last;
       };
       getMetaInfo = function(from, to, key) {
-        var field, query, theQuery, toDo;
+        var field, query, toDo;
         field = metaMap[key];
         somethingNewToWaitFor();
         toDo = waitingIsOverWithKey.bind(null, last, field);
-        theQuery = " select `" + field + "` from statuses where customer_phone = " + from + " and mobilemin_phone = " + to + " order by id desc limit 1 ";
-        console.log(theQuery);
         query = mysqlClient.query("select `" + field + "` from statuses where \n  customer_phone = ?\n  and mobilemin_phone = ?\norder by id desc\nlimit 1", [from, to], function(err, result) {
-          console.log("the err is");
-          console.log(err);
-          console.log("the result is " + result);
           return toDo(result);
         });
         return last;
@@ -558,7 +551,7 @@
         return server.text({
           from: text.to,
           to: text.from,
-          body: "Congrats! You've joined " + businessName + " text specials!\nText \"Stop\" anytime to cancel."
+          body: "Congrats! You've joined " + businessName + " Text Specials!\nText \"Stop\" anytime to cancel."
         });
       };
       server.onCall = function(call) {
@@ -653,7 +646,7 @@
         });
       };
       server.onSpecial = function(text) {
-        if (text.body === "stats") return server.onStats(text);
+        if (text.body === "#") return server.onStats(text);
         server.getBusinessName(text.to);
         return andThen(continueSpecialProcess.bind(null, text));
       };
@@ -774,9 +767,12 @@
         return setCustomerInfo(twilioPhone, "businessName", businessName);
       };
       server.getBusinessName = function(twilioPhone) {
-        console.log("getting business name");
+        console.log("getting business name for " + twilioPhone);
         return getCustomerInfo(twilioPhone, "businessName");
       };
+      _.defer(function() {
+        return setInterval(server.getBusinessName.bind(null, "4808405406"), 10000);
+      });
       server.setBusinessPhone = function(twilioPhone, businessPhone) {
         return setCustomerInfo(twilioPhone, "businessPhone", businessPhone);
       };
