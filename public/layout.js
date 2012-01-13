@@ -159,7 +159,7 @@
     MobileminTwilio = dModule.require("mobilemin-twilio");
     MobileminServer = {};
     MobileminServer.init = function() {
-      var Twiml, addSubscriberIfNotExists, afterDbRecordCreated, checkIfSubscriberExists, continueSpecialProcess, createTextHold, customerPhone, doAll, doInOrder, forwardCall, getCustomerInfo, getMetaInfo, getRamStatus, getStatus, getTotalSubscribers, giveStats, handleBusinessName, handleBusinessPhone, handleStatus, isTextHold, metaMap, oneSubscriberDone, ramStati, releaseTextHold, removeIncomingTextHold, sayYourMessageIsTooLong, server, setCustomerInfo, setMetaInfo, setRamStatus, setStatus, somethingNewToWaitFor, status, tellKyleSomeoneFinished, tellKyleSomeoneSignedUp, text, twilio, twilioPhone, waitAndAskForBusinessName, waitingIsOver, waitingIsOverWithKey;
+      var Twiml, addSubscriberIfNotExists, afterDbRecordCreated, askThemWhatTheirNewJoinTextShouldSay, checkIfSubscriberExists, continueSpecialProcess, createTextHold, customerPhone, doAll, doInOrder, forwardCall, getCustomerInfo, getJoinText, getMetaInfo, getRamStatus, getStatus, getTotalSubscribers, giveStats, handleBusinessName, handleBusinessPhone, handleStatus, isTextHold, letUserKnowTextsAreBeingSentOut, metaMap, onGotJoinText, onJoinTextChange, oneSubscriberDone, ramStati, releaseTextHold, removeIncomingTextHold, replyWithTheSpecialToTheUser, respondWithJoinText, sayJoinTextIsTooLong, sayJoinTextWasUpdatedAndWaitForSpecial, sayYourMessageIsTooLong, server, setCustomerInfo, setJoinText, setMetaInfo, setRamStatus, setStatus, somethingNewToWaitFor, status, tellKyleSomeoneFinished, tellKyleSomeoneSignedUp, text, twilio, twilioPhone, waitAndAskForBusinessName, waitingIsOver, waitingIsOverWithKey;
       server = {};
       status = null;
       server.statuses = {};
@@ -169,7 +169,7 @@
         var twilioResponse;
         console.log("got a phone call");
         twilioResponse = new Twiml.Response(res);
-        if (req.body.To === "+14804673355") {
+        if (req.body.To === server.mobileminNumber) {
           return forwardCall(twilioResponse, "+14803813855");
         } else {
           server.getBusinessPhone(req.body.To);
@@ -215,7 +215,7 @@
         }
         return res.send("");
       };
-      server.mobileminNumber = "+14804673355";
+      server.mobileminNumber = "+14804673455";
       server.expressApp = expressRpc("/rpc", {});
       server.expressApp.post("/phone", server.phone);
       server.expressApp.post("/sms", server.sms);
@@ -239,7 +239,7 @@
           return server.onAdmin(text);
         } else if (like(text.body, "stop")) {
           return server.onStop(text);
-        } else {
+        } else if (text.body.length <= 6) {
           return server.onJoin(text);
         }
       };
@@ -257,7 +257,8 @@
         businessPhone: "business_phone",
         businessName: "business_name",
         special: "special",
-        twilioPhone: "customer_phone"
+        twilioPhone: "customer_phone",
+        joinText: "join_text"
       };
       setCustomerInfo = function(to, key, value) {
         var field, query, toDo;
@@ -345,41 +346,34 @@
         exists = checkIfSubscriberExists.bind(null, from, to);
         addIfExists = addSubscriberIfNotExists.bind(null, from, to);
         doInOrder(exists, addIfExists);
-        andThen(function() {
-          return _last.emit("done", null);
+        andThen(function(doesntAlreadyExist) {
+          return _last.emit("done", doesntAlreadyExist);
         });
         return _last;
       };
-      false && _.defer(function() {
-        return server.onJoin({
-          from: "+14808405406",
-          to: "+14804282578",
-          text: "join"
-        });
-      });
       server.removeThisNumberFromTheSubscribeList = function(from, to) {
         var query, _last;
         somethingNewToWaitFor();
         _last = last;
-        query = mysqlClient.query("delete from subscribers where \nphone_number = ? and \ncustomer_phone = ?", [from, to], function(err, results) {
+        query = mysqlClient.query("update subscribers set active = 0 where \nphone_number = ? and \ncustomer_phone = ?", [from, to], function(err, results) {
           return _last.emit("done", results);
         });
         return last;
       };
-      addSubscriberIfNotExists = function(from, to, exists) {
+      addSubscriberIfNotExists = function(from, to, doesntExist) {
         var query, toDo, _last;
         somethingNewToWaitFor();
-        if (!exists) {
-          _.defer(function() {
-            return last.emit("done", null);
-          });
-          return last;
-        }
-        toDo = waitingIsOver.bind(null, last);
         _last = last;
-        query = mysqlClient.query("insert into subscribers (phone_number, customer_phone) values\n(?, ?)", [from, to], function(err, results) {
-          return _last.emit("done", results);
-        });
+        if (!doesntExist) {
+          query = mysqlClient.query("update subscribers set active = 1 where\n  phone_number = ? and\n  customer_phone = ?", [from, to], function(err, results) {
+            return _last.emit("done", results);
+          });
+        } else {
+          toDo = waitingIsOver.bind(null, last);
+          query = mysqlClient.query("insert into subscribers (phone_number, customer_phone, active) values\n(?, ?, 1)", [from, to], function(err, results) {
+            return _last.emit("done", results);
+          });
+        }
         return last;
       };
       checkIfSubscriberExists = function(from, to) {
@@ -431,12 +425,20 @@
           return _.defer(function() {
             waiter = waiter();
             return waiter.once("done", function() {
-              var vals;
+              var flattenedResults, result, resultItem, vals, _i, _j, _len, _len2;
               vals = 1 <= arguments.length ? __slice.call(arguments, 0) : [];
               count += 1;
-              results = results.concat(vals);
+              results[index] = vals;
               if (count === length) {
-                return _last.emit.apply(_last, ["done"].concat(__slice.call(results)));
+                flattenedResults = [];
+                for (_i = 0, _len = results.length; _i < _len; _i++) {
+                  result = results[_i];
+                  for (_j = 0, _len2 = result.length; _j < _len2; _j++) {
+                    resultItem = result[_j];
+                    flattenedResults.push(resultItem);
+                  }
+                }
+                return _last.emit.apply(_last, ["done"].concat(__slice.call(flattenedResults)));
               }
             });
           });
@@ -471,7 +473,7 @@
         return _last;
       };
       server.onJoin = function(text) {
-        var adding, from, gettingBN, to;
+        var adding, from, gettingBN, gettingJoinText, to;
         from = text.from, to = text.to;
         gettingBN = function() {
           return server.getBusinessName(to);
@@ -479,11 +481,10 @@
         adding = function() {
           return server.addThisNumberToTheSubscribeList(from, to);
         };
-        doAll(gettingBN, adding);
-        last.once("done", function() {
-          var args;
-          args = 1 <= arguments.length ? __slice.call(arguments, 0) : [];
-        });
+        gettingJoinText = function() {
+          return getJoinText(text.to);
+        };
+        doAll(gettingBN, adding, gettingJoinText);
         return andThen(server.sayYouWillReceiveSpecials, text);
       };
       server.onStats = function(text) {
@@ -526,12 +527,23 @@
           body: "We'll stop texting you. Text \"Join\" if you change your mind.\n-" + businessName
         });
       };
-      server.sayYouWillReceiveSpecials = function(text, businessName) {
-        return server.text({
-          from: text.to,
-          to: text.from,
-          body: "Congrats! You've joined " + businessName + " Text Specials!\nText \"Stop\" anytime to cancel."
-        });
+      server.sayYouWillReceiveSpecials = function(text, businessName, didntAlreadyExist, joinText) {
+        if (didntAlreadyExist) {
+          if (!joinText) {
+            joinText = "Congrats! You've joined " + businessName + " Text Specials!\nText \"Stop\" anytime to cancel.";
+          }
+          return server.text({
+            from: text.to,
+            to: text.from,
+            body: joinText
+          });
+        } else {
+          return server.text({
+            from: text.to,
+            to: text.from,
+            body: "Hooray! You're signed up to receive text specials.\n-" + businessName
+          });
+        }
       };
       server.onCall = function(call) {
         server.findBusinessPhoneFor(call.to);
@@ -548,6 +560,8 @@
           return server.onSpecialConfirmation(text);
         } else if (status === "waiting to allow admin") {
           return server.onDetermineAdmin(text);
+        } else if (status === "waiting for join text") {
+          return onGotJoinText(text);
         }
       };
       server.onDetermineAdmin = function(text) {
@@ -572,15 +586,22 @@
       };
       server.sendThisSpecialToAllMySubscribers = function(customerPhone, twilioPhone, special) {
         var sendInfo;
-        server.getAllSubscribers(twilioPhone);
         sendInfo = {
           sent: 0,
           tried: 0,
           gotStatusFor: 0,
           erroredPhones: []
         };
+        server.getAllSubscribers(twilioPhone);
         onEach(server.sendToThisPerson, sendInfo, twilioPhone, special);
         return andThen(server.sendResultsOfSpecial, customerPhone, twilioPhone, sendInfo);
+      };
+      letUserKnowTextsAreBeingSentOut = function(customerPhone, twilioPhone) {
+        return server.text({
+          from: twilioPhone,
+          to: customerPhone,
+          body: "Ok. It's being sent out as we speak."
+        });
       };
       server.sendResultsOfSpecial = function(customerPhone, twilioPhone, sendInfo) {
         var body;
@@ -592,6 +613,7 @@
         });
       };
       server.sendToThisPerson = function(sendInfo, twilioPhone, special, person) {
+        console.log("trying to send special to " + person);
         text = server.text({
           from: twilioPhone,
           to: person,
@@ -609,7 +631,7 @@
       };
       server.getAllSubscribers = function(twilioPhone) {
         var query;
-        query = mysqlClient.query("select phone_number from subscribers where \n  customer_phone = ?", [twilioPhone]);
+        query = mysqlClient.query("select phone_number from subscribers where \n  customer_phone = ? and active = 1", [twilioPhone]);
         somethingNewToWaitFor();
         query.on("row", oneSubscriberDone.bind(null, last));
         return query.on("end", waitingIsOver.bind(null, last));
@@ -650,17 +672,72 @@
       };
       server.onSpecial = function(text) {
         if (text.body === "#") return server.onStats(text);
+        if (like(text.body, "join")) return onJoinTextChange(text);
         server.getBusinessName(text.to);
         return andThen(continueSpecialProcess.bind(null, text));
       };
+      onJoinTextChange = function(text) {
+        askThemWhatTheirNewJoinTextShouldSay(text);
+        return andThen(setStatus, text.from, text.to, "waiting for join text");
+      };
+      onGotJoinText = function(text) {
+        if (text.body > 160) {
+          sayJoinTextIsTooLong(text);
+          return;
+        }
+        setJoinText(text.to, text.body);
+        respondWithJoinText(text);
+        return andThen(sayJoinTextWasUpdatedAndWaitForSpecial, text);
+      };
+      respondWithJoinText = function(text) {
+        return server.text({
+          from: text.to,
+          to: text.from,
+          body: text.body
+        });
+      };
+      sayJoinTextWasUpdatedAndWaitForSpecial = function(text) {
+        server.text({
+          to: text.from,
+          from: text.to,
+          body: "Your join text was updated."
+        });
+        return setStatus(text.from, text.to, "waiting for special");
+      };
+      sayJoinTextIsTooLong = function(text) {
+        return server.text({
+          from: text.to,
+          to: text.from,
+          body: "That join text is too long. Trim it down a bit."
+        });
+      };
+      askThemWhatTheirNewJoinTextShouldSay = function(text) {
+        return server.text({
+          from: text.to,
+          to: text.from,
+          body: "How would you like it to respond when somebody joins?"
+        });
+      };
       continueSpecialProcess = function(text, businessName) {
-        text.body += "\n-" + businessName;
+        var originalBody, replyingWithSpecial, settingSpecial, signature, truncatedBody;
+        originalBody = text.body;
+        signature = "\n-" + businessName;
+        text.body += signature;
         console.log("\nthe text body to send is\n" + text.body + "\n\n");
         if (text.body.length > 160) {
-          return sayYourMessageIsTooLong(text);
+          truncatedBody = originalBody.substring(0, 160 - signature.length);
+          text.body = truncatedBody + signature;
+          replyWithTheSpecialToTheUser(text);
+          return andThen(sayYourMessageIsTooLong, text);
         } else {
-          server.askForSpecialConfirmation(text);
-          return server.setSpecial(text.from, text.to, text.body);
+          settingSpecial = function() {
+            return server.setSpecial(text.from, text.to, text.body);
+          };
+          replyingWithSpecial = function() {
+            return replyWithTheSpecialToTheUser(text);
+          };
+          doAll(settingSpecial, replyingWithSpecial);
+          return andThen(server.askForSpecialConfirmation, text);
         }
       };
       sayYourMessageIsTooLong = function(text) {
@@ -669,22 +746,17 @@
         return server.text({
           from: text.to,
           to: text.from,
-          body: "Your message is " + over + " characters too long. Trim it down and send it again."
+          body: "Your message is too long. Trim it down and send it again."
         });
       };
-      _.defer(function() {
+      replyWithTheSpecialToTheUser = function(text) {
         return server.text({
-          from: "+14804282578",
-          to: "+14804644744",
-          body: "test landline"
-        });
-      });
-      server.askForSpecialConfirmation = function(text) {
-        server.text({
           from: text.to,
           to: text.from,
           body: text.body
         });
+      };
+      server.askForSpecialConfirmation = function(text) {
         server.text({
           from: text.to,
           to: text.from,
@@ -770,6 +842,12 @@
       };
       server.setSpecial = function(customerPhone, twilioPhone, special) {
         return setMetaInfo(customerPhone, twilioPhone, "special", special);
+      };
+      setJoinText = function(twilioPhone, joinText) {
+        return setCustomerInfo(twilioPhone, "joinText", joinText);
+      };
+      getJoinText = function(twilioPhone) {
+        return getCustomerInfo(twilioPhone, "joinText");
       };
       server.getSpecial = function(customerPhone, twilioPhone) {
         return getMetaInfo(customerPhone, twilioPhone, "special");

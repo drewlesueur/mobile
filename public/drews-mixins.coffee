@@ -260,7 +260,9 @@ dModule.define "drews-mixins", ->
   # this is just a wrapper for setTimeout.
   # it puts the miliseconds first to it's more
   # natural to write in coffeescript
-
+  
+  #TODO timers ignite and diffuse
+  #
   exports.wait = (miliseconds, func) ->
     setTimeout func, miliseconds
   times = (numb, func) ->

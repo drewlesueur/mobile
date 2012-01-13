@@ -160,7 +160,7 @@ dModule.define "mobilemin-server", ->
       console.log "got a phone call"
       twilioResponse = new Twiml.Response(res)
       #TODO: find out what the actual phone numer called was
-      if req.body.To == "+14804673355" 
+      if req.body.To == server.mobileminNumber
         forwardCall twilioResponse, "+14803813855"
       else
         server.getBusinessPhone req.body.To
@@ -209,7 +209,8 @@ dModule.define "mobilemin-server", ->
           text.retry()
       res.send ""
         
-    server.mobileminNumber =  "+14804673355"
+    #server.mobileminNumber =  "+14804673355"
+    server.mobileminNumber =  "+14804673455"
     server.expressApp = expressRpc("/rpc", {})
     server.expressApp.post "/phone", server.phone
     server.expressApp.post "/sms", server.sms
@@ -236,7 +237,7 @@ dModule.define "mobilemin-server", ->
         server.onAdmin(text)
       else if like text.body, "stop"
         server.onStop(text)
-      else
+      else if text.body.length <= 6
         server.onJoin(text)
       
     server.onText = (_text) ->
@@ -253,6 +254,7 @@ dModule.define "mobilemin-server", ->
       businessName: "business_name"
       special: "special"
       twilioPhone: "customer_phone"
+      joinText: "join_text"
 
     setCustomerInfo = (to, key, value) ->
       field = metaMap[key]
@@ -364,21 +366,16 @@ dModule.define "mobilemin-server", ->
       exists = checkIfSubscriberExists.bind null, from, to
       addIfExists = addSubscriberIfNotExists.bind null, from, to
       doInOrder exists, addIfExists
-      andThen ->
-        _last.emit "done", null
+      andThen (doesntAlreadyExist)->
+        _last.emit "done", doesntAlreadyExist
       return _last
 
-    false and _.defer ->
-      server.onJoin
-        from: "+14808405406"
-        to: "+14804282578"
-        text: "join"
       
     server.removeThisNumberFromTheSubscribeList = (from, to) ->
       somethingNewToWaitFor()
       _last = last
       query = mysqlClient.query """
-        delete from subscribers where 
+        update subscribers set active = 0 where 
         phone_number = ? and 
         customer_phone = ?
       """, [from, to], (err, results) ->
@@ -386,19 +383,24 @@ dModule.define "mobilemin-server", ->
       last
 
     
-    addSubscriberIfNotExists = (from, to, exists) ->
+    addSubscriberIfNotExists = (from, to, doesntExist) ->
       somethingNewToWaitFor()
-      if not exists
-        _.defer -> last.emit "done", null
-        return last
 
-      toDo = waitingIsOver.bind null, last
       _last = last
-      query = mysqlClient.query """
-        insert into subscribers (phone_number, customer_phone) values
-        (?, ?)
-      """, [from, to], (err, results) ->
-        _last.emit "done", results
+      if not doesntExist #if it does exist
+        query = mysqlClient.query """
+          update subscribers set active = 1 where
+            phone_number = ? and
+            customer_phone = ?
+        """, [from, to], (err, results) ->
+          _last.emit "done", results
+      else 
+        toDo = waitingIsOver.bind null, last
+        query = mysqlClient.query """
+          insert into subscribers (phone_number, customer_phone, active) values
+          (?, ?, 1)
+        """, [from, to], (err, results) ->
+          _last.emit "done", results
       last
 
         
@@ -460,9 +462,14 @@ dModule.define "mobilemin-server", ->
           waiter = waiter()
           waiter.once "done", (vals...) ->
             count += 1
-            results = results.concat vals
+            results[index] = vals
+            #results = results.concat vals
             if count is length
-              _last.emit "done", results...
+              flattenedResults = []
+              for result in results # results is [[a], [g, b], [d]]
+                for resultItem in result #result is [a] or [g,b]
+                  flattenedResults.push resultItem #flattened = [a, g, b, d]
+              _last.emit "done", flattenedResults...
       return _last
       
       
@@ -491,9 +498,9 @@ dModule.define "mobilemin-server", ->
       {from, to} = text
       gettingBN = -> server.getBusinessName to
       adding = -> server.addThisNumberToTheSubscribeList(from, to)
+      gettingJoinText = -> getJoinText text.to
 
-      doAll gettingBN, adding
-      last.once "done", (args...) ->
+      doAll gettingBN, adding, gettingJoinText
       andThen server.sayYouWillReceiveSpecials, text
 
     server.onStats = (text) ->
@@ -534,14 +541,26 @@ dModule.define "mobilemin-server", ->
           -#{businessName}
         """
 
-    server.sayYouWillReceiveSpecials = (text, businessName) ->
-      server.text
-        from: text.to
-        to: text.from
-        body: """
-          Congrats! You've joined #{businessName} Text Specials!
-          Text "Stop" anytime to cancel.
-        """
+    server.sayYouWillReceiveSpecials = (text, businessName, didntAlreadyExist, joinText) ->
+      if didntAlreadyExist 
+        if not joinText
+          joinText = """
+            Congrats! You've joined #{businessName} Text Specials!
+            Text "Stop" anytime to cancel.
+          """
+        server.text
+          from: text.to
+          to: text.from
+          body: joinText
+      else
+        server.text
+          from: text.to
+          to: text.from
+          body: """
+            Hooray! You're signed up to receive text specials.
+            -#{businessName}
+          """
+
 
     server.onCall = (call) ->
       server.findBusinessPhoneFor(call.to) 
@@ -558,6 +577,8 @@ dModule.define "mobilemin-server", ->
         server.onSpecialConfirmation(text)
       else if status is "waiting to allow admin"
         server.onDetermineAdmin(text)
+      else if status is "waiting for join text"
+        onGotJoinText text
         
     server.onDetermineAdmin = (text) ->
       wannaBeAdmin = server.getWannaBeAdmin(text.from, text.to)
@@ -579,10 +600,17 @@ dModule.define "mobilemin-server", ->
         server.sayThatTheSpecialWasNotSent text
 
     server.sendThisSpecialToAllMySubscribers = (customerPhone, twilioPhone, special) ->
-      server.getAllSubscribers(twilioPhone)
       sendInfo = sent: 0, tried: 0, gotStatusFor: 0, erroredPhones: []
+      #letUserKnowTextsAreBeingSentOut(customerPhone, twilioPhone)
+      server.getAllSubscribers(twilioPhone)
       onEach(server.sendToThisPerson, sendInfo, twilioPhone, special)
       andThen server.sendResultsOfSpecial, customerPhone, twilioPhone, sendInfo
+
+    letUserKnowTextsAreBeingSentOut = (customerPhone, twilioPhone) ->
+      server.text
+        from: twilioPhone
+        to: customerPhone
+        body: "Ok. It's being sent out as we speak."
 
     server.sendResultsOfSpecial = (customerPhone, twilioPhone, sendInfo) ->
       body =  """
@@ -594,6 +622,7 @@ dModule.define "mobilemin-server", ->
         body: body
 
     server.sendToThisPerson = (sendInfo, twilioPhone, special, person) ->
+      console.log "trying to send special to #{person}"
       text = server.text
         from: twilioPhone
         to: person
@@ -613,7 +642,7 @@ dModule.define "mobilemin-server", ->
     server.getAllSubscribers = (twilioPhone) ->
       query = mysqlClient.query """
         select phone_number from subscribers where 
-          customer_phone = ?
+          customer_phone = ? and active = 1
       """, [twilioPhone] #TODO customer phone should be mobilemin phone
       somethingNewToWaitFor()
       query.on "row", oneSubscriberDone.bind null, last
@@ -657,11 +686,57 @@ dModule.define "mobilemin-server", ->
     server.onSpecial = (text) ->
       if text.body == "#"
         return server.onStats text
+      if like text.body, "join"
+        return onJoinTextChange text
+
       server.getBusinessName text.to
       andThen continueSpecialProcess.bind null, text
 
+    onJoinTextChange = (text) ->
+      askThemWhatTheirNewJoinTextShouldSay text
+      andThen setStatus, text.from, text.to, "waiting for join text"
+
+    onGotJoinText = (text) ->
+      if (text.body > 160)
+        sayJoinTextIsTooLong text
+        return
+      setJoinText text.to, text.body
+      respondWithJoinText text
+      andThen sayJoinTextWasUpdatedAndWaitForSpecial, text
+
+    respondWithJoinText = (text) ->
+      server.text
+        from: text.to
+        to: text.from
+        body: text.body
+
+    sayJoinTextWasUpdatedAndWaitForSpecial = (text) ->
+      server.text
+        to: text.from
+        from: text.to
+        body: "Your join text was updated."
+      setStatus text.from, text.to, "waiting for special"
+
+    sayJoinTextIsTooLong = (text) ->
+      server.text
+        from: text.to
+        to: text.from
+        body: "That join text is too long. Trim it down a bit."
+        
+        
+
+    askThemWhatTheirNewJoinTextShouldSay = (text) ->
+      server.text
+        from: text.to
+        to: text.from
+        body: """
+          How would you like it to respond when somebody joins?
+        """
+
     continueSpecialProcess = (text, businessName) ->
-      text.body += "\n-#{businessName}"
+      originalBody = text.body
+      signature = "\n-#{businessName}"
+      text.body += signature
       console.log """
 
         the text body to send is
@@ -670,10 +745,17 @@ dModule.define "mobilemin-server", ->
 
       """
       if text.body.length > 160
-        sayYourMessageIsTooLong(text)
+        truncatedBody = originalBody.substring(0, 160 - signature.length) 
+        text.body = truncatedBody + signature
+        replyWithTheSpecialToTheUser text
+        #andThen -> drews.wait 500, -> sayYourMessageIsTooLong(text)
+        andThen sayYourMessageIsTooLong, text
       else
-        server.askForSpecialConfirmation(text)
-        server.setSpecial(text.from, text.to, text.body)
+        settingSpecial = -> server.setSpecial(text.from, text.to, text.body)
+        replyingWithSpecial = -> replyWithTheSpecialToTheUser text
+        doAll settingSpecial, replyingWithSpecial
+        #andThen -> drews.wait 500, -> server.askForSpecialConfirmation(text)
+        andThen server.askForSpecialConfirmation, text
 
     sayYourMessageIsTooLong = (text) ->
       over = text.body.length - 160
@@ -681,19 +763,17 @@ dModule.define "mobilemin-server", ->
         from: text.to
         to: text.from
         body: """
-          Your message is #{over} characters too long. Trim it down and send it again.
+          Your message is too long. Trim it down and send it again.
         """
-    _.defer ->
-      server.text
-        from: "+14804282578"
-        to: "+14804644744"
-        body: "test landline"
 
-    server.askForSpecialConfirmation = (text) ->
+    replyWithTheSpecialToTheUser = (text) ->
+      #sending the text to them so they can review it
       server.text
         from: text.to
         to: text.from
         body: text.body
+
+    server.askForSpecialConfirmation = (text) ->
 
       server.text
         from: text.to
@@ -786,6 +866,12 @@ dModule.define "mobilemin-server", ->
 
     server.setSpecial = (customerPhone, twilioPhone, special) ->
       setMetaInfo(customerPhone, twilioPhone, "special", special)
+
+    setJoinText = (twilioPhone, joinText) ->
+      setCustomerInfo(twilioPhone, "joinText", joinText)
+
+    getJoinText = (twilioPhone) ->
+      getCustomerInfo(twilioPhone, "joinText")
 
     server.getSpecial = (customerPhone, twilioPhone) ->
       getMetaInfo(customerPhone, twilioPhone, "special")
