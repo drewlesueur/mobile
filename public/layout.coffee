@@ -880,6 +880,7 @@ dModule.define "mobilemin-server", ->
       setCustomerInfo(twilioPhone, "businessName", businessName)
 
     server.getBusinessName = (twilioPhone) ->
+      console.log "getting businessName"
       getCustomerInfo(twilioPhone, "businessName")
 
     _.defer ->

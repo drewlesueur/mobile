@@ -856,6 +856,7 @@
         return setCustomerInfo(twilioPhone, "businessName", businessName);
       };
       server.getBusinessName = function(twilioPhone) {
+        console.log("getting businessName");
         return getCustomerInfo(twilioPhone, "businessName");
       };
       _.defer(function() {
