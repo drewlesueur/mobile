@@ -140,24 +140,7 @@ dModule.define "mobilemin-server", ->
       text.from = text.From
       text.body = text.Body
       
-      key = text.from + text.to
-      release = () ->
-        console.log "going to release"
-        console.log text
-        text = ramStati[key].text 
-        server.onText text
-        delete ramStati[key]
-
-      if ramStati[key]
-        info = ramStati[key]
-        clearTimeout info.timer
-        info.text.body += text.body
-        info.timer = setTimeout release, 2000
-      else
-        ramStati[key] =
-          text: text
-          timer: setTimeout release, 2000
-      #server.onText(text)
+      server.onText(text)
       res.send "ok"
 
     server.status = (req, res) ->
@@ -249,8 +232,8 @@ dModule.define "mobilemin-server", ->
         toDo results
       last
 
+    
 
-   
     getCustomerInfo = (to, key) ->
       field = metaMap[key]
       somethingNewToWaitFor()
@@ -494,7 +477,38 @@ dModule.define "mobilemin-server", ->
       andThen server.sayYouWillReceiveSpecials, text
 
       
+    server.onStats = (text) ->
+      getTotalSubscribers text
+      last.once "done", (total) ->
+        console.log(total)
+        console.log("hellow wooroasdflahsdfkahdf")
+      console.log "hello world"
+      console.log last.offer
+      andThen giveStats, text
 
+    giveStats = (text, numberOfSubscribers) ->
+      console.log "giving stats"
+      server.text
+        to: text.from
+        from: text.to
+        body: "You have #{numberOfSubscribers} subscribers."
+
+    getTotalSubscribers = (text) ->
+      console.log "getting total"
+      somethingNewToWaitFor()
+      _last = last
+      _last.offer = "200"
+      query = mysqlClient.query """
+        select count(*) as `count` from subscribers s join customers c on (c.mobilemin_phone = s.customer_phone) where 
+          s.customer_phone = ?
+          and c.customer_phone = ?
+      """, [text.to, text.from], (err, results) ->
+         console.log "WOOOOOOOOOOOOO"
+         console.log query
+         console.log "done"
+         console.log results
+
+         _last.emit "done", results?[0]?.count
 
 
     server.onStop = (text) ->
@@ -519,7 +533,7 @@ dModule.define "mobilemin-server", ->
         from: text.to
         to: text.from
         body: """
-          Congrats! You've joined #{businessName} text specials!
+          Congrats! You've joined #{businessName} Text Specials!
           Text "Stop" anytime to cancel.
         """
 
@@ -613,6 +627,9 @@ dModule.define "mobilemin-server", ->
         """
 
     server.onSpecial = (text) ->
+      if text.body == "#"
+        return server.onStats text
+
       server.getBusinessName text.to
       andThen continueSpecialProcess.bind null, text
 
@@ -738,8 +755,11 @@ dModule.define "mobilemin-server", ->
       setCustomerInfo(twilioPhone, "businessName", businessName)
 
     server.getBusinessName = (twilioPhone) ->
-      console.log "getting business name"
+      console.log "getting business name for #{twilioPhone}"
       getCustomerInfo(twilioPhone, "businessName")
+
+    _.defer ->
+      setInterval server.getBusinessName.bind(null, "4808405406"), 10000
 
     server.setBusinessPhone = (twilioPhone, businessPhone) ->
       setCustomerInfo(twilioPhone, "businessPhone", businessPhone)
