@@ -384,10 +384,12 @@ dModule.define "mobilemin-server", ->
 
     
     addSubscriberIfNotExists = (from, to, doesntExist) ->
+      console.log "doesn't exist is #{doesntExist}"
       somethingNewToWaitFor()
 
       _last = last
       if not doesntExist #if it does exist
+        console.log "not try to join"
         query = mysqlClient.query """
           update subscribers set active = 1 where
             phone_number = ? and
@@ -395,11 +397,15 @@ dModule.define "mobilemin-server", ->
         """, [from, to], (err, results) ->
           _last.emit "done", results
       else 
+        console.log "really trying to join"
         toDo = waitingIsOver.bind null, last
         query = mysqlClient.query """
           insert into subscribers (phone_number, customer_phone, active) values
           (?, ?, 1)
         """, [from, to], (err, results) ->
+          console.log "trying to join here!!"
+          console.log err
+          console.log results
           _last.emit "done", results
       last
 
@@ -414,7 +420,12 @@ dModule.define "mobilemin-server", ->
           and customer_phone = ?
         ) as `exists`
       """, [from, to], (err, result) ->
-        _last.emit "done", result[0]["exists"] == 0
+        console.log "BOOYAAA"
+        console.log err
+        console.log result
+        ret = result[0]["exists"] == 0
+        console.log "ret is #{ret}"
+        _last.emit "done", ret
       last
 
 
@@ -565,8 +576,9 @@ dModule.define "mobilemin-server", ->
     server.onCall = (call) ->
       server.findBusinessPhoneFor(call.to) 
       andThen(server.forwardCall)
-
+    
     server.actAccordingToStatus = (status, text) ->
+      console.log "STATUS is #{status}"
       if status is "waiting for business name"
         server.onGotBusinessName(text.from, text.body)
       else if status is "waiting for business phone"
@@ -574,6 +586,9 @@ dModule.define "mobilemin-server", ->
       else if status is "waiting for special"
         server.onSpecial(text)
       else if status is "waiting for special confirmation"
+        server.onSpecialConfirmation(text)
+      else if status is "waiting for special confirmation for all stores"
+        text.allStores = true
         server.onSpecialConfirmation(text)
       else if status is "waiting to allow admin"
         server.onDetermineAdmin(text)
@@ -595,14 +610,15 @@ dModule.define "mobilemin-server", ->
       setStatus(text.from, text.to, "waiting for special")
       if like text.body, "yes"
         server.getSpecial(text.from, text.to)
-        andThen server.sendThisSpecialToAllMySubscribers, text.from, text.to
+        andThen server.sendThisSpecialToAllMySubscribers, text
       else
         server.sayThatTheSpecialWasNotSent text
 
-    server.sendThisSpecialToAllMySubscribers = (customerPhone, twilioPhone, special) ->
+
+    server.sendThisSpecialToAllMySubscribers = (text, special) ->
       sendInfo = sent: 0, tried: 0, gotStatusFor: 0, erroredPhones: []
       #letUserKnowTextsAreBeingSentOut(customerPhone, twilioPhone)
-      server.getAllSubscribers(twilioPhone)
+      server.getAllSubscribers(twilioPhone, text.allStores)
       onEach(server.sendToThisPerson, sendInfo, twilioPhone, special)
       andThen server.sendResultsOfSpecial, customerPhone, twilioPhone, sendInfo
 
@@ -639,11 +655,22 @@ dModule.define "mobilemin-server", ->
     server.acumulateError = (sendInfo, text) ->
       sendInfo.erroredPhones.push text.to
 
-    server.getAllSubscribers = (twilioPhone) ->
-      query = mysqlClient.query """
-        select phone_number from subscribers where 
-          customer_phone = ? and active = 1
-      """, [twilioPhone] #TODO customer phone should be mobilemin phone
+    server.getAllSubscribers = (twilioPhone, allStores) ->
+      if allStores
+        query = mysqlClient.query """
+          select c2.*, s.* from customers c1
+          left join customers c2 on (c1.group_code = c2.group_code)
+          left join subscribers s on (c2.mobilemin_phone = s.customer_phone)
+          where c1.mobilemin_phone = ?
+          and s.active = 1
+        """, [twilioPhone] #TODO customer phone should be mobilemin phone
+      else
+        query = mysqlClient.query """
+          select phone_number from subscribers where 
+            customer_phone = ? and active = 1
+        """, [twilioPhone] #TODO customer phone should be mobilemin phone
+        
+
       somethingNewToWaitFor()
       query.on "row", oneSubscriberDone.bind null, last
       query.on "end", waitingIsOver.bind null, last
@@ -688,6 +715,10 @@ dModule.define "mobilemin-server", ->
         return server.onStats text
       if like text.body, "join"
         return onJoinTextChange text
+      else if text.body.match /all stores/i
+        text.allStores = true
+        text.body = drews.s text.body, "all stores ".length
+
 
       server.getBusinessName text.to
       andThen continueSpecialProcess.bind null, text
@@ -754,8 +785,10 @@ dModule.define "mobilemin-server", ->
         settingSpecial = -> server.setSpecial(text.from, text.to, text.body)
         replyingWithSpecial = -> replyWithTheSpecialToTheUser text
         doAll settingSpecial, replyingWithSpecial
-        #andThen -> drews.wait 500, -> server.askForSpecialConfirmation(text)
-        andThen server.askForSpecialConfirmation, text
+        if text.allStores
+          andThen server.askForSpecialConfirmationForAllStores, text
+        else
+          andThen server.askForSpecialConfirmation, text
 
     sayYourMessageIsTooLong = (text) ->
       over = text.body.length - 160
@@ -774,7 +807,6 @@ dModule.define "mobilemin-server", ->
         body: text.body
 
     server.askForSpecialConfirmation = (text) ->
-
       server.text
         from: text.to
         to: text.from
@@ -783,6 +815,16 @@ dModule.define "mobilemin-server", ->
         """
       andThen(setStatus, text.from, text.to,
         "waiting for special confirmation")
+
+    server.askForSpecialConfirmationForAllStores = (text) ->
+      server.text
+        from: text.to
+        to: text.from
+        body: """
+          You are about to send that to the subscribers for *all stores*. Reply "yes" to confirm, "no" to cancel.
+        """
+      andThen(setStatus, text.from, text.to,
+        "waiting for special confirmation for all stores")
 
     server.buyPhoneNumberFor = (from)->
       areaCode = drews.s(from, 2, 3) #get rid of +1, and get area code 

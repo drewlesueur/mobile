@@ -362,15 +362,21 @@
       };
       addSubscriberIfNotExists = function(from, to, doesntExist) {
         var query, toDo, _last;
+        console.log("doesn't exist is " + doesntExist);
         somethingNewToWaitFor();
         _last = last;
         if (!doesntExist) {
+          console.log("not try to join");
           query = mysqlClient.query("update subscribers set active = 1 where\n  phone_number = ? and\n  customer_phone = ?", [from, to], function(err, results) {
             return _last.emit("done", results);
           });
         } else {
+          console.log("really trying to join");
           toDo = waitingIsOver.bind(null, last);
           query = mysqlClient.query("insert into subscribers (phone_number, customer_phone, active) values\n(?, ?, 1)", [from, to], function(err, results) {
+            console.log("trying to join here!!");
+            console.log(err);
+            console.log(results);
             return _last.emit("done", results);
           });
         }
@@ -381,7 +387,13 @@
         somethingNewToWaitFor();
         _last = last;
         query = mysqlClient.query("select exists(select * from subscribers where\n  phone_number = ?\n  and customer_phone = ?\n) as `exists`", [from, to], function(err, result) {
-          return _last.emit("done", result[0]["exists"] === 0);
+          var ret;
+          console.log("BOOYAAA");
+          console.log(err);
+          console.log(result);
+          ret = result[0]["exists"] === 0;
+          console.log("ret is " + ret);
+          return _last.emit("done", ret);
         });
         return last;
       };
@@ -550,6 +562,7 @@
         return andThen(server.forwardCall);
       };
       server.actAccordingToStatus = function(status, text) {
+        console.log("STATUS is " + status);
         if (status === "waiting for business name") {
           return server.onGotBusinessName(text.from, text.body);
         } else if (status === "waiting for business phone") {
@@ -557,6 +570,9 @@
         } else if (status === "waiting for special") {
           return server.onSpecial(text);
         } else if (status === "waiting for special confirmation") {
+          return server.onSpecialConfirmation(text);
+        } else if (status === "waiting for special confirmation for all stores") {
+          text.allStores = true;
           return server.onSpecialConfirmation(text);
         } else if (status === "waiting to allow admin") {
           return server.onDetermineAdmin(text);
@@ -579,12 +595,12 @@
         setStatus(text.from, text.to, "waiting for special");
         if (like(text.body, "yes")) {
           server.getSpecial(text.from, text.to);
-          return andThen(server.sendThisSpecialToAllMySubscribers, text.from, text.to);
+          return andThen(server.sendThisSpecialToAllMySubscribers, text);
         } else {
           return server.sayThatTheSpecialWasNotSent(text);
         }
       };
-      server.sendThisSpecialToAllMySubscribers = function(customerPhone, twilioPhone, special) {
+      server.sendThisSpecialToAllMySubscribers = function(text, special) {
         var sendInfo;
         sendInfo = {
           sent: 0,
@@ -592,7 +608,7 @@
           gotStatusFor: 0,
           erroredPhones: []
         };
-        server.getAllSubscribers(twilioPhone);
+        server.getAllSubscribers(twilioPhone, text.allStores);
         onEach(server.sendToThisPerson, sendInfo, twilioPhone, special);
         return andThen(server.sendResultsOfSpecial, customerPhone, twilioPhone, sendInfo);
       };
@@ -629,9 +645,13 @@
       server.acumulateError = function(sendInfo, text) {
         return sendInfo.erroredPhones.push(text.to);
       };
-      server.getAllSubscribers = function(twilioPhone) {
+      server.getAllSubscribers = function(twilioPhone, allStores) {
         var query;
-        query = mysqlClient.query("select phone_number from subscribers where \n  customer_phone = ? and active = 1", [twilioPhone]);
+        if (allStores) {
+          query = mysqlClient.query("select c2.*, s.* from customers c1\nleft join customers c2 on (c1.group_code = c2.group_code)\nleft join subscribers s on (c2.mobilemin_phone = s.customer_phone)\nwhere c1.mobilemin_phone = ?\nand s.active = 1", [twilioPhone]);
+        } else {
+          query = mysqlClient.query("select phone_number from subscribers where \n  customer_phone = ? and active = 1", [twilioPhone]);
+        }
         somethingNewToWaitFor();
         query.on("row", oneSubscriberDone.bind(null, last));
         return query.on("end", waitingIsOver.bind(null, last));
@@ -672,7 +692,12 @@
       };
       server.onSpecial = function(text) {
         if (text.body === "#") return server.onStats(text);
-        if (like(text.body, "join")) return onJoinTextChange(text);
+        if (like(text.body, "join")) {
+          return onJoinTextChange(text);
+        } else if (text.body.match(/all stores/i)) {
+          text.allStores = true;
+          text.body = drews.s(text.body, "all stores ".length);
+        }
         server.getBusinessName(text.to);
         return andThen(continueSpecialProcess.bind(null, text));
       };
@@ -737,7 +762,11 @@
             return replyWithTheSpecialToTheUser(text);
           };
           doAll(settingSpecial, replyingWithSpecial);
-          return andThen(server.askForSpecialConfirmation, text);
+          if (text.allStores) {
+            return andThen(server.askForSpecialConfirmationForAllStores, text);
+          } else {
+            return andThen(server.askForSpecialConfirmation, text);
+          }
         }
       };
       sayYourMessageIsTooLong = function(text) {
@@ -763,6 +792,14 @@
           body: "You are about to send that to all your subscribers. Reply \"yes\" to confirm, \"no\" to cancel."
         });
         return andThen(setStatus, text.from, text.to, "waiting for special confirmation");
+      };
+      server.askForSpecialConfirmationForAllStores = function(text) {
+        server.text({
+          from: text.to,
+          to: text.from,
+          body: "You are about to send that to the subscribers for *all stores*. Reply \"yes\" to confirm, \"no\" to cancel."
+        });
+        return andThen(setStatus, text.from, text.to, "waiting for special confirmation for all stores");
       };
       server.buyPhoneNumberFor = function(from) {
         var actuallyBuy, areaCode, buyError, buySuccess,
