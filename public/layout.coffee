@@ -429,8 +429,10 @@ dModule.define "mobilemin-server", ->
       last
 
 
+    #forTesting
+    setLast = (_last) =>
+      last = _last
 
-    
     somethingNewToWaitFor = () ->
       last = drews.makeEventful {}
 

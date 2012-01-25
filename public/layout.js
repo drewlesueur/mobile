@@ -159,7 +159,8 @@
     MobileminTwilio = dModule.require("mobilemin-twilio");
     MobileminServer = {};
     MobileminServer.init = function() {
-      var Twiml, addSubscriberIfNotExists, afterDbRecordCreated, askThemWhatTheirNewJoinTextShouldSay, checkIfSubscriberExists, continueSpecialProcess, createTextHold, customerPhone, doAll, doInOrder, forwardCall, getCustomerInfo, getJoinText, getMetaInfo, getRamStatus, getStatus, getTotalSubscribers, giveStats, handleBusinessName, handleBusinessPhone, handleStatus, isTextHold, letUserKnowTextsAreBeingSentOut, metaMap, onGotJoinText, onJoinTextChange, oneSubscriberDone, ramStati, releaseTextHold, removeIncomingTextHold, replyWithTheSpecialToTheUser, respondWithJoinText, sayJoinTextIsTooLong, sayJoinTextWasUpdatedAndWaitForSpecial, sayYourMessageIsTooLong, server, setCustomerInfo, setJoinText, setMetaInfo, setRamStatus, setStatus, somethingNewToWaitFor, status, tellKyleSomeoneFinished, tellKyleSomeoneSignedUp, text, twilio, twilioPhone, waitAndAskForBusinessName, waitingIsOver, waitingIsOverWithKey;
+      var Twiml, addSubscriberIfNotExists, afterDbRecordCreated, askThemWhatTheirNewJoinTextShouldSay, checkIfSubscriberExists, continueSpecialProcess, createTextHold, customerPhone, doAll, doInOrder, forwardCall, getCustomerInfo, getJoinText, getMetaInfo, getRamStatus, getStatus, getTotalSubscribers, giveStats, handleBusinessName, handleBusinessPhone, handleStatus, isTextHold, letUserKnowTextsAreBeingSentOut, metaMap, onGotJoinText, onJoinTextChange, oneSubscriberDone, ramStati, releaseTextHold, removeIncomingTextHold, replyWithTheSpecialToTheUser, respondWithJoinText, sayJoinTextIsTooLong, sayJoinTextWasUpdatedAndWaitForSpecial, sayYourMessageIsTooLong, server, setCustomerInfo, setJoinText, setLast, setMetaInfo, setRamStatus, setStatus, somethingNewToWaitFor, status, tellKyleSomeoneFinished, tellKyleSomeoneSignedUp, text, twilio, twilioPhone, waitAndAskForBusinessName, waitingIsOver, waitingIsOverWithKey,
+        _this = this;
       server = {};
       status = null;
       server.statuses = {};
@@ -396,6 +397,9 @@
           return _last.emit("done", ret);
         });
         return last;
+      };
+      setLast = function(_last) {
+        return last = _last;
       };
       somethingNewToWaitFor = function() {
         return last = drews.makeEventful({});
