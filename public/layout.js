@@ -182,6 +182,10 @@
         return twilioResponse.send();
       };
       ramStati = {};
+      server.setLast = function(_last) {
+        return last = _last;
+      };
+      server.prettyPhone = prettyPhone;
       server.sms = function(req, res) {
         var text;
         console.log("Got a text");
@@ -802,7 +806,7 @@
       tellKyleSomeoneSignedUp = function(customerPhone, twilioPhone) {
         text = {
           from: server.mobileminNumber,
-          to: "4803813855",
+          to: "+14803813855",
           body: "Someone new signed up. Their Text Marketing Number is " + (prettyPhone(twilioPhone)) + ".\nTheir cell phone is " + (prettyPhone(customerPhone)) + "."
         };
         return server.text(text);
@@ -810,7 +814,7 @@
       tellKyleSomeoneFinished = function(customerPhone, twilioPhone, businessPhone, businessName) {
         return server.text({
           from: server.mobileminNumber,
-          to: "4803813855",
+          to: "+14803813855",
           body: "" + businessName + " finished signing up.\nTheir Text Marketing number is " + (prettyPhone(twilioPhone)) + ".\nTheir business phone is " + (prettyPhone(businessPhone)) + ".\nTheir cell phone is " + (prettyPhone(customerPhone)) + ".\n"
         });
       };

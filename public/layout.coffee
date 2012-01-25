@@ -173,6 +173,11 @@ dModule.define "mobilemin-server", ->
 
 
     ramStati = {}
+   
+    #for testing
+    server.setLast = (_last) ->
+      last = _last
+    server.prettyPhone = prettyPhone
 
     server.sms =  (req, res) ->
       console.log "Got a text"
@@ -815,7 +820,7 @@ dModule.define "mobilemin-server", ->
     tellKyleSomeoneSignedUp = (customerPhone, twilioPhone) ->
       text = 
         from: server.mobileminNumber
-        to: "4803813855"
+        to: "+14803813855"
         body: """
           Someone new signed up. Their Text Marketing Number is #{prettyPhone twilioPhone}.
           Their cell phone is #{prettyPhone customerPhone}.
@@ -825,7 +830,7 @@ dModule.define "mobilemin-server", ->
     tellKyleSomeoneFinished = (customerPhone, twilioPhone, businessPhone, businessName) ->
       server.text
         from: server.mobileminNumber
-        to: "4803813855"
+        to: "+14803813855"
         body: """
           #{businessName} finished signing up.
           Their Text Marketing number is #{prettyPhone twilioPhone}.
