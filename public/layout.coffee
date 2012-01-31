@@ -238,7 +238,6 @@ dModule.define "mobilemin-server", ->
 
     handleStatus = (text, status) ->
       console.log "handling status for #{text.from} **#{status}**".blue
-
       if status
         server.actAccordingToStatus(status, text)
       else if like text.body, "admin"
