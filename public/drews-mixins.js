@@ -1,5 +1,6 @@
 (function() {
-  var __slice = Array.prototype.slice, __hasProp = Object.prototype.hasOwnProperty, __indexOf = Array.prototype.indexOf || function(item) { for (var i = 0, l = this.length; i < l; i++) { if (__hasProp.call(this, i) && this[i] === item) return i; } return -1; };
+  var __slice = Array.prototype.slice,
+    __indexOf = Array.prototype.indexOf || function(item) { for (var i = 0, l = this.length; i < l; i++) { if (i in this && this[i] === item) return i; } return -1; };
 
   dModule.define("drews-mixins", function() {
     var addToObject, addToObjectMaker, errorHandleMaker, exports, hosty, jsonGet, jsonHttpMaker, jsonObj, jsonPost, jsonRpcMaker, log, meta, metaMaker, metaObjects, p, polymorphic, postMessageHelper, set, setLocation, times, trigger, _;
@@ -114,10 +115,14 @@
       };
       return [done, allDone];
     };
-    exports.on = function(obj, ev, callback) {
-      var calls, list;
+    exports.on = function() {
+      var args, callback, calls, ev, list, obj, thethis;
+      obj = arguments[0], ev = arguments[1], callback = arguments[2], thethis = arguments[3], args = 5 <= arguments.length ? __slice.call(arguments, 4) : [];
       calls = obj._callbacks || (obj._callbacks = {});
       list = calls[ev] || (calls[ev] = []);
+      if (args.length) {
+        callback = _.bind.apply(_, [callback, thethis].concat(__slice.call(args)));
+      }
       list.push(callback);
       obj._events = obj._callbacks;
       return obj;
@@ -207,10 +212,10 @@
         args = 1 <= arguments.length ? __slice.call(arguments, 0) : [];
         return exports.emit.apply(exports, [obj].concat(__slice.call(args)));
       };
-      obj.removeEventListener = function() {
+      obj.off = function() {
         var args;
         args = 1 <= arguments.length ? __slice.call(arguments, 0) : [];
-        return exports.removeEventListener.apply(exports, [obj].concat(__slice.call(args)));
+        return exports.removeListener.apply(exports, [obj].concat(__slice.call(args)));
       };
       obj.once = function() {
         var args;

@@ -22,7 +22,45 @@ require("./public/layout.js")
 var config = dModule.require("config")
 var _ = dModule.require("underscore")
 ;
-  var MobileminText, Server, bill, bob, colors, drews, fakeBoughtNumbers, jamba, jambamm, jim, kylePhone, mcDonalds, mcDonaldsmm, mobileminNumber, prettyPhone, randomPhone, realBuyPhoneNumberFor, realText, sendFakeText, sentTexts, server, shouldHaveSent, startJamba, startMcDonalds, steve, testBusinessNameRequested, testFirstResponse, testJambaFirstResponse, testKyleWasNotifiedOfNewSignup, testMcDonaldsFirstResponse, tests, wait;
+  var MobileminText, Server, andThen, bill, bob, colors, doBusinessPhone, doInOrder, drews, fakeBoughtNumbers, jamba, jambamm, jim, kylePhone, last, mcDonalds, mcDonaldsmm, mobileminNumber, prettyPhone, randomPhone, realBuyPhoneNumberFor, realText, sendFakeText, sentTexts, server, shouldHaveSent, startJamba, startMcDonalds, steve, testBusinessNameRequested, testBusinessPhoneReqested, testFirstResponse, testJambaFirstResponse, testKyleWasNotifiedOfNewSignup, testMcDonaldsFirstResponse, tests, wait, waitFor,
+    __slice = Array.prototype.slice;
+
+  last = "";
+
+  andThen = function() {
+    var args, fn, whatToDo;
+    fn = arguments[0], args = 2 <= arguments.length ? __slice.call(arguments, 1) : [];
+    whatToDo = fn.bind.apply(fn, [null].concat(__slice.call(args)));
+    return last.once("done", whatToDo);
+  };
+
+  doInOrder = function() {
+    var count, execWaiter, length, results, waiters, _last;
+    waiters = 1 <= arguments.length ? __slice.call(arguments, 0) : [];
+    length = waiters.length;
+    count = 0;
+    results = [];
+    last = drews.makeEventful({});
+    _last = last;
+    execWaiter = function() {
+      var waiter;
+      waiter = waiters[count];
+      waiter = waiter.apply(null, results);
+      return waiter.once("done", function() {
+        var vals;
+        vals = 1 <= arguments.length ? __slice.call(arguments, 0) : [];
+        results = results.concat(vals);
+        count += 1;
+        if (count === length) {
+          return _last.emit.apply(_last, ["done"].concat(__slice.call(results)));
+        } else {
+          return execWaiter();
+        }
+      });
+    };
+    _.defer(execWaiter);
+    return _last;
+  };
 
   colors = require("colors");
 
@@ -53,7 +91,7 @@ var _ = dModule.require("underscore")
   server.buyPhoneNumberFor = function(from) {
     var fakeBoughtNumber;
     fakeBoughtNumber = randomPhone();
-    fakeBoughtNumbers.push(fakeBoughtNumber);
+    fakeBoughtNumbers.unshift(fakeBoughtNumber);
     return _.defer(function() {
       return server.onBoughtPhoneNumber(from, fakeBoughtNumber);
     });
@@ -62,9 +100,8 @@ var _ = dModule.require("underscore")
   sentTexts = [];
 
   server.text = function(info) {
-    var last;
     last = drews.makeEventful({});
-    sentTexts.push(info);
+    sentTexts.unshift(info);
     _.defer(function() {
       return last.emit("done");
     });
@@ -103,18 +140,15 @@ var _ = dModule.require("underscore")
 
   tests = [];
 
-  shouldHaveSent = function(info) {
+  shouldHaveSent = function(info, message) {
     var sentText;
     sentText = sentTexts.pop();
-    console.log(info.body === sentText.body);
     if (_.isEqual(info, sentText)) {
-      console.log("Passed Test:".green);
-      console.log(("  " + info.body).green);
-      return console.log(("  " + sentText.body).yellow);
+      return console.log(message.green);
     } else {
-      console.log("Failed Test:".red);
-      console.log(("  " + info.body).red);
-      return console.log(("  " + sentText.body).magenta);
+      console.log(message.red);
+      console.log(sentText.body.yellow);
+      return console.log(info.body.magenta);
     }
   };
 
@@ -145,58 +179,98 @@ var _ = dModule.require("underscore")
   };
 
   testJambaFirstResponse = function() {
-    jambamm = fakeBoughtNumbers.pop();
     return shouldHaveSent({
       to: jamba,
       from: mobileminNumber,
       body: "You're live! Your Text Marketing Number is " + (prettyPhone(jambamm)) + ". Text it to send your customers a special. They text \"Join\" to subscribe."
-    });
+    }, "First Response from a new sign up");
   };
 
   testMcDonaldsFirstResponse = function() {
-    mcDonaldsmm = fakeBoughtNumbers.pop();
     return shouldHaveSent({
       to: mcDonalds,
       from: mobileminNumber,
       body: "You're live! Your Text Marketing Number is " + (prettyPhone(mcDonaldsmm)) + ". Text it to send your customers a special. They text \"Join\" to subscribe."
-    });
+    }, "First Response from a new sign up");
   };
 
   testKyleWasNotifiedOfNewSignup = function(customer, customermm) {
-    return shouldHaveSent = {
+    return shouldHaveSent({
       to: kylePhone,
       from: mobileminNumber,
       body: "Someone new signed up. Their Text Marketing Number is " + (prettyPhone(customermm)) + ".\nTheir cell phone is " + (prettyPhone(customer)) + "."
-    };
+    }, "Kyle was notified of a new signup");
   };
 
   testFirstResponse = function() {
-    testJambaFirstResponse();
-    testMcDonaldsFirstResponse();
-    testKyleWasNotifiedOfNewSignup(jamba, jambamm);
+    mcDonaldsmm = fakeBoughtNumbers.pop();
+    jambamm = fakeBoughtNumbers.pop();
     testKyleWasNotifiedOfNewSignup(mcDonalds, mcDonaldsmm);
-    wait(600, function() {
-      return testBusinessNameRequested(mcDonalds, mcDonaldsmm);
-    });
-    return wait(600, function() {
-      return testBusinessNameRequested(jamba, jambamm);
-    });
+    testKyleWasNotifiedOfNewSignup(jamba, jambamm);
+    testMcDonaldsFirstResponse();
+    testJambaFirstResponse();
+    testBusinessNameRequested(mcDonalds, mcDonaldsmm, "McDonalds");
+    return testBusinessNameRequested(jamba, jambamm, "Jamba");
   };
 
-  testBusinessNameRequested = function(customer, customermm) {
+  testBusinessPhoneReqested = function(customer) {
     return shouldHaveSent({
       to: customer,
       from: mobileminNumber,
-      body: "what is your business number?"
+      body: "What is your business phone number?"
+    }, "Business phone was requested");
+  };
+
+  testBusinessNameRequested = function(customer, customermm, business) {
+    return shouldHaveSent({
+      to: customer,
+      from: mobileminNumber,
+      body: "What is your business name?"
+    }, "Business name was requested");
+  };
+
+  waitFor = function(milis) {
+    var _last;
+    last = drews.makeEventful({});
+    _last = last;
+    wait(milis, function() {
+      return _last.emit("done");
     });
+    return last;
   };
 
   startMcDonalds();
 
   startJamba();
 
-  wait(500, function() {
-    return testFirstResponse();
+  doBusinessPhone = function() {
+    console.log("fake sending business phone");
+    sendFakeText({
+      to: mobileminNumber,
+      from: mcDonalds,
+      body: "McDonalds"
+    });
+    return wait(5000, function() {
+      sendFakeText({
+        to: mobileminNumber,
+        from: jamba,
+        body: "Jamba"
+      });
+      return wait(5000, function() {
+        console.log("testing mcdonalds business phone requested with " + mcDonalds);
+        testBusinessPhoneReqested(mcDonalds);
+        return testBusinessPhoneReqested(jamba);
+      });
+    });
+  };
+
+  console.log("wating 10 seconds");
+
+  wait(15000, function() {
+    testFirstResponse();
+    return wait(4500, function() {
+      return doBusinessPhone();
+    });
   });
 
 }).call(this);

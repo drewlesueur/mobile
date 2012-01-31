@@ -21,11 +21,40 @@ require("./public/layout.js")
 var config = dModule.require("config")
 var _ = dModule.require("underscore")
 `
+last = ""
+andThen = (fn, args...) ->
+  whatToDo = fn.bind null, args...
+  last.once "done", whatToDo
+
+doInOrder = (waiters...) ->
+  length = waiters.length
+  count = 0
+  results = []
+  last = drews.makeEventful {}
+  _last = last
+
+  execWaiter = ->
+    waiter = waiters[count]
+    waiter = waiter results...
+    waiter.once "done", (vals...) ->
+      results = results.concat vals
+      count += 1
+      if count is length
+        _last.emit "done", results...
+      else
+        execWaiter()
+  _.defer execWaiter
+  return _last
+    
+  
+
 colors = require "colors"
  
 drews = dModule.require 'drews-mixins'
 Server = dModule.require("mobilemin-server")
 server = Server.init()
+
+
 
 randomPhone = ->
   phone = "+1"
@@ -41,14 +70,14 @@ MobileminText = dModule.require "mobilemin-text"
 fakeBoughtNumbers = []
 server.buyPhoneNumberFor = (from) ->
   fakeBoughtNumber = randomPhone()
-  fakeBoughtNumbers.push fakeBoughtNumber
+  fakeBoughtNumbers.unshift fakeBoughtNumber
   _.defer -> server.onBoughtPhoneNumber from, fakeBoughtNumber
 
 sentTexts = []
 
 server.text = (info) ->
   last = drews.makeEventful {}
-  sentTexts.push info
+  sentTexts.unshift info
   _.defer ->
     last.emit "done"
   server.setLast last
@@ -80,6 +109,9 @@ shouldHaveSent = (info, message) ->
     console.log message.green
   else
     console.log message.red
+    console.log sentText.body.yellow
+    console.log info.body.magenta
+    
 
 prettyPhone = server.prettyPhone
 wait  = drews.wait
@@ -100,7 +132,6 @@ startJamba = ->
     body: "start"
 
 testJambaFirstResponse = ->
-  jambamm = fakeBoughtNumbers.pop()
   shouldHaveSent
     to: jamba
     from: mobileminNumber
@@ -110,7 +141,6 @@ testJambaFirstResponse = ->
   , "First Response from a new sign up"
 
 testMcDonaldsFirstResponse = ->
-  mcDonaldsmm = fakeBoughtNumbers.pop()
   shouldHaveSent
     to: mcDonalds
     from: mobileminNumber
@@ -130,12 +160,28 @@ testKyleWasNotifiedOfNewSignup = (customer, customermm)->
   , "Kyle was notified of a new signup"
 
 testFirstResponse = () ->
-    testJambaFirstResponse()
-    testMcDonaldsFirstResponse()
-    testKyleWasNotifiedOfNewSignup jamba, jambamm
+    #test in backwards order
+
+    mcDonaldsmm = fakeBoughtNumbers.pop()
+    jambamm = fakeBoughtNumbers.pop()
+
+
     testKyleWasNotifiedOfNewSignup mcDonalds, mcDonaldsmm
-    wait 1000, -> testBusinessNameRequested jamba, jambamm, "Jamba"
-    wait 1000, -> testBusinessNameRequested mcDonalds, mcDonaldsmm, "McDonalds"
+    testKyleWasNotifiedOfNewSignup jamba, jambamm
+
+    testMcDonaldsFirstResponse()
+    testJambaFirstResponse()
+
+    testBusinessNameRequested mcDonalds, mcDonaldsmm, "McDonalds"
+    testBusinessNameRequested jamba, jambamm, "Jamba"
+    #waitFor(4100)
+
+testBusinessPhoneReqested = (customer) ->
+  shouldHaveSent
+    to: customer
+    from: mobileminNumber
+    body: "What is your business phone number?"
+  , "Business phone was requested"
 
 testBusinessNameRequested = (customer, customermm, business) ->
   shouldHaveSent
@@ -144,12 +190,36 @@ testBusinessNameRequested = (customer, customermm, business) ->
     body: "What is your business name?"
   , "Business name was requested"
 
-  wait 4100, -> sendFakeText #TODO: because of the 4 second hold
-    to: mobileminNumber
-    from: customer
-    body: business
+
+waitFor = (milis) ->
+  last = drews.makeEventful {}
+  _last = last
+  wait milis, -> _last.emit "done"
+  last
 
 startMcDonalds()
 startJamba()
-wait 500, -> testFirstResponse()
+
+
+doBusinessPhone = ->
+  console.log "fake sending business phone"
+  sendFakeText 
+    to: mobileminNumber
+    from: mcDonalds
+    body: "McDonalds"
+
+  sendFakeText 
+    to: mobileminNumber
+    from: jamba
+    body: "Jamba"
+    wait 10000, ->
+      console.log "testing mcdonalds business phone requested with #{mcDonalds}"
+      testBusinessPhoneReqested(mcDonalds)
+      testBusinessPhoneReqested(jamba)
+
+console.log "wating 10 seconds"
+wait 15000, ->
+  testFirstResponse()
+  wait 4500, ->
+    doBusinessPhone()
 
