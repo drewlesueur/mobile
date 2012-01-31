@@ -232,7 +232,7 @@
       server.start = function() {
         return server.expressApp.listen(8010);
       };
-      handleStatus = function(status) {
+      handleStatus = function(text, status) {
         if (status) {
           return server.actAccordingToStatus(status, text);
         } else if (like(text.body, "admin")) {
@@ -249,7 +249,7 @@
           return server.onNewCustomer(text.from);
         } else {
           getStatus(text.from, text.to);
-          return andThen(handleStatus);
+          return andThen(handleStatus, text);
         }
       };
       metaMap = {

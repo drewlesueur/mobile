@@ -230,7 +230,7 @@ dModule.define "mobilemin-server", ->
       server.expressApp.listen 8010 #TODO: use config
       #self.twilio.setupNumbers()
 
-    handleStatus = (status) ->
+    handleStatus = (text, status) ->
       if status
         server.actAccordingToStatus(status, text)
       else if like text.body, "admin"
@@ -246,7 +246,7 @@ dModule.define "mobilemin-server", ->
         server.onNewCustomer text.from
       else
         getStatus(text.from, text.to) 
-        andThen handleStatus
+        andThen handleStatus, text
     
     metaMap =
       status: "status"
