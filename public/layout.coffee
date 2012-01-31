@@ -187,6 +187,7 @@ dModule.define "mobilemin-server", ->
       text.body = text.Body
       if (not isTextHold text.from, text.to) or like(text.body, "yes") or like(text.body, "no")
         console.log "not on hold, releasing"
+        console.log text
         createTextHold(text.from, text.to) #holding for long messages
         drews.wait 4000, releaseTextHold.bind(null, text.from, text.to)
         server.onText text
@@ -235,7 +236,9 @@ dModule.define "mobilemin-server", ->
       server.expressApp.listen 8010 #TODO: use config
       #self.twilio.setupNumbers()
 
-    handleStatus = (status) ->
+    handleStatus = (text, status) ->
+      console.log "handling status for #{text.from} **#{status}**".blue
+
       if status
         server.actAccordingToStatus(status, text)
       else if like text.body, "admin"
@@ -250,8 +253,9 @@ dModule.define "mobilemin-server", ->
       if text.to is server.mobileminNumber and like(text.body, "start")
         server.onNewCustomer text.from
       else
+        console.log "getting status for #{text.from}".blue
         getStatus(text.from, text.to) 
-        andThen handleStatus
+        andThen handleStatus, text
     
     metaMap =
       status: "status"
@@ -315,6 +319,7 @@ dModule.define "mobilemin-server", ->
           customer_phone = ?
           and mobilemin_phone = ?
       """, [value, from, to], (err, results) ->
+        console.log "just set #{key} of #{from}:#{to} to #{value}".blue
         toDo results
       last
 
@@ -572,6 +577,8 @@ dModule.define "mobilemin-server", ->
       andThen(server.forwardCall)
 
     server.actAccordingToStatus = (status, text) ->
+      console.log "going to act according to status".blue
+      console.log "status is #{status}"
       if status is "waiting for business name"
         server.onGotBusinessName(text.from, text.body)
       else if status is "waiting for business phone"
@@ -853,6 +860,7 @@ dModule.define "mobilemin-server", ->
 
        
     server.onGotBusinessName = (customerPhone, businessName) ->
+      console.log "got a business name #{businessName}".blue
       server.getTwilioPhone customerPhone
       andThen handleBusinessName, customerPhone, businessName
 
@@ -948,6 +956,7 @@ dModule.define "mobilemin-server", ->
         body: """
           What is your business phone number?
         """
+      console.log "Asking business phone number of #{customerPhone}".blue
       andThen(setStatus, customerPhone, 
         server.mobileminNumber, "waiting for business phone")
 
@@ -960,6 +969,7 @@ dModule.define "mobilemin-server", ->
           What is your business name?
         """
       #TODO: should I wait till text is sent
+      console.log "asked for businessName of #{customerPhone}".blue
       andThen(setStatus, customerPhone, 
         server.mobileminNumber, "waiting for business name")
 
@@ -967,6 +977,7 @@ dModule.define "mobilemin-server", ->
     server.text = (textInfo) ->
       sms = MobileminText.init(textInfo, server.twilio.twilioClient)
       sms.send()
+      console.log "to: #{text.to} body: #{text.body}".blue
       waitForTextResponse = server.waitForTextResponse.bind(null, sms)
       sms.once("triedtosendsuccess", waitForTextResponse)
       server.lastSms = sms

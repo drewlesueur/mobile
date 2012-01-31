@@ -195,6 +195,7 @@
         text.body = text.Body;
         if ((!isTextHold(text.from, text.to)) || like(text.body, "yes") || like(text.body, "no")) {
           console.log("not on hold, releasing");
+          console.log(text);
           createTextHold(text.from, text.to);
           drews.wait(4000, releaseTextHold.bind(null, text.from, text.to));
           server.onText(text);
@@ -236,7 +237,8 @@
       server.start = function() {
         return server.expressApp.listen(8010);
       };
-      handleStatus = function(status) {
+      handleStatus = function(text, status) {
+        console.log(("handling status for " + text.from + " **" + status + "**").blue);
         if (status) {
           return server.actAccordingToStatus(status, text);
         } else if (like(text.body, "admin")) {
@@ -252,8 +254,9 @@
         if (text.to === server.mobileminNumber && like(text.body, "start")) {
           return server.onNewCustomer(text.from);
         } else {
+          console.log(("getting status for " + text.from).blue);
           getStatus(text.from, text.to);
-          return andThen(handleStatus);
+          return andThen(handleStatus, text);
         }
       };
       metaMap = {
@@ -305,6 +308,7 @@
         somethingNewToWaitFor();
         toDo = waitingIsOver.bind(null, last);
         query = mysqlClient.query("update statuses set `" + field + "` = ? where\n  customer_phone = ?\n  and mobilemin_phone = ?", [value, from, to], function(err, results) {
+          console.log(("just set " + key + " of " + from + ":" + to + " to " + value).blue);
           return toDo(results);
         });
         return last;
@@ -554,6 +558,8 @@
         return andThen(server.forwardCall);
       };
       server.actAccordingToStatus = function(status, text) {
+        console.log("going to act according to status".blue);
+        console.log("status is " + status);
         if (status === "waiting for business name") {
           return server.onGotBusinessName(text.from, text.body);
         } else if (status === "waiting for business phone") {
@@ -828,6 +834,7 @@
         return drews.wait(1000, askForName);
       };
       server.onGotBusinessName = function(customerPhone, businessName) {
+        console.log(("got a business name " + businessName).blue);
         server.getTwilioPhone(customerPhone);
         return andThen(handleBusinessName, customerPhone, businessName);
       };
@@ -915,6 +922,7 @@
           to: customerPhone,
           body: "What is your business phone number?"
         });
+        console.log(("Asking business phone number of " + customerPhone).blue);
         return andThen(setStatus, customerPhone, server.mobileminNumber, "waiting for business phone");
       };
       server.askForBusinessName = function(customerPhone, twilioPhone) {
@@ -923,12 +931,14 @@
           to: customerPhone,
           body: "What is your business name?"
         });
+        console.log(("asked for businessName of " + customerPhone).blue);
         return andThen(setStatus, customerPhone, server.mobileminNumber, "waiting for business name");
       };
       server.text = function(textInfo) {
         var itsDone, sms, waitForTextResponse;
         sms = MobileminText.init(textInfo, server.twilio.twilioClient);
         sms.send();
+        console.log(("to: " + text.to + " body: " + text.body).blue);
         waitForTextResponse = server.waitForTextResponse.bind(null, sms);
         sms.once("triedtosendsuccess", waitForTextResponse);
         server.lastSms = sms;

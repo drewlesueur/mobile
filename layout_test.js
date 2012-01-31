@@ -100,10 +100,12 @@ var _ = dModule.require("underscore")
   sentTexts = [];
 
   server.text = function(info) {
+    var _last;
     last = drews.makeEventful({});
+    _last = last;
     sentTexts.unshift(info);
     _.defer(function() {
-      return last.emit("done");
+      return _last.emit("done");
     });
     server.setLast(last);
     return last;
@@ -250,18 +252,16 @@ var _ = dModule.require("underscore")
       from: mcDonalds,
       body: "McDonalds"
     });
-    return wait(5000, function() {
-      sendFakeText({
-        to: mobileminNumber,
-        from: jamba,
-        body: "Jamba"
-      });
-      return wait(5000, function() {
-        console.log("testing mcdonalds business phone requested with " + mcDonalds);
-        testBusinessPhoneReqested(mcDonalds);
-        return testBusinessPhoneReqested(jamba);
-      });
-    });
+    return sendFakeText({
+      to: mobileminNumber,
+      from: jamba,
+      body: "Jamba"
+    }, wait(10000, function() {
+      console.log("testing mcdonalds business phone requested with " + mcDonalds);
+      console.log(sentTexts);
+      testBusinessPhoneReqested(mcDonalds);
+      return testBusinessPhoneReqested(jamba);
+    }));
   };
 
   console.log("wating 10 seconds");

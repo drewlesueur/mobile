@@ -77,9 +77,10 @@ sentTexts = []
 
 server.text = (info) ->
   last = drews.makeEventful {}
+  _last = last
   sentTexts.unshift info
   _.defer ->
-    last.emit "done"
+    _last.emit "done"
   server.setLast last
   return last
 
@@ -207,13 +208,14 @@ doBusinessPhone = ->
     to: mobileminNumber
     from: mcDonalds
     body: "McDonalds"
-
+  
   sendFakeText 
     to: mobileminNumber
     from: jamba
     body: "Jamba"
     wait 10000, ->
       console.log "testing mcdonalds business phone requested with #{mcDonalds}"
+      console.log sentTexts
       testBusinessPhoneReqested(mcDonalds)
       testBusinessPhoneReqested(jamba)
 
