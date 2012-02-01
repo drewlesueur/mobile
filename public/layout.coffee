@@ -1,12 +1,18 @@
 config = dModule.require "config"
+require "colors"
 
 process?.on "uncaughtException", (err) ->
   console.log "there whas a hitch, but we're still up"
   console.log err.stack
 
-
 _ = dModule.require "underscore"
 drews = dModule.require("drews-mixins")
+
+infoWatcher = drews.makeEventful {}
+infoWatcher.on "data", (data) ->
+  console.log data
+
+info = (arg) -> infoWatcher.emit "data", arg
 
 addPlus1 = (phone) ->
   if drews.s(phone, 0, 2) != "+1" and phone.length == 10
@@ -156,16 +162,27 @@ dModule.define "mobilemin-server", ->
     server.statuses = {}
     server.info = {}
     server.twilioPhones = {}
+
+
+
+
+
     server.phone = (req, res)->
       console.log "got a phone call"
       twilioResponse = new Twiml.Response(res)
       #TODO: find out what the actual phone numer called was
-      if req.body.To == server.mobileminNumber
+      info req.body
+      info "#{req.body.From in ['+14803813855', '+14808405406']}".cyan
+      info "#{req.body.To == server.mobileminNumber}".cyan
+      info "---".green
+      if req.body.To == server.mobileminNumber and req.body.From in ["+14803813855", "+14808405406", "+14803814770"]
+        doColdCall twilioResponse, req.body.CallSid
+      else if req.body.To == server.mobileminNumber
         forwardCall twilioResponse, "+14803813855"
       else
         server.getBusinessPhone req.body.To
         andThen forwardCall.bind null, twilioResponse
-
+    
     forwardCall = (twilioResponse, phoneNumber) ->
       console.log "it got a phone number for forwarding " + phoneNumber
       twilioResponse.append(new Twiml.Dial(phoneNumber))
@@ -173,6 +190,88 @@ dModule.define "mobilemin-server", ->
 
 
     ramStati = {}
+
+    server.coldCallEnded = (req, res) ->
+      console.log req.body.CallSid
+      callSid = req.body.CallSid
+      twilioResponse = new Twiml.Response(res)
+      person = callerProCalls[callSid]
+      followupLater(person, 3)
+      andThen doColdCall, twilioResponse, req.body.CallSid
+
+      
+
+    server.phoneCallEnded = (req, res) ->
+      console.log req.body.CallSid
+      delete callerProCalls[req.body.CallSid]
+      
+    doColdCall = (twilioResponse, callSid) ->
+
+      info "going to get next coldcall".cyan
+      getNextColdCall()
+      andThen makeColdCall, twilioResponse, callSid
+
+
+    TIMEOFFSET = 7
+
+    callerProCalls = {}
+
+    followupLater = (person, time) ->
+      somethingNewToWaitFor()
+      console.log "changing the followuptime for #{person.name} #{person.id} to #{time} days later".cyan
+      toDo =  waitingIsOver.bind null, last
+      query = mysqlClient.query """
+        update callerpro set `type` = 'follow_up',
+        follow_up = adddate(now(), interval 2 day),
+        granularity = 24
+        where id = ?
+      """, [person.id], (err, results) ->
+        console.log "after tried to follow up".cyan
+        console.log err
+        toDo()
+      last
+
+    getNextColdCall = () ->
+      somethingNewToWaitFor()
+      toDo =  waitingIsOver.bind null, last
+      query = mysqlClient.query """
+        select * from callerpro where 
+        (`type` = 'follow_up' and (hour(timediff(follow_up, now())) - #{TIMEOFFSET}) <= granularity)
+        or (timediff(follow_up, now()) < 0)
+        or (`type` = 'cold')
+
+        order by important desc, follow_up
+        limit 1
+      """, [], (err, results) ->
+        if err then return toDo null
+        if results?.length == 0 then return toDo null
+        toDo results[0]
+      last
+      
+      
+    makeColdCall = (twilioResponse, callSid, person) ->
+      if not person
+        twilioResponse.send ""
+        return
+
+      callerProCalls[callSid] = person
+      info "makeing a cold call to #{person.phone}".cyan
+      {name, phone, quick_note, type, follow_up} = person
+      if type is "cold"
+        explainType = "Calling"
+      else
+        explainType = "Following up with"
+      twilioResponse.append(new Twiml.Say("""
+        #{explainType} #{name}.
+        #{quick_note}.
+      """, {voice: "woman"}))
+      twilioResponse.append(new Twiml.Dial(phone, {
+        action: "http://#{config.server.hostName}:#{config.server.port}/coldCallEnded",
+        record: true
+        hangupOnStar: true
+      }))
+      #twilioResponse.append(new Twiml.Record())
+      twilioResponse.send()
 
     server.sms =  (req, res) ->
       console.log "Got a text"
@@ -196,10 +295,19 @@ dModule.define "mobilemin-server", ->
 
       res.send ""
 
+    server.callAnswered = (req, res) ->
+      res.send ""
+     
+    server.phoneStatus = (req, res) ->
+      console.log "got a phone call status"
+      console.log req.body
+
     server.status = (req, res) ->
-      info = req.body
-      sid = info.SmsSid
-      status = info.SmsStatus
+      console.log req.body
+
+      info2 = req.body
+      sid = info2.SmsSid
+      status = info2.SmsStatus
       if sid and server.smsSidsWaitingStatus[sid]
         text = server.smsSidsWaitingStatus[sid] 
         delete server.smsSidsWaitingStatus[sid] 
@@ -210,11 +318,15 @@ dModule.define "mobilemin-server", ->
       res.send ""
         
     #server.mobileminNumber =  "+14804673355"
-    server.mobileminNumber =  "+14804673455"
+    server.mobileminNumber =  config.mobileminNumber
     server.expressApp = expressRpc("/rpc", {})
     server.expressApp.post "/phone", server.phone
     server.expressApp.post "/sms", server.sms
     server.expressApp.post "/status", server.status
+    server.expressApp.post "/phoneStatus", server.phoneStatus
+    server.expressApp.post "/coldCallEnded", server.coldCallEnded
+    server.expressApp.post "/phoneCallEnded", server.phoneCallEnded
+
     server.twilio =  new MobileminTwilio config.ACCOUNT_SID, config.AUTH_TOKEN
     server.smsSidsWaitingStatus =  {}
     server.conversations = {}
@@ -225,6 +337,19 @@ dModule.define "mobilemin-server", ->
     twilioPhone = ""
     text = null
     status = null
+
+
+    makeCall___NotUsedYet = (callInfo) ->
+      opts =
+        StatusCallback:  "http://#{config.server.hostName}:#{config.server.port}/phoneStatus",
+      twilio.twilioClient.makeOutgoingCall(
+        callInfo.from,
+        callInfo.to,
+        "http://#{config.server.hostName}:#{config.server.port}/callAnswered",
+        opts,
+        ->,
+        ->
+      )
 
     server.start =  ->
       server.expressApp.listen 8010 #TODO: use config

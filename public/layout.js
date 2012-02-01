@@ -1,8 +1,10 @@
 (function() {
-  var addPlus1, andThen, config, drews, last, like, onEach, onError, prettyPhone, _,
+  var addPlus1, andThen, config, drews, info, infoWatcher, last, like, onEach, onError, prettyPhone, _,
     __slice = Array.prototype.slice;
 
   config = dModule.require("config");
+
+  require("colors");
 
   if (typeof process !== "undefined" && process !== null) {
     process.on("uncaughtException", function(err) {
@@ -14,6 +16,16 @@
   _ = dModule.require("underscore");
 
   drews = dModule.require("drews-mixins");
+
+  infoWatcher = drews.makeEventful({});
+
+  infoWatcher.on("data", function(data) {
+    return console.log(data);
+  });
+
+  info = function(arg) {
+    return infoWatcher.emit("data", arg);
+  };
 
   addPlus1 = function(phone) {
     if (drews.s(phone, 0, 2) !== "+1" && phone.length === 10) {
@@ -159,17 +171,23 @@
     MobileminTwilio = dModule.require("mobilemin-twilio");
     MobileminServer = {};
     MobileminServer.init = function() {
-      var Twiml, addSubscriberIfNotExists, afterDbRecordCreated, askThemWhatTheirNewJoinTextShouldSay, checkIfSubscriberExists, continueSpecialProcess, createTextHold, customerPhone, doAll, doInOrder, forwardCall, getCustomerInfo, getJoinText, getMetaInfo, getRamStatus, getStatus, getTotalSubscribers, giveStats, handleBusinessName, handleBusinessPhone, handleStatus, isTextHold, letUserKnowTextsAreBeingSentOut, metaMap, onGotJoinText, onJoinTextChange, oneSubscriberDone, ramStati, releaseTextHold, removeIncomingTextHold, replyWithTheSpecialToTheUser, respondWithJoinText, sayJoinTextIsTooLong, sayJoinTextWasUpdatedAndWaitForSpecial, sayYourMessageIsTooLong, server, setCustomerInfo, setJoinText, setMetaInfo, setRamStatus, setStatus, somethingNewToWaitFor, status, tellKyleSomeoneFinished, tellKyleSomeoneSignedUp, text, twilio, twilioPhone, waitAndAskForBusinessName, waitingIsOver, waitingIsOverWithKey;
+      var TIMEOFFSET, Twiml, addSubscriberIfNotExists, afterDbRecordCreated, askThemWhatTheirNewJoinTextShouldSay, callerProCalls, checkIfSubscriberExists, continueSpecialProcess, createTextHold, customerPhone, doAll, doColdCall, doInOrder, followupLater, forwardCall, getCustomerInfo, getJoinText, getMetaInfo, getNextColdCall, getRamStatus, getStatus, getTotalSubscribers, giveStats, handleBusinessName, handleBusinessPhone, handleStatus, isTextHold, letUserKnowTextsAreBeingSentOut, makeCall___NotUsedYet, makeColdCall, metaMap, onGotJoinText, onJoinTextChange, oneSubscriberDone, ramStati, releaseTextHold, removeIncomingTextHold, replyWithTheSpecialToTheUser, respondWithJoinText, sayJoinTextIsTooLong, sayJoinTextWasUpdatedAndWaitForSpecial, sayYourMessageIsTooLong, server, setCustomerInfo, setJoinText, setMetaInfo, setRamStatus, setStatus, somethingNewToWaitFor, status, tellKyleSomeoneFinished, tellKyleSomeoneSignedUp, text, twilio, twilioPhone, waitAndAskForBusinessName, waitingIsOver, waitingIsOverWithKey;
       server = {};
       status = null;
       server.statuses = {};
       server.info = {};
       server.twilioPhones = {};
       server.phone = function(req, res) {
-        var twilioResponse;
+        var twilioResponse, _ref, _ref2;
         console.log("got a phone call");
         twilioResponse = new Twiml.Response(res);
-        if (req.body.To === server.mobileminNumber) {
+        info(req.body);
+        info(("" + ((_ref = req.body.From) === '+14803813855' || _ref === '+14808405406')).cyan);
+        info(("" + (req.body.To === server.mobileminNumber)).cyan);
+        info("---".green);
+        if (req.body.To === server.mobileminNumber && ((_ref2 = req.body.From) === "+14803813855" || _ref2 === "+14808405406" || _ref2 === "+14803814770")) {
+          return doColdCall(twilioResponse, req.body.CallSid);
+        } else if (req.body.To === server.mobileminNumber) {
           return forwardCall(twilioResponse, "+14803813855");
         } else {
           server.getBusinessPhone(req.body.To);
@@ -182,6 +200,73 @@
         return twilioResponse.send();
       };
       ramStati = {};
+      server.coldCallEnded = function(req, res) {
+        var callSid, person, twilioResponse;
+        console.log(req.body.CallSid);
+        callSid = req.body.CallSid;
+        twilioResponse = new Twiml.Response(res);
+        person = callerProCalls[callSid];
+        followupLater(person, 3);
+        return andThen(doColdCall, twilioResponse, req.body.CallSid);
+      };
+      server.phoneCallEnded = function(req, res) {
+        console.log(req.body.CallSid);
+        return delete callerProCalls[req.body.CallSid];
+      };
+      doColdCall = function(twilioResponse, callSid) {
+        info("going to get next coldcall".cyan);
+        getNextColdCall();
+        return andThen(makeColdCall, twilioResponse, callSid);
+      };
+      TIMEOFFSET = 7;
+      callerProCalls = {};
+      followupLater = function(person, time) {
+        var query, toDo;
+        somethingNewToWaitFor();
+        console.log(("changing the followuptime for " + person.name + " " + person.id + " to " + time + " days later").cyan);
+        toDo = waitingIsOver.bind(null, last);
+        query = mysqlClient.query("update callerpro set `type` = 'follow_up',\nfollow_up = adddate(now(), interval 2 day),\ngranularity = 24\nwhere id = ?", [person.id], function(err, results) {
+          console.log("after tried to follow up".cyan);
+          console.log(err);
+          return toDo();
+        });
+        return last;
+      };
+      getNextColdCall = function() {
+        var query, toDo;
+        somethingNewToWaitFor();
+        toDo = waitingIsOver.bind(null, last);
+        query = mysqlClient.query("select * from callerpro where \n(`type` = 'follow_up' and (hour(timediff(follow_up, now())) - " + TIMEOFFSET + ") <= granularity)\nor (timediff(follow_up, now()) < 0)\nor (`type` = 'cold')\n\norder by important desc, follow_up\nlimit 1", [], function(err, results) {
+          if (err) return toDo(null);
+          if ((results != null ? results.length : void 0) === 0) return toDo(null);
+          return toDo(results[0]);
+        });
+        return last;
+      };
+      makeColdCall = function(twilioResponse, callSid, person) {
+        var explainType, follow_up, name, phone, quick_note, type;
+        if (!person) {
+          twilioResponse.send("");
+          return;
+        }
+        callerProCalls[callSid] = person;
+        info(("makeing a cold call to " + person.phone).cyan);
+        name = person.name, phone = person.phone, quick_note = person.quick_note, type = person.type, follow_up = person.follow_up;
+        if (type === "cold") {
+          explainType = "Calling";
+        } else {
+          explainType = "Following up with";
+        }
+        twilioResponse.append(new Twiml.Say("" + explainType + " " + name + ".\n" + quick_note + ".", {
+          voice: "woman"
+        }));
+        twilioResponse.append(new Twiml.Dial(phone, {
+          action: "http://" + config.server.hostName + ":" + config.server.port + "/coldCallEnded",
+          record: true,
+          hangupOnStar: true
+        }));
+        return twilioResponse.send();
+      };
       server.sms = function(req, res) {
         var text;
         console.log("Got a text");
@@ -199,11 +284,19 @@
         }
         return res.send("");
       };
+      server.callAnswered = function(req, res) {
+        return res.send("");
+      };
+      server.phoneStatus = function(req, res) {
+        console.log("got a phone call status");
+        return console.log(req.body);
+      };
       server.status = function(req, res) {
-        var info, sid, text;
-        info = req.body;
-        sid = info.SmsSid;
-        status = info.SmsStatus;
+        var info2, sid, text;
+        console.log(req.body);
+        info2 = req.body;
+        sid = info2.SmsSid;
+        status = info2.SmsStatus;
         if (sid && server.smsSidsWaitingStatus[sid]) {
           text = server.smsSidsWaitingStatus[sid];
           delete server.smsSidsWaitingStatus[sid];
@@ -215,11 +308,14 @@
         }
         return res.send("");
       };
-      server.mobileminNumber = "+14804673455";
+      server.mobileminNumber = config.mobileminNumber;
       server.expressApp = expressRpc("/rpc", {});
       server.expressApp.post("/phone", server.phone);
       server.expressApp.post("/sms", server.sms);
       server.expressApp.post("/status", server.status);
+      server.expressApp.post("/phoneStatus", server.phoneStatus);
+      server.expressApp.post("/coldCallEnded", server.coldCallEnded);
+      server.expressApp.post("/phoneCallEnded", server.phoneCallEnded);
       server.twilio = new MobileminTwilio(config.ACCOUNT_SID, config.AUTH_TOKEN);
       server.smsSidsWaitingStatus = {};
       server.conversations = {};
@@ -229,6 +325,13 @@
       twilioPhone = "";
       text = null;
       status = null;
+      makeCall___NotUsedYet = function(callInfo) {
+        var opts;
+        opts = {
+          StatusCallback: "http://" + config.server.hostName + ":" + config.server.port + "/phoneStatus"
+        };
+        return twilio.twilioClient.makeOutgoingCall(callInfo.from, callInfo.to, "http://" + config.server.hostName + ":" + config.server.port + "/callAnswered", opts, function() {}, function() {});
+      };
       server.start = function() {
         return server.expressApp.listen(8010);
       };
