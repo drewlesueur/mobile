@@ -1,0 +1,134 @@
+x 1
+
+age 27
+
+name $ Kyle LeSueur
+
+mysentence $
+  Hello world
+  this is my sentence.
+  times two.
+
+Alert name
+
+theName $ Drew
+
+sayHi *
+  Alert $ Hello $theName
+  Alert theName
+
+area * r
+  pi*r*r
+
+areaOfMyBarn Area 30
+
+sayBye *
+Alert $
+  good bye. See you later
+  theName
+
+
+
+server.coldCallEnded * req res
+  console.log req.body.CallSid  
+  callSid req.body.CallSid
+  twilioResponse New Twiml.Response res
+  person CallerProCalls callSid
+  FollowupLater person 3
+  Then doColdCall twilioResponse
+
+server.sayThatTheSpecialWasNotSent * text
+  myText #
+    from text.to
+    to text.from
+    body $
+      Ok. That Special was *not* sent
+      
+  Server.text myText
+    
+
+theName > saHi > $Hello $theName
+
+userInput > CalculateTheArea > areaOfMyBarn
+
+userInput > CalcArea > pi*userInput^2
+
+heighth width > CalcArea .5 * height width > areaofTriangle
+r > CalcAreaOfCircle pi*r*r > areofCircle
+
+5 6 > CalcArea
+AoT > Alert
+
+$kyle > .name
+27 > .age
+> person
+
+  $kyle > name
+  27 > age
+    $mack > first
+    $brodie > second
+  > children
+> person
+
+person <
+  $kyle > name
+  27 > age
+  children <
+    $mack > first
+    $brodie > second
+
+person <
+  name > $Kyle
+  age > 27
+
+
+
+$kyle > person.name
+27 > person.age
+
+Area < Calculate
+  PiR^2
+  <  r
+
+1 > x
+
+x < 1
+
+
+1 > x
+
+x y x2 y2  > distanceformula
+  (x1 .......)
+  ......
+  > distance
+
+
+
+CalcArea 5 6
+CalcAreaOfCircle r
+Alert AreaOfTriange
+
+
+
+  Print $ Displaying report for $name
+  Print $ his age is $age
+  Print $ his eyes are $eyes
+  report $
+    Here is pretty report
+  
+  > report
+
+30 > calcArea > myArea
+myArea CalcArea 30
+
+
+height > DoubleHeight > height*2 > newHeight
+height > DoubleHeightWithMessage > 
+  Say < "you are doubling the height"
+  "new say" > say
+  height*2
+  > newHeight
+
+
+
+
