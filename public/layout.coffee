@@ -136,7 +136,7 @@ dModule.define "mobilemin-server", ->
     console.log e
   
   mysqlClient.query("USE mobilemin");
-  mysqlClient.query "select `customer_phone` from statuses where customer_phone like '%4%'", (err, results) ->
+  mysqlClient.query "select `customer_phone` from statuses limit 1", (err, results) ->
     console.log "done showing tables"
     console.log results
     #mysqlClient.end ->
@@ -170,6 +170,44 @@ dModule.define "mobilemin-server", ->
       console.log "it got a phone number for forwarding " + phoneNumber
       twilioResponse.append(new Twiml.Dial(phoneNumber))
       twilioResponse.send()
+
+
+
+
+    otherOnSpecial = null
+
+    thumbsExtra =
+      setOtherOnSpecial: (x) -> otherOnSpecial = x
+      startsWith: (x, y) -> drews.startsWith(x, y)
+      split: (str, onStr) -> str.split(onStr)
+      getSpace: () -> return " " 
+      getPhoneFromAdminText: (body) ->
+        split = body.split " "
+        phone = addPlus1 split[1].replace(/-/g, "")
+        phone
+      addAdmin: (customerPhone, twilioPhone, cb) ->
+        customers = -> server.createDatabaseRecord customerPhone, twilioPhone
+        statuses = -> server.createStatusRecord customerPhone, twilioPhone
+        doAll customers, statuses
+        andThen () ->
+          setStatus customerPhone, twilioPhone, "waiting for special"
+          andThen cb.bind(null, null)
+      removeAdmin: (customerPhone, twilioPhone, cb) ->
+        cb()
+      sendText: (from, to, body) ->
+        console.log "trying to send a text from thumbs!"
+        server.text
+          from: from
+          to: to
+          body: body
+
+          
+          
+        
+
+    Thumbs = require("../thumbs.js")
+    Thumbs.addScope(thumbsExtra)
+    Thumbs.runFile("./public/layout.thumbs")
 
 
     ramStati = {}
@@ -688,6 +726,8 @@ dModule.define "mobilemin-server", ->
         return server.onStats text
       if like text.body, "join"
         return onJoinTextChange text
+      else if otherOnSpecial text.from, text.to, text.body
+        return
 
       server.getBusinessName text.to
       andThen continueSpecialProcess.bind null, text

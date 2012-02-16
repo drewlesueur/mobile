@@ -1,0 +1,41 @@
+otherOnSpecial * from to body
+  Say $ $from $to $body
+ 
+  If
+    > StartsWith body $admin
+    > HandleAdmin from to body
+    > StargsWith body $remove
+    > RemoveAdmin from to body
+    > Say $ not trying to do anything
+      0
+
+handleAdmin * from to body
+  Say $ you are trying to add an admin  
+  mmPhone to
+  $ change that to your own implementation
+  customerPhone GetPhoneFromAdminText body
+  AddAdmin customerPhone mmPhone * err
+    $ err isnt being handled right now
+    Say $ done adding admin
+    $ to and from are swapped
+    SendText to from $
+      You added $customerPhone as an admin to $mmPhone
+  1
+
+removeAdmin * from to body
+  1
+  $ commented out!!!
+    Say $ you are trying to remove an admin
+    mmPhone to
+    $ change that to your own implementation
+    customerPhone GetPhoneFromAdminText body
+    RemoveAdmin customerPhone mmPhone * err
+      $ err isnt being handled right now
+      Say $ done removing admin
+      $ to and from are swapped
+      SendText to from $
+        You removed $customerPhone from $mmPhone
+    1
+
+SetOtherOnSpecial otherOnSpecial
+

@@ -149,7 +149,7 @@
       return console.log(e);
     });
     mysqlClient.query("USE mobilemin");
-    mysqlClient.query("select `customer_phone` from statuses where customer_phone like '%4%'", function(err, results) {
+    mysqlClient.query("select `customer_phone` from statuses limit 1", function(err, results) {
       console.log("done showing tables");
       return console.log(results);
     });
@@ -159,7 +159,7 @@
     MobileminTwilio = dModule.require("mobilemin-twilio");
     MobileminServer = {};
     MobileminServer.init = function() {
-      var Twiml, addSubscriberIfNotExists, afterDbRecordCreated, askThemWhatTheirNewJoinTextShouldSay, checkIfSubscriberExists, continueSpecialProcess, createTextHold, customerPhone, doAll, doInOrder, forwardCall, getCustomerInfo, getJoinText, getMetaInfo, getRamStatus, getStatus, getTotalSubscribers, giveStats, handleBusinessName, handleBusinessPhone, handleStatus, isTextHold, letUserKnowTextsAreBeingSentOut, metaMap, onGotJoinText, onJoinTextChange, oneSubscriberDone, ramStati, releaseTextHold, removeIncomingTextHold, replyWithTheSpecialToTheUser, respondWithJoinText, sayJoinTextIsTooLong, sayJoinTextWasUpdatedAndWaitForSpecial, sayYourMessageIsTooLong, server, setCustomerInfo, setJoinText, setMetaInfo, setRamStatus, setStatus, somethingNewToWaitFor, status, tellKyleSomeoneFinished, tellKyleSomeoneSignedUp, text, twilio, twilioPhone, waitAndAskForBusinessName, waitingIsOver, waitingIsOverWithKey;
+      var Thumbs, Twiml, addSubscriberIfNotExists, afterDbRecordCreated, askThemWhatTheirNewJoinTextShouldSay, checkIfSubscriberExists, continueSpecialProcess, createTextHold, customerPhone, doAll, doInOrder, forwardCall, getCustomerInfo, getJoinText, getMetaInfo, getRamStatus, getStatus, getTotalSubscribers, giveStats, handleBusinessName, handleBusinessPhone, handleStatus, isTextHold, letUserKnowTextsAreBeingSentOut, metaMap, onGotJoinText, onJoinTextChange, oneSubscriberDone, otherOnSpecial, ramStati, releaseTextHold, removeIncomingTextHold, replyWithTheSpecialToTheUser, respondWithJoinText, sayJoinTextIsTooLong, sayJoinTextWasUpdatedAndWaitForSpecial, sayYourMessageIsTooLong, server, setCustomerInfo, setJoinText, setMetaInfo, setRamStatus, setStatus, somethingNewToWaitFor, status, tellKyleSomeoneFinished, tellKyleSomeoneSignedUp, text, thumbsExtra, twilio, twilioPhone, waitAndAskForBusinessName, waitingIsOver, waitingIsOverWithKey;
       server = {};
       status = null;
       server.statuses = {};
@@ -181,6 +181,55 @@
         twilioResponse.append(new Twiml.Dial(phoneNumber));
         return twilioResponse.send();
       };
+      otherOnSpecial = null;
+      thumbsExtra = {
+        setOtherOnSpecial: function(x) {
+          return otherOnSpecial = x;
+        },
+        startsWith: function(x, y) {
+          return drews.startsWith(x, y);
+        },
+        split: function(str, onStr) {
+          return str.split(onStr);
+        },
+        getSpace: function() {
+          return " ";
+        },
+        getPhoneFromAdminText: function(body) {
+          var phone, split;
+          split = body.split(" ");
+          phone = addPlus1(split[1].replace(/-/g, ""));
+          return phone;
+        },
+        addAdmin: function(customerPhone, twilioPhone, cb) {
+          var customers, statuses;
+          customers = function() {
+            return server.createDatabaseRecord(customerPhone, twilioPhone);
+          };
+          statuses = function() {
+            return server.createStatusRecord(customerPhone, twilioPhone);
+          };
+          doAll(customers, statuses);
+          return andThen(function() {
+            setStatus(customerPhone, twilioPhone, "waiting for special");
+            return andThen(cb.bind(null, null));
+          });
+        },
+        removeAdmin: function(customerPhone, twilioPhone, cb) {
+          return cb();
+        },
+        sendText: function(from, to, body) {
+          console.log("trying to send a text from thumbs!");
+          return server.text({
+            from: from,
+            to: to,
+            body: body
+          });
+        }
+      };
+      Thumbs = require("../thumbs.js");
+      Thumbs.addScope(thumbsExtra);
+      Thumbs.runFile("./public/layout.thumbs");
       ramStati = {};
       server.sms = function(req, res) {
         var text;
@@ -672,7 +721,11 @@
       };
       server.onSpecial = function(text) {
         if (text.body === "#") return server.onStats(text);
-        if (like(text.body, "join")) return onJoinTextChange(text);
+        if (like(text.body, "join")) {
+          return onJoinTextChange(text);
+        } else if (otherOnSpecial(text.from, text.to, text.body)) {
+          return;
+        }
         server.getBusinessName(text.to);
         return andThen(continueSpecialProcess.bind(null, text));
       };
