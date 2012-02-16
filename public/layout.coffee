@@ -186,12 +186,17 @@ dModule.define "mobilemin-server", ->
         phone = addPlus1 split[1].replace(/-/g, "")
         phone
       addAdmin: (customerPhone, twilioPhone, cb) ->
-        customers = -> server.createDatabaseRecord customerPhone, twilioPhone
-        statuses = -> server.createStatusRecord customerPhone, twilioPhone
-        doAll customers, statuses
-        andThen () ->
-          setStatus customerPhone, twilioPhone, "waiting for special"
-          andThen cb.bind(null, null)
+        server.getBusinessName twilioPhone
+        andThen (businessName) ->
+          customers = -> server.createDatabaseRecord customerPhone, twilioPhone
+          statuses = -> server.createStatusRecord customerPhone, twilioPhone
+          doAll customers, statuses
+          andThen () ->
+            console.log "I thought the businessName was #{businessName}"
+            server.setBusinessName twilioPhone, businessName
+            andThen ->
+              setStatus customerPhone, twilioPhone, "waiting for special"
+              andThen -> cb null, businessName
       removeAdmin: (customerPhone, twilioPhone, cb) ->
         cb()
       sendText: (from, to, body) ->
@@ -248,7 +253,7 @@ dModule.define "mobilemin-server", ->
       res.send ""
         
     #server.mobileminNumber =  "+14804673355"
-    server.mobileminNumber =  "+14804673455"
+    server.mobileminNumber =  "+14804673355"
     server.expressApp = expressRpc("/rpc", {})
     server.expressApp.post "/phone", server.phone
     server.expressApp.post "/sms", server.sms
@@ -1013,6 +1018,7 @@ dModule.define "mobilemin-server", ->
 
     server.waitForTextResponse = (text) ->
       server.smsSidsWaitingStatus[text.sid] = text
+    server.andThen = andThen
 
     return server
   return MobileminServer

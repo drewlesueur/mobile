@@ -202,17 +202,26 @@
           return phone;
         },
         addAdmin: function(customerPhone, twilioPhone, cb) {
-          var customers, statuses;
-          customers = function() {
-            return server.createDatabaseRecord(customerPhone, twilioPhone);
-          };
-          statuses = function() {
-            return server.createStatusRecord(customerPhone, twilioPhone);
-          };
-          doAll(customers, statuses);
-          return andThen(function() {
-            setStatus(customerPhone, twilioPhone, "waiting for special");
-            return andThen(cb.bind(null, null));
+          server.getBusinessName(twilioPhone);
+          return andThen(function(businessName) {
+            var customers, statuses;
+            customers = function() {
+              return server.createDatabaseRecord(customerPhone, twilioPhone);
+            };
+            statuses = function() {
+              return server.createStatusRecord(customerPhone, twilioPhone);
+            };
+            doAll(customers, statuses);
+            return andThen(function() {
+              console.log("I thought the businessName was " + businessName);
+              server.setBusinessName(twilioPhone, businessName);
+              return andThen(function() {
+                setStatus(customerPhone, twilioPhone, "waiting for special");
+                return andThen(function() {
+                  return cb(null, businessName);
+                });
+              });
+            });
           });
         },
         removeAdmin: function(customerPhone, twilioPhone, cb) {
@@ -989,6 +998,7 @@
       server.waitForTextResponse = function(text) {
         return server.smsSidsWaitingStatus[text.sid] = text;
       };
+      server.andThen = andThen;
       return server;
     };
     return MobileminServer;

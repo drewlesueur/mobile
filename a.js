@@ -29,5 +29,10 @@ server = Server.init()
 server.start()
 
 
+//server.getBusinessName('+14804282578')
+//server.andThen(function (bn) {
+//  console.log("business nane is " + bn)    
+//})
+
 
 
