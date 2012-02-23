@@ -1,0 +1,81 @@
+addAdmin * customerPhone twilioPhone cb
+  series
+    + getbusinessname twilioPhone
+    * businessName
+      parallel
+        + createDatabaseRecord customerPhone twilioPhone
+        + createStatusRecord customerPhone twilioPhone
+        > Say $ log message
+          series
+            + server.setBusinessName twilioPhone businessName
+            + server.setStatus customerPhone twilioPhone $ waiting for special
+            > Cb null businessName
+            
+
+
+addAdmin: (customerPhone, twilioPhone, cb) ->
+  server.getBusinessName twilioPhone
+  andThen (businessName) ->
+    customers = -> server.createDatabaseRecord customerPhone, twilioPhone
+    statuses = -> server.createStatusRecord customerPhone, twilioPhone
+    doAll customers, statuses
+    andThen () ->
+      console.log "I thought the businessName was #{businessName}"
+      server.setBusinessName twilioPhone, businessName
+      andThen ->
+        setStatus customerPhone, twilioPhone, "waiting for special"
+        andThen -> cb null, businessName
+
+
+
+  addAdmin: (customerPhone, twilioPhone, cb) ->
+    customers = -> server.createDatabaseRecord customerPhone, twilioPhone
+    statuses = -> server.createStatusRecord customerPhone, twilioPhone
+    doAll customers, statuses
+    andThen () ->
+      server.getBusinessName twilioPhone
+      andThen (businessName) ->
+        server.setBusinessName twilioPhone, businessName
+        andThen ->
+          setStatus customerPhone, twilioPhone, "waiting for special"
+          andThen cb.bind(null, null)
+
+
+series
+  > CreateDatabaseRecord customerPone twilioPhone
+  + doSomthing these args
+  * businessName cb
+    DoSomethingElse businessName cb
+   
+series
+  + getBusinessName twilioPhone
+   
+forEach collection
+  * item cb
+    getItem item * err info
+      Cb err info
+  * err all
+    Say $ you are all done
+
+forEach collection
+  * item cb
+    GetItem item cb
+
+parallel
+  startOven
+  startWasher
+  * err results
+
+parallel
+  startOven
+  + preheatoven "drew"
+  + askOven 
+
+series
+  > StartTimer 500
+  > 
+
+StartTimer 500
+  
+   
+ 
