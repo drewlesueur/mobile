@@ -331,7 +331,7 @@ dModule.define "mobilemin-server", ->
       query = mysqlClient.query """
         select `#{field}` from customers where 
           mobilemin_phone = ?
-        order by id desc
+        order by id asc
         limit 1
       """, [to], (err, results) ->
         toDo results
@@ -656,6 +656,7 @@ dModule.define "mobilemin-server", ->
         body: "Ok. It's being sent out as we speak."
 
     server.sendResultsOfSpecial = (customerPhone, twilioPhone, sendInfo) ->
+
       body =  """
         Your special was sent to #{sendInfo.tried} People.
       """
@@ -663,6 +664,17 @@ dModule.define "mobilemin-server", ->
         from: twilioPhone
         to: customerPhone
         body: body
+
+      server.getBusinessName twilioPhone
+      andThen (businessName) ->
+        console.log "trying to tell kyle a text was sent"
+        server.text
+          from: twilioPhone
+          to: "+14803813855" 
+          body: """
+            #{businessName} sent a text to #{sendInfo.tried} people.
+          """
+      
 
     server.sendToThisPerson = (sendInfo, twilioPhone, special, person) ->
       console.log "trying to send special to #{person}"

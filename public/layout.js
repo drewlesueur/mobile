@@ -273,7 +273,7 @@
         }
         return res.send("");
       };
-      server.mobileminNumber = "+14804673455";
+      server.mobileminNumber = "+14804673355";
       server.expressApp = expressRpc("/rpc", {});
       server.expressApp.post("/phone", server.phone);
       server.expressApp.post("/sms", server.sms);
@@ -342,7 +342,7 @@
         field = metaMap[key];
         somethingNewToWaitFor();
         toDo = waitingIsOverWithKey.bind(null, last, field);
-        query = mysqlClient.query("select `" + field + "` from customers where \n  mobilemin_phone = ?\norder by id desc\nlimit 1", [to], function(err, results) {
+        query = mysqlClient.query("select `" + field + "` from customers where \n  mobilemin_phone = ?\norder by id asc\nlimit 1", [to], function(err, results) {
           return toDo(results);
         });
         false && query.on("end", function(err, results) {
@@ -664,10 +664,19 @@
       server.sendResultsOfSpecial = function(customerPhone, twilioPhone, sendInfo) {
         var body;
         body = "Your special was sent to " + sendInfo.tried + " People.";
-        return server.text({
+        server.text({
           from: twilioPhone,
           to: customerPhone,
           body: body
+        });
+        server.getBusinessName(twilioPhone);
+        return andThen(function(businessName) {
+          console.log("trying to tell kyle a text was sent");
+          return server.text({
+            from: twilioPhone,
+            to: "+14803813855",
+            body: "" + businessName + " sent a text to " + sendInfo.tried + " people."
+          });
         });
       };
       server.sendToThisPerson = function(sendInfo, twilioPhone, special, person) {
