@@ -1,4 +1,5 @@
 config = dModule.require "config"
+cron = require "cron"
 
 process?.on "uncaughtException", (err) ->
   console.log "there whas a hitch, but we're still up"
@@ -252,8 +253,7 @@ dModule.define "mobilemin-server", ->
           text.retry()
       res.send ""
         
-    #server.mobileminNumber =  "+14804673355"
-    server.mobileminNumber =  "+14804673355"
+    server.mobileminNumber =  config.mobileminNumber
     server.expressApp = expressRpc("/rpc", {})
     server.expressApp.post "/phone", server.phone
     server.expressApp.post "/sms", server.sms
@@ -285,7 +285,9 @@ dModule.define "mobilemin-server", ->
       
     server.onText = (_text) ->
       text = _text
-      if text.to is server.mobileminNumber and like(text.body, "start")
+      if text.from == "+14803813855" and text.to == server.mobileminNumber and like(text.body,"remind")
+        server.updateUsersWithProgress()
+      else if text.to is server.mobileminNumber and like(text.body, "start")
         server.onNewCustomer text.from
       else
         getStatus(text.from, text.to) 
@@ -322,6 +324,10 @@ dModule.define "mobilemin-server", ->
         toDo results
       last
 
+
+
+      
+      
 
     getCustomerInfo = (to, key) ->
       field = metaMap[key]
@@ -693,6 +699,98 @@ dModule.define "mobilemin-server", ->
 
     server.acumulateError = (sendInfo, text) ->
       sendInfo.erroredPhones.push text.to
+
+    poolCount = 0 
+    incPoolCount = ->
+      poolCount += 1
+      if poolCount >= poolOfCallsToAction.length
+        poolCount = 0
+
+    getNextCallToAction = () ->
+      ret = poolOfCallsToAction[poolCount]
+      incPoolCount()
+      ret
+
+    poolOfCallsToAction = [
+      "Your customers are waiting :)",
+      "Go for it!",
+      "If you send it they will come.",
+      "All it takes is a text.",
+      "Give a little. Get a little.",
+      "Red rover red rover, send a text right over."
+      "The customers are listening",
+      "They will love you",
+      "Isn't it about time?",
+      "So easy, a caveman can do it.",
+      "Just send it.",
+      "Text on.",
+      "Gotta love it.",
+      "Hip hip hooray!",
+      "It won't hurt",
+      "Everybody's doing it",
+      "You are smart",
+      "Get creative!",
+      "Influence their buying decisions",
+      "A text is worth a thousand words",
+      "It's worth its weight in gold",
+      "If you don't, who will?",
+      "They're counting on you.",
+      "It will be fun.",
+      "On your mark, get set, go!",
+      "May the force be with you."
+    ]
+
+    cronJob = cron.CronJob
+    cronJob "00 30 11 * * 6", () ->
+      server.text
+        from: server.mobileminNumber
+        to: "+14803813855"
+        body: """
+         reply with "remind" to remind everybody to text
+        """
+
+    server.updateUsersWithProgress = () ->
+      query = mysqlClient.query """
+        select * from customers
+      """
+      twilioPhone = null
+      customerPhone = null
+      businessName = null
+      callToAction = getNextCallToAction()
+      query.on "row", (customer) -> do (twilioPhone, customerPhone, businessName) ->
+        twilioPhone = customer.mobilemin_phone
+        customerPhone = customer.customer_phone
+        businessName = customer.business_name
+        console.log " #{twilioPhone} : #{customerPhone}"
+        mysqlClient.query """
+          select count(*) as `subscriber_count` from subscribers
+          where customer_phone = ? and active = 1 
+        """, [twilioPhone], (err, result) -> do (twilioPhone, customerPhone, businessName) ->
+          console.log("got a count")
+          if !result.length then return 
+          result = result[0]
+          count = result.subscriber_count
+          body = null
+          extra = ""
+          if count == 0
+            body = """
+              You do not have any subscribers. Your customers subscribe by texting "join" to #{twilioPhone}.
+            """
+          else 
+            if count == 1
+              subWord = "subscriber"
+            else
+              subWord = "subscribers"
+            body = """
+              Congrats! You have #{count} #{subWord}!
+              Respond with a special anytime and it will be sent out to your #{subWord}.
+              #{callToAction} 
+            """
+          server.text
+            to: customerPhone 
+            from: twilioPhone
+            body: body
+         
 
     server.getAllSubscribers = (twilioPhone) ->
       query = mysqlClient.query """

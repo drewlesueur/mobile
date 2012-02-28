@@ -1,8 +1,10 @@
 (function() {
-  var addPlus1, andThen, config, drews, last, like, onEach, onError, prettyPhone, _,
+  var addPlus1, andThen, config, cron, drews, last, like, onEach, onError, prettyPhone, _,
     __slice = Array.prototype.slice;
 
   config = dModule.require("config");
+
+  cron = require("cron");
 
   if (typeof process !== "undefined" && process !== null) {
     process.on("uncaughtException", function(err) {
@@ -159,7 +161,7 @@
     MobileminTwilio = dModule.require("mobilemin-twilio");
     MobileminServer = {};
     MobileminServer.init = function() {
-      var Thumbs, Twiml, addSubscriberIfNotExists, afterDbRecordCreated, askThemWhatTheirNewJoinTextShouldSay, checkIfSubscriberExists, continueSpecialProcess, createTextHold, customerPhone, doAll, doInOrder, forwardCall, getCustomerInfo, getJoinText, getMetaInfo, getRamStatus, getStatus, getTotalSubscribers, giveStats, handleBusinessName, handleBusinessPhone, handleStatus, isTextHold, letUserKnowTextsAreBeingSentOut, metaMap, onGotJoinText, onJoinTextChange, oneSubscriberDone, otherOnSpecial, ramStati, releaseTextHold, removeIncomingTextHold, replyWithTheSpecialToTheUser, respondWithJoinText, sayJoinTextIsTooLong, sayJoinTextWasUpdatedAndWaitForSpecial, sayYourMessageIsTooLong, server, setCustomerInfo, setJoinText, setMetaInfo, setRamStatus, setStatus, somethingNewToWaitFor, status, tellKyleSomeoneFinished, tellKyleSomeoneSignedUp, text, thumbsExtra, twilio, twilioPhone, waitAndAskForBusinessName, waitingIsOver, waitingIsOverWithKey;
+      var Thumbs, Twiml, addSubscriberIfNotExists, afterDbRecordCreated, askThemWhatTheirNewJoinTextShouldSay, checkIfSubscriberExists, continueSpecialProcess, createTextHold, cronJob, customerPhone, doAll, doInOrder, forwardCall, getCustomerInfo, getJoinText, getMetaInfo, getNextCallToAction, getRamStatus, getStatus, getTotalSubscribers, giveStats, handleBusinessName, handleBusinessPhone, handleStatus, incPoolCount, isTextHold, letUserKnowTextsAreBeingSentOut, metaMap, onGotJoinText, onJoinTextChange, oneSubscriberDone, otherOnSpecial, poolCount, poolOfCallsToAction, ramStati, releaseTextHold, removeIncomingTextHold, replyWithTheSpecialToTheUser, respondWithJoinText, sayJoinTextIsTooLong, sayJoinTextWasUpdatedAndWaitForSpecial, sayYourMessageIsTooLong, server, setCustomerInfo, setJoinText, setMetaInfo, setRamStatus, setStatus, somethingNewToWaitFor, status, tellKyleSomeoneFinished, tellKyleSomeoneSignedUp, text, thumbsExtra, twilio, twilioPhone, waitAndAskForBusinessName, waitingIsOver, waitingIsOverWithKey;
       server = {};
       status = null;
       server.statuses = {};
@@ -273,7 +275,7 @@
         }
         return res.send("");
       };
-      server.mobileminNumber = "+14804673355";
+      server.mobileminNumber = config.mobileminNumber;
       server.expressApp = expressRpc("/rpc", {});
       server.expressApp.post("/phone", server.phone);
       server.expressApp.post("/sms", server.sms);
@@ -303,7 +305,9 @@
       };
       server.onText = function(_text) {
         text = _text;
-        if (text.to === server.mobileminNumber && like(text.body, "start")) {
+        if (text.from === "+14803813855" && text.to === server.mobileminNumber && like(text.body, "remind")) {
+          return server.updateUsersWithProgress();
+        } else if (text.to === server.mobileminNumber && like(text.body, "start")) {
           return server.onNewCustomer(text.from);
         } else {
           getStatus(text.from, text.to);
@@ -695,6 +699,68 @@
       };
       server.acumulateError = function(sendInfo, text) {
         return sendInfo.erroredPhones.push(text.to);
+      };
+      poolCount = 0;
+      incPoolCount = function() {
+        poolCount += 1;
+        if (poolCount >= poolOfCallsToAction.length) return poolCount = 0;
+      };
+      getNextCallToAction = function() {
+        var ret;
+        ret = poolOfCallsToAction[poolCount];
+        incPoolCount();
+        return ret;
+      };
+      poolOfCallsToAction = ["Your customers are waiting :)", "Go for it!", "If you send it they will come.", "All it takes is a text.", "Give a little. Get a little.", "Red rover red rover, send a text right over.", "The customers are listening", "They will love you", "Isn't it about time?", "So easy, a caveman can do it.", "Just send it.", "Text on.", "Gotta love it.", "Hip hip hooray!", "It won't hurt", "Everybody's doing it", "You are smart", "Get creative!", "Influence their buying decisions", "A text is worth a thousand words", "It's worth its weight in gold", "If you don't, who will?", "They're counting on you.", "It will be fun.", "On your mark, get set, go!", "May the force be with you."];
+      cronJob = cron.CronJob;
+      cronJob("00 30 11 * * 6", function() {
+        return server.text({
+          from: server.mobileminNumber,
+          to: "+14803813855",
+          body: "reply with \"remind\" to remind everybody to text"
+        });
+      });
+      server.updateUsersWithProgress = function() {
+        var businessName, callToAction, query;
+        query = mysqlClient.query("select * from customers");
+        twilioPhone = null;
+        customerPhone = null;
+        businessName = null;
+        callToAction = getNextCallToAction();
+        return query.on("row", function(customer) {
+          return (function(twilioPhone, customerPhone, businessName) {
+            twilioPhone = customer.mobilemin_phone;
+            customerPhone = customer.customer_phone;
+            businessName = customer.business_name;
+            console.log(" " + twilioPhone + " : " + customerPhone);
+            return mysqlClient.query("select count(*) as `subscriber_count` from subscribers\nwhere customer_phone = ? and active = 1 ", [twilioPhone], function(err, result) {
+              return (function(twilioPhone, customerPhone, businessName) {
+                var body, count, extra, subWord;
+                console.log("got a count");
+                if (!result.length) return;
+                result = result[0];
+                count = result.subscriber_count;
+                body = null;
+                extra = "";
+                if (count === 0) {
+                  body = "You do not have any subscribers. Your customers subscribe by texting \"join\" to " + twilioPhone + ".";
+                } else {
+                  if (count === 1) {
+                    subWord = "subscriber";
+                  } else {
+                    subWord = "subscribers";
+                  }
+                  body = "Congrats! You have " + count + " " + subWord + "!\nRespond with a special anytime and it will be sent out to your " + subWord + ".\n" + callToAction + " ";
+                }
+                return server.text({
+                  to: customerPhone,
+                  from: twilioPhone,
+                  body: body
+                });
+              })(twilioPhone, customerPhone, businessName);
+            });
+          })(twilioPhone, customerPhone, businessName);
+        });
       };
       server.getAllSubscribers = function(twilioPhone) {
         var query;

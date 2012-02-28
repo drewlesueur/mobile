@@ -34,5 +34,3 @@ server.start()
 //  console.log("business nane is " + bn)    
 //})
 
-
-
