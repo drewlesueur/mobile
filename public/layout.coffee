@@ -591,10 +591,18 @@ dModule.define "mobilemin-server", ->
         """
 
     server.sayYouWillReceiveSpecials = (text, businessName, didntAlreadyExist, joinText) ->
+      if not businessName
+        businessName = ""
+        fromBusiness = ""
+        defaultText = "You've signed up for Text Specials!"
+      else
+        defaultText = "You've joined #{businessName} Text Specials!"
+        fromBusiness = "\n-#{businessName}"
+
       if didntAlreadyExist 
         if not joinText
           joinText = """
-            Congrats! You've joined #{businessName} Text Specials!
+            Congrats! #{defaultText}
             Text "Stop" anytime to cancel.
           """
         server.text
@@ -606,8 +614,7 @@ dModule.define "mobilemin-server", ->
           from: text.to
           to: text.from
           body: """
-            Hooray! You're signed up to receive text specials.
-            -#{businessName}
+            Hooray! You're signed up to receive text specials.#{fromBusiness}
           """
 
 

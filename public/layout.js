@@ -590,9 +590,18 @@
         });
       };
       server.sayYouWillReceiveSpecials = function(text, businessName, didntAlreadyExist, joinText) {
+        var defaultText, fromBusiness;
+        if (!businessName) {
+          businessName = "";
+          fromBusiness = "";
+          defaultText = "You've signed up for Text Specials!";
+        } else {
+          defaultText = "You've joined " + businessName + " Text Specials!";
+          fromBusiness = "\n-" + businessName;
+        }
         if (didntAlreadyExist) {
           if (!joinText) {
-            joinText = "Congrats! You've joined " + businessName + " Text Specials!\nText \"Stop\" anytime to cancel.";
+            joinText = "Congrats! " + defaultText + "\nText \"Stop\" anytime to cancel.";
           }
           return server.text({
             from: text.to,
@@ -603,7 +612,7 @@
           return server.text({
             from: text.to,
             to: text.from,
-            body: "Hooray! You're signed up to receive text specials.\n-" + businessName
+            body: "Hooray! You're signed up to receive text specials." + fromBusiness
           });
         }
       };
