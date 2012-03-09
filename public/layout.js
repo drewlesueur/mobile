@@ -566,7 +566,7 @@
         somethingNewToWaitFor();
         _last = last;
         _last.offer = "200";
-        return query = mysqlClient.query("select count(*) as `count` from subscribers s join customers c on (c.mobilemin_phone = s.customer_phone) where \n  s.customer_phone = ?\n  and c.customer_phone = ?", [text.to, text.from], function(err, results) {
+        return query = mysqlClient.query("select count(*) as `count` from subscribers s join customers c on (c.mobilemin_phone = s.customer_phone) where \n  s.customer_phone = ?\n  and c.customer_phone = ?\n  and s.active = 1 ", [text.to, text.from], function(err, results) {
           var _ref;
           return _last.emit("done", results != null ? (_ref = results[0]) != null ? _ref.count : void 0 : void 0);
         });
@@ -583,10 +583,17 @@
         return andThen(server.sayYouWillNoLongerReceiveTextsFromThisBusiness, text);
       };
       server.sayYouWillNoLongerReceiveTextsFromThisBusiness = function(text, businessName) {
+        var fromText;
+        businessName || (businessName = "");
+        if (!businessName) {
+          fromText = "";
+        } else {
+          fromText = "\n-" + businessName;
+        }
         return server.text({
           from: text.to,
           to: text.from,
-          body: "We'll stop texting you. Text \"Join\" if you change your mind.\n-" + businessName
+          body: "We'll stop texting you. Text \"Join\" if you change your mind." + fromText
         });
       };
       server.sayYouWillReceiveSpecials = function(text, businessName, didntAlreadyExist, joinText) {
@@ -663,15 +670,37 @@
           gotStatusFor: 0,
           erroredPhones: []
         };
+        getTotalSubscribers({
+          from: customerPhone,
+          to: twilioPhone
+        });
+        andThen(function(numberOfSubscribers) {
+          return server.sayGoingToSendTo(customerPhone, twilioPhone, numberOfSubscribers);
+        });
         server.getAllSubscribers(twilioPhone);
-        onEach(server.sendToThisPerson, sendInfo, twilioPhone, special);
-        return andThen(server.sendResultsOfSpecial, customerPhone, twilioPhone, sendInfo);
+        return onEach(server.sendToThisPerson, sendInfo, twilioPhone, special);
       };
       letUserKnowTextsAreBeingSentOut = function(customerPhone, twilioPhone) {
         return server.text({
           from: twilioPhone,
           to: customerPhone,
           body: "Ok. It's being sent out as we speak."
+        });
+      };
+      server.sayGoingToSendTo = function(customerPhone, twilioPhone, numberOfSubscribers) {
+        server.text({
+          from: twilioPhone,
+          to: customerPhone,
+          body: "Ok. Now sending to your " + numberOfSubscribers + " subscribers."
+        });
+        server.getBusinessName(twilioPhone);
+        return andThen(function(businessName) {
+          console.log("trying to tell kyle a text was sent");
+          return server.text({
+            from: twilioPhone,
+            to: "+14803813855",
+            body: "" + businessName + " sent a text to " + numberOfSubscribers + " people."
+          });
         });
       };
       server.sendResultsOfSpecial = function(customerPhone, twilioPhone, sendInfo) {
@@ -722,7 +751,7 @@
       };
       poolOfCallsToAction = ["Your customers are waiting :)", "Go for it!", "If you send it they will come.", "All it takes is a text.", "Give a little. Get a little.", "Red rover red rover, send a text right over.", "The customers are listening", "They will love you", "Isn't it about time?", "So easy, a caveman can do it.", "Just send it.", "Text on.", "Gotta love it.", "Hip hip hooray!", "It won't hurt", "Everybody's doing it", "You are smart", "Get creative!", "Influence their buying decisions", "A text is worth a thousand words", "It's worth its weight in gold", "If you don't, who will?", "They're counting on you.", "It will be fun.", "On your mark, get set, go!", "May the force be with you."];
       cronJob = cron.CronJob;
-      cronJob("00 30 11 * * 6", function() {
+      cronJob("00 30 " + (11 + 7) + " * * 6", function() {
         return server.text({
           from: server.mobileminNumber,
           to: "+14803813855",
@@ -761,11 +790,13 @@
                   }
                   body = "Congrats! You have " + count + " " + subWord + "!\nRespond with a special anytime and it will be sent out to your " + subWord + ".\n" + callToAction + " ";
                 }
-                return server.text({
-                  to: customerPhone,
-                  from: twilioPhone,
-                  body: body
-                });
+                if (customerPhone !== "+14803813855") {
+                  return server.text({
+                    to: customerPhone,
+                    from: twilioPhone,
+                    body: body
+                  });
+                }
               })(twilioPhone, customerPhone, businessName);
             });
           })(twilioPhone, customerPhone, businessName);

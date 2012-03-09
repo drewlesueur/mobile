@@ -571,6 +571,7 @@ dModule.define "mobilemin-server", ->
         select count(*) as `count` from subscribers s join customers c on (c.mobilemin_phone = s.customer_phone) where 
           s.customer_phone = ?
           and c.customer_phone = ?
+          and s.active = 1 
       """, [text.to, text.from], (err, results) ->
          _last.emit "done", results?[0]?.count
 
@@ -582,12 +583,17 @@ dModule.define "mobilemin-server", ->
       andThen server.sayYouWillNoLongerReceiveTextsFromThisBusiness, text
 
     server.sayYouWillNoLongerReceiveTextsFromThisBusiness = (text, businessName) ->
+      businessName or= ""
+      if not businessName
+        fromText = ""
+      else
+        fromText = "\n-#{businessName}"
+
       server.text
         from: text.to
         to: text.from
         body: """
-          We'll stop texting you. Text "Join" if you change your mind.
-          -#{businessName}
+          We'll stop texting you. Text "Join" if you change your mind.#{fromText}
         """
 
     server.sayYouWillReceiveSpecials = (text, businessName, didntAlreadyExist, joinText) ->
@@ -658,15 +664,41 @@ dModule.define "mobilemin-server", ->
     server.sendThisSpecialToAllMySubscribers = (customerPhone, twilioPhone, special) ->
       sendInfo = sent: 0, tried: 0, gotStatusFor: 0, erroredPhones: []
       #letUserKnowTextsAreBeingSentOut(customerPhone, twilioPhone)
+      
+      getTotalSubscribers
+        from: customerPhone
+        to: twilioPhone
+
+      andThen (numberOfSubscribers) ->
+        server.sayGoingToSendTo customerPhone, twilioPhone, numberOfSubscribers
+
       server.getAllSubscribers(twilioPhone)
       onEach(server.sendToThisPerson, sendInfo, twilioPhone, special)
-      andThen server.sendResultsOfSpecial, customerPhone, twilioPhone, sendInfo
+      # andThen server.sendResultsOfSpecial, customerPhone, twilioPhone, sendInfo
 
     letUserKnowTextsAreBeingSentOut = (customerPhone, twilioPhone) ->
       server.text
         from: twilioPhone
         to: customerPhone
         body: "Ok. It's being sent out as we speak."
+
+    server.sayGoingToSendTo = (customerPhone, twilioPhone, numberOfSubscribers) ->
+      server.text
+        from: twilioPhone
+        to: customerPhone
+        body: """
+          Ok. Now sending to your #{numberOfSubscribers} subscribers.
+        """
+      server.getBusinessName twilioPhone
+      andThen (businessName) ->
+        console.log "trying to tell kyle a text was sent"
+        server.text
+          from: twilioPhone
+          to: "+14803813855" 
+          body: """
+            #{businessName} sent a text to #{numberOfSubscribers} people.
+          """
+      
 
     server.sendResultsOfSpecial = (customerPhone, twilioPhone, sendInfo) ->
 
@@ -748,7 +780,7 @@ dModule.define "mobilemin-server", ->
     ]
 
     cronJob = cron.CronJob
-    cronJob "00 30 11 * * 6", () ->
+    cronJob "00 30 #{11 + 7} * * 6", () ->
       server.text
         from: server.mobileminNumber
         to: "+14803813855"
@@ -793,10 +825,11 @@ dModule.define "mobilemin-server", ->
               Respond with a special anytime and it will be sent out to your #{subWord}.
               #{callToAction} 
             """
-          server.text
-            to: customerPhone 
-            from: twilioPhone
-            body: body
+          if customerPhone != "+14803813855"
+            server.text
+              to: customerPhone 
+              from: twilioPhone
+              body: body
          
 
     server.getAllSubscribers = (twilioPhone) ->
