@@ -1,6 +1,7 @@
 (function() {
-  var MobileMinApp, Severus, drews;
-  var __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; }, __slice = Array.prototype.slice;
+  var MobileMinApp, Severus, drews,
+    __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; },
+    __slice = Array.prototype.slice;
 
   Severus = dModule.require("severus2");
 
@@ -21,8 +22,8 @@
     }
 
     MobileMinApp.prototype.find = function(what, callback) {
-      var mmCallback;
-      var _this = this;
+      var mmCallback,
+        _this = this;
       if (callback == null) callback = function() {};
       mmCallback = function(err, apps) {
         _this.app = apps[0];

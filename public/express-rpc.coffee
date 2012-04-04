@@ -43,6 +43,8 @@ dModule.define "express-rpc", ->
         cb error, null
 
     url or= "/rpc"
+    pg "/ping", (req, res) ->
+      res.send Date.now().toString()
     pg url, (req, res) ->
       body = req.body
       {method, params, id} = body

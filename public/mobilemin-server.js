@@ -112,8 +112,8 @@
     Customer = dModule.require("mobilemin-customer");
     MobileminServer = {};
     MobileminServer.init = function() {
-      var self, twilio;
-      var _this = this;
+      var self, twilio,
+        _this = this;
       self = {};
       self.phone = function() {};
       self.sms = function(req, res) {
@@ -194,8 +194,8 @@
         return self.conversations[convo.from][convo.to] = customer;
       };
       self.handleNewCustomerWhoTextedStart = function(res, from) {
-        var actuallyBuy, areaCode, buyError, buySuccess;
-        var _this = this;
+        var actuallyBuy, areaCode, buyError, buySuccess,
+          _this = this;
         console.log("we are handling a new start");
         areaCode = drews.s(from, 2, 3);
         buySuccess = function(justBoughtNumber) {

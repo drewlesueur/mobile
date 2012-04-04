@@ -1,6 +1,7 @@
 (function() {
-  var difinir;
-  var __slice = Array.prototype.slice, __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
+  var difinir,
+    __slice = Array.prototype.slice,
+    __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
 
   if (typeof module !== "undefined" && module !== null ? module.exports : void 0) {
     difinir = function() {

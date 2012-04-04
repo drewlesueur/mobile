@@ -46,6 +46,9 @@
         };
       };
       url || (url = "/rpc");
+      pg("/ping", function(req, res) {
+        return res.send(Date.now().toString());
+      });
       pg(url, function(req, res) {
         var body, fn, id, method, params;
         body = req.body;

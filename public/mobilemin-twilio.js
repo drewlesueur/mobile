@@ -25,8 +25,8 @@
       };
 
       MobileMinTwilio.prototype.onGotApps = function(err, apps) {
-        var cbs;
-        var _this = this;
+        var cbs,
+          _this = this;
         cbs = [];
         nimble.each(apps, function(app, index, arr, cb) {
           return cbs.push(_this.getPhoneNumberSidsForUpdating(app.twilioPhone, cb));
@@ -37,8 +37,8 @@
       MobileMinTwilio.prototype.updateCallbackNumbers = function(cb) {};
 
       MobileMinTwilio.prototype.getPhoneNumberSidsForUpdating = function(twilioPhone, cb) {
-        var err, success;
-        var _this = this;
+        var err, success,
+          _this = this;
         if (cb == null) cb = function() {};
         if ((!twilioPhone) || (twilioPhone.length < 10)) return cb(null);
         success = function(resp) {
