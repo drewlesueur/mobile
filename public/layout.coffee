@@ -824,7 +824,7 @@ dModule.define "mobilemin-server", ->
               Congrats! You have #{count} #{subWord}!
               Respond with a special anytime and it will be sent out to your #{subWord}.
               #{callToAction} 
-              - Kyle 480-840-5406
+              - Kyle 480-381-3855
             """
           if customerPhone != "+14803813855"
             server.text

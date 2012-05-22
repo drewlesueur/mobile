@@ -788,7 +788,7 @@
                   } else {
                     subWord = "subscribers";
                   }
-                  body = "Congrats! You have " + count + " " + subWord + "!\nRespond with a special anytime and it will be sent out to your " + subWord + ".\n" + callToAction + " \n- Kyle 480-840-5406";
+                  body = "Congrats! You have " + count + " " + subWord + "!\nRespond with a special anytime and it will be sent out to your " + subWord + ".\n" + callToAction + " \n- Kyle 480-381-3855";
                 }
                 if (customerPhone !== "+14803813855") {
                   return server.text({
