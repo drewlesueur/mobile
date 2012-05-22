@@ -814,6 +814,7 @@ dModule.define "mobilemin-server", ->
           if count == 0
             body = """
               You do not have any subscribers. Your customers subscribe by texting "join" to #{twilioPhone}.
+              -Kyle 480-381-3855
             """
           else 
             if count == 1
@@ -824,7 +825,7 @@ dModule.define "mobilemin-server", ->
               Congrats! You have #{count} #{subWord}!
               Respond with a special anytime and it will be sent out to your #{subWord}.
               #{callToAction} 
-              - Kyle 480-381-3855
+              -Kyle 480-381-3855
             """
           if customerPhone != "+14803813855"
             server.text

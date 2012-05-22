@@ -781,14 +781,14 @@
                 body = null;
                 extra = "";
                 if (count === 0) {
-                  body = "You do not have any subscribers. Your customers subscribe by texting \"join\" to " + twilioPhone + ".";
+                  body = "You do not have any subscribers. Your customers subscribe by texting \"join\" to " + twilioPhone + ".\n-Kyle 480-381-3855";
                 } else {
                   if (count === 1) {
                     subWord = "subscriber";
                   } else {
                     subWord = "subscribers";
                   }
-                  body = "Congrats! You have " + count + " " + subWord + "!\nRespond with a special anytime and it will be sent out to your " + subWord + ".\n" + callToAction + " \n- Kyle 480-381-3855";
+                  body = "Congrats! You have " + count + " " + subWord + "!\nRespond with a special anytime and it will be sent out to your " + subWord + ".\n" + callToAction + " \n-Kyle 480-381-3855";
                 }
                 if (customerPhone !== "+14803813855") {
                   return server.text({
