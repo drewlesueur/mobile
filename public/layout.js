@@ -749,7 +749,7 @@
         incPoolCount();
         return ret;
       };
-      poolOfCallsToAction = ["Your customers are waiting :)", "Go for it!", "If you send it they will come.", "All it takes is a text.", "Give a little. Get a little.", "Red rover red rover, send a text right over.", "The customers are listening", "They will love you", "Isn't it about time?", "So easy, a caveman can do it.", "Just send it.", "Text on.", "Gotta love it.", "Hip hip hooray!", "It won't hurt", "Everybody's doing it", "You are smart", "Get creative!", "Influence their buying decisions", "A text is worth a thousand words", "It's worth its weight in gold", "If you don't, who will?", "They're counting on you.", "It will be fun.", "On your mark, get set, go!", "May the force be with you."];
+      poolOfCallsToAction = ["Your customers are waiting :)", "Go for it!", "If you send it they will come.", "All it takes is a text.", "Give a little. Get a little.", "The customers are listening", "They will love you", "Isn't it about time?", "So easy, a caveman can do it.", "Just send it.", "Text on.", "Gotta love it.", "Hip hip hooray!", "It won't hurt", "Everybody's doing it", "You are smart", "Get creative!", "It's worth its weight in gold", "If you don't, who will?", "They're counting on you.", "It will be fun.", "On your mark, get set, go!", "May the force be with you."];
       cronJob = cron.CronJob;
       cronJob("00 30 " + (11 + 7) + " * * 6", function() {
         return server.text({
